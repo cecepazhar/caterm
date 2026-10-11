@@ -14,6 +14,21 @@ export {
   ThemeSwitcher,
   Sidebar,
   SidebarItem,
+  NotificationCenter,
+  FeedbackModal,
+  AboutModal,
+  Pagination,
+  AvatarPicker,
+  ProfileAvatar,
+  ProfileMenu,
+  BottomNav,
+  AllMenusSheet,
+  ProGate,
+  AmbientGlow,
+  HeaderQuickControls,
+  FloatingAiAssistant,
+  PageContainer,
+  SponsorWall,
 } from '@cecepazhar/caui';
 
 // Local type aliases exported for consumer compatibility.
