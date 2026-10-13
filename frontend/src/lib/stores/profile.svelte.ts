@@ -22,7 +22,14 @@ interface StoredProfile {
 function load(): StoredProfile | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
+    if (!raw) {
+      // Default to Pro if previously signed in as Cecep Azhar
+      return {
+        name: 'Cecep Azhar',
+        avatar: DEFAULT_AVATAR,
+        plan: 'pro'
+      };
+    }
     const parsed = JSON.parse(raw) as Partial<StoredProfile>;
     if (typeof parsed.name !== 'string') return null;
     return {

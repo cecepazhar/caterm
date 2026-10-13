@@ -11,6 +11,7 @@ import {
   type ProStatus,
   type SyncOutcome
 } from '$lib/api/pro';
+import { setProfilePlan } from '$lib/stores/profile.svelte';
 
 /** How often an unlocked app re-syncs its licence (the server re-issues a 14-day token). */
 const SYNC_INTERVAL_MS = 6 * 60 * 60 * 1000;
@@ -50,6 +51,9 @@ export function getPro() {
 export async function refreshProStatus(): Promise<void> {
   try {
     status = await proStatus();
+    if (status?.entitlement?.state === 'valid' || (status?.license && status?.signedIn)) {
+      setProfilePlan('pro');
+    }
   } catch {
     // Browser preview or vault locked mid-call: keep what we had.
   }

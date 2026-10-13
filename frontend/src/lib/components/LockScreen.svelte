@@ -15,6 +15,7 @@
   import ProLoginForm from './ProLoginForm.svelte';
   import type { ProAccount } from '$lib/api/pro';
   import { getTheme, setTheme } from '$lib/stores/theme.svelte';
+  import { refreshProStatus } from '$lib/stores/pro.svelte';
 
   let { onUnlocked }: { onUnlocked: () => void } = $props();
 
@@ -187,6 +188,7 @@
   onMount(async () => {
     currentQuote = QUOTES[Math.floor(Math.random() * QUOTES.length)];
     checkStoredLockout();
+    void refreshProStatus();
     try {
       isSetup = !(await isVaultInitialized());
     } catch {
