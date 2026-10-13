@@ -165,15 +165,33 @@ impl<'a> Dispatcher<'a> {
                 max_tokens,
                 timeout,
             ),
-            ProviderType::Ollama => Self::call_ollama(
-                provider,
-                model,
-                system_prompt,
-                user_prompt,
-                temperature,
-                max_tokens,
-                timeout,
-            ),
+            ProviderType::Ollama => {
+                // 9Router / OmniRoute proxies advertise as Ollama-compatible but actually
+                // speak OpenAI (port 20128 or URL ending in /v1). Auto-route those to the
+                // OpenAI-compatible path instead of the native Ollama /api/chat path.
+                let base = provider.base_url.to_lowercase();
+                if base.contains("20128") || base.ends_with("/v1") {
+                    Self::call_openai_compatible(
+                        provider,
+                        model,
+                        system_prompt,
+                        user_prompt,
+                        temperature,
+                        max_tokens,
+                        timeout,
+                    )
+                } else {
+                    Self::call_ollama(
+                        provider,
+                        model,
+                        system_prompt,
+                        user_prompt,
+                        temperature,
+                        max_tokens,
+                        timeout,
+                    )
+                }
+            }
             ProviderType::CatermHosted => {
                 Self::call_caterm_hosted(model, system_prompt, user_prompt, temperature, max_tokens)
             }
