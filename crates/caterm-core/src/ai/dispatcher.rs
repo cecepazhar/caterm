@@ -278,6 +278,7 @@ impl<'a> Dispatcher<'a> {
             "model": model,
             "temperature": temperature,
             "max_tokens": max_tokens,
+            "stream": false,
             "messages": [
                 { "role": "system", "content": system_prompt },
                 { "role": "user", "content": user_prompt }
@@ -313,34 +314,68 @@ impl<'a> Dispatcher<'a> {
             .read_to_string()
             .map_err(|e| CatermError::Ai(AiError::Generic(format!("Read OpenAI response: {e}"))))?;
 
-        let parsed: Value = serde_json::from_str(&body)
-            .map_err(|e| CatermError::Ai(AiError::Generic(format!("Parse OpenAI JSON: {e}"))))?;
+        // 1. Try standard JSON parse
+        if let Ok(parsed) = serde_json::from_str::<Value>(&body) {
+            if let Some(err_msg) = parsed
+                .get("error")
+                .and_then(|e| e.get("message"))
+                .and_then(Value::as_str)
+            {
+                return Err(CatermError::Ai(AiError::Generic(format!(
+                    "OpenAI API returned error: {err_msg}"
+                ))));
+            }
 
-        if let Some(err_msg) = parsed
-            .get("error")
-            .and_then(|e| e.get("message"))
-            .and_then(Value::as_str)
-        {
-            return Err(CatermError::Ai(AiError::Generic(format!(
-                "OpenAI API returned error: {err_msg}"
-            ))));
+            if let Some(content) = parsed
+                .get("choices")
+                .and_then(Value::as_array)
+                .and_then(|arr| arr.first())
+                .and_then(|choice| choice.get("message"))
+                .and_then(|msg| msg.get("content"))
+                .and_then(Value::as_str)
+            {
+                if !content.trim().is_empty() {
+                    return Ok(content.to_string());
+                }
+            }
         }
 
-        let content = parsed
-            .get("choices")
-            .and_then(Value::as_array)
-            .and_then(|arr| arr.first())
-            .and_then(|choice| choice.get("message"))
-            .and_then(|msg| msg.get("content"))
-            .and_then(Value::as_str)
-            .ok_or_else(|| {
-                CatermError::Ai(AiError::Generic(format!(
-                    "Unexpected OpenAI response shape: {}",
-                    body.chars().take(200).collect::<String>()
-                )))
-            })?;
+        // 2. Fallback: Parse Server-Sent Events (SSE / text/event-stream) from 9Router or proxies
+        let mut accumulated_text = String::new();
+        for line in body.lines() {
+            let trimmed = line.trim();
+            if let Some(data_str) = trimmed.strip_prefix("data: ") {
+                let data_str = data_str.trim();
+                if data_str == "[DONE]" {
+                    break;
+                }
+                if let Ok(chunk) = serde_json::from_str::<Value>(data_str) {
+                    if let Some(delta) = chunk
+                        .get("choices")
+                        .and_then(Value::as_array)
+                        .and_then(|arr| arr.first())
+                        .and_then(|c| c.get("delta"))
+                    {
+                        if let Some(text) = delta.get("content").and_then(Value::as_str) {
+                            accumulated_text.push_str(text);
+                        } else if let Some(thought) = delta.get("reasoning").and_then(Value::as_str) {
+                            if accumulated_text.is_empty() {
+                                accumulated_text.push_str(thought);
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
-        Ok(content.to_string())
+        if !accumulated_text.trim().is_empty() {
+            return Ok(accumulated_text);
+        }
+
+        Err(CatermError::Ai(AiError::Generic(format!(
+            "Unexpected OpenAI response shape: {}",
+            body.chars().take(200).collect::<String>()
+        ))))
     }
 
     fn call_ollama(

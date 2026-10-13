@@ -471,6 +471,63 @@ static ACCESS: Lazy<Mutex<Option<(String, i64)>>> = Lazy::new(|| Mutex::new(None
 
 // ---- Local persistence (inside the encrypted vault database) ---------------------------------
 
+#[derive(serde::Serialize, serde::Deserialize)]
+struct ProCacheFile {
+    account: Value,
+    license: Option<Value>,
+    token_payload: ***
+    token_signature: ***
+    token_key_version: ***
+    last_sync_at: i64,
+}
+
+fn pro_cache_path() -> Option<std::path::PathBuf> {
+    crate::paths::resolve_data_dir().ok().map(|d| d.path.join("pro_cache.json"))
+}
+
+fn write_pro_cache(state: &StoredState) {
+    if let Some(p) = pro_cache_path() {
+        let cache = ProCacheFile {
+            account: state.account.clone(),
+            license: state.license.clone(),
+            token_payload: ***.as_ref().map(|t| t.0.clone()),
+            token_signature: ***.as_ref().map(|t| t.1.clone()),
+            token_key_version: ***.as_ref().map(|t| t.2),
+            last_sync_at: state.last_sync_at.unwrap_or_else(now),
+        };
+        if let Ok(data) = serde_json::to_string(&cache) {
+            let _ = std::fs::write(p, data);
+        }
+    }
+}
+
+fn read_pro_cache() -> Option<StoredState> {
+    let p = pro_cache_path()?;
+    let data = std::fs::read_to_string(p).ok()?;
+    let cache: ProCacheFile = serde_json::from_str(&data).ok()?;
+    Some(StoredState {
+        account: cache.account,
+        refresh_token: ***
+        license: cache.license,
+        token: match (
+            cache.token_payload,
+            cache.token_signature,
+            cache.token_key_version,
+        ) {
+            (Some(pl), Some(sig), Some(ver)) => Some((pl, sig, ver)),
+            _ => None,
+        },
+        last_seen: now(),
+        last_sync_at: Some(cache.last_sync_at),
+    })
+}
+
+fn clear_pro_cache() {
+    if let Some(p) = pro_cache_path() {
+        let _ = std::fs::remove_file(p);
+    }
+}
+
 fn ensure_table(conn: &Connection) -> Result<(), CatermError> {
     conn.execute_batch(
         "CREATE TABLE IF NOT EXISTS pro_state (
@@ -525,7 +582,15 @@ fn load_state(conn: &Connection) -> Result<Option<StoredState>, CatermError> {
     )
     .optional()
     .map_err(db_err)
-}
+    }
+
+    /// Persists the pro session to the unencrypted `pro_cache.json` outside the vault so it
+    /// remains visible when the main vault is locked or the app is restarted.
+    fn persist_pro_cache(conn: &Connection) {
+    if let Ok(Some(state)) = load_state(conn) {
+    write_pro_cache(&state);
+    }
+    }
 
 fn save_session(conn: &Connection, session: &Session) -> Result<(), CatermError> {
     ensure_table(conn)?;
@@ -792,6 +857,37 @@ pub fn status() -> Result<ProStatus, CatermError> {
             .lock()
             .as_ref()
             .and_then(|s| account_from(&s.account));
+
+        // Persisted Pro session survives vault lock (Option 3): serve cached Pro status
+        if pending.is_none() {
+            if let Some(cached) = read_pro_cache() {
+                let hwid = hwid().ok()?;
+                let token = cached
+                    .token
+                    .as_ref()
+                    .map(|(p, s, v)| (p.as_str(), s.as_str(), *v));
+                let (entitlement, _) = evaluate(
+                    token,
+                    public_key,
+                    &hwid,
+                    cached.last_seen,
+                    now(),
+                );
+                return Ok(ProStatus {
+                    signed_in: true,
+                    pending: false,
+                    account: account_from(&cached.account),
+                    license: cached
+                        .license
+                        .as_ref()
+                        .and_then(|l| serde_json::from_value(l.clone()).ok()),
+                    entitlement,
+                    last_sync_at: cached.last_sync_at,
+                    key_configured: key_configured(),
+                });
+            }
+        }
+
         return Ok(ProStatus {
             signed_in: pending.is_some(),
             pending: pending.is_some(),
