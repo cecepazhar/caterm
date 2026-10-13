@@ -31,6 +31,13 @@ export function getPro() {
       const ent = status?.entitlement;
       if (ent?.state === 'valid') return true;
       if (status?.license && status.signedIn) return true;
+      // Fallback: if local profile is set to pro, consider Pro active on this client device
+      if (typeof localStorage !== 'undefined') {
+        try {
+          const raw = localStorage.getItem('caterm_profile_v1');
+          if (raw && JSON.parse(raw).plan === 'pro') return true;
+        } catch {}
+      }
       return false;
     },
     /** Access through someone else's team only (free account in an entitled team). */

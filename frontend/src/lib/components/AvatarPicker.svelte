@@ -2,12 +2,14 @@
   import { t } from '$lib/i18n/index.svelte';
   import ProfileAvatar, { AVATARS } from './ProfileAvatar.svelte';
   import { getPro } from '$lib/stores/pro.svelte';
+  import { getProfile } from '$lib/stores/profile.svelte';
   import { showToast } from '$lib/stores/uiNotifications.svelte';
   import { onMount } from 'svelte';
 
   let { value = $bindable('rocket'), size = 48, centered = true }: { value: string; size?: number; centered?: boolean } = $props();
 
   const pro = getPro();
+  const profile = getProfile();
   let isOpen = $state(false);
   let containerRef = $state<HTMLDivElement | null>(null);
 
@@ -18,7 +20,7 @@
 
   function selectAvatar(id: string, isProAvatar: boolean, e: MouseEvent) {
     e.stopPropagation();
-    if (isProAvatar && !pro.isPro) {
+    if (isProAvatar && !pro.isPro && profile.plan !== 'pro') {
       showToast('Avatar ini eksklusif untuk member Pro', 'error');
       return;
     }
