@@ -835,8 +835,10 @@
       </div>
     </aside>
 
-    <!-- Content panel with Outer Ambient Halo Underglow -->
-    <div class="flex-1 min-w-0 flex relative overflow-hidden pl-2 pt-2 pr-0 pb-0 md:p-0">
+    <!-- Content panel with Outer Ambient Halo Underglow.
+         overflow-visible keeps the ambient halo bleeding past the panel edge;
+         the parent w-screen + overflow-hidden wrapper prevents stray scrollbars. -->
+    <div class="flex-1 min-w-0 flex relative overflow-visible pl-2 pt-2 pr-0 pb-0 md:p-0">
       <AmbientGlow defaultAccent="#ef4444" />
 
       <main class="flex-1 min-w-0 flex overflow-hidden relative z-10 bg-white dark:bg-[#161616] {cardBorderClass} rounded-none rounded-tl-2xl md:rounded-none md:rounded-tl-xl transition-colors duration-150">
