@@ -61,3 +61,18 @@ html.dark {
   --text-secondary: #a3a3a3;
   color-scheme: dark;
 }
+
+/* ── Native Desktop Lock: prevent stray web-style scrollbars on Pro / glow modes ── */
+html,
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden !important;
+}
+
+#app {
+  width: 100%;
+  height: 100%;
+}

@@ -543,7 +543,7 @@
 <!-- Shell: one title bar across the full width, then sidebar + content panel. Title bar and
      sidebar share the app background with no dividers; the content sits on a raised panel with
      a left/top hairline and a rounded top-left corner. -->
-<div class="flex flex-col h-screen bg-neutral-100 dark:bg-[#0e0e0e] text-neutral-800 dark:text-neutral-300 font-sans transition-colors duration-150 pb-[env(safe-area-inset-bottom,0px)]">
+<div class="flex flex-col h-screen w-screen overflow-hidden bg-neutral-100 dark:bg-[#0e0e0e] text-neutral-800 dark:text-neutral-300 font-sans transition-colors duration-150 pb-[env(safe-area-inset-bottom,0px)]">
   <!-- Title bar. Also hosts the terminal workspace controls (session tabs, Files, AI, split)
        so a session never costs a second stacked header row. -->
   <header
@@ -836,7 +836,7 @@
     </aside>
 
     <!-- Content panel with Outer Ambient Halo Underglow -->
-    <div class="flex-1 min-w-0 flex relative overflow-visible pl-2 pt-2 pr-0 pb-0 md:p-0">
+    <div class="flex-1 min-w-0 flex relative overflow-hidden pl-2 pt-2 pr-0 pb-0 md:p-0">
       <AmbientGlow defaultAccent="#ef4444" />
 
       <main class="flex-1 min-w-0 flex overflow-hidden relative z-10 bg-white dark:bg-[#161616] {cardBorderClass} rounded-none rounded-tl-2xl md:rounded-none md:rounded-tl-xl transition-colors duration-150">
