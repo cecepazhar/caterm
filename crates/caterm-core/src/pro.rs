@@ -471,13 +471,13 @@ static ACCESS: Lazy<Mutex<Option<(String, i64)>>> = Lazy::new(|| Mutex::new(None
 
 // ---- Local persistence (inside the encrypted vault database) ---------------------------------
 
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
 struct ProCacheFile {
     account: Value,
     license: Option<Value>,
-    token_payload: ***
-    token_signature: ***
-    token_key_version: ***
+    token_payload: Option<String>,
+    token_signature: Option<String>,
+    token_key_version: Option<u32>,
     last_sync_at: i64,
 }
 
@@ -490,9 +490,9 @@ fn write_pro_cache(state: &StoredState) {
         let cache = ProCacheFile {
             account: state.account.clone(),
             license: state.license.clone(),
-            token_payload: ***.as_ref().map(|t| t.0.clone()),
-            token_signature: ***.as_ref().map(|t| t.1.clone()),
-            token_key_version: ***.as_ref().map(|t| t.2),
+            token_payload: state.token.as_ref().map(|t| t.0.clone()),
+            token_signature: state.token.as_ref().map(|t| t.1.clone()),
+            token_key_version: state.token.as_ref().map(|t| t.2),
             last_sync_at: state.last_sync_at.unwrap_or_else(now),
         };
         if let Ok(data) = serde_json::to_string(&cache) {
@@ -507,7 +507,7 @@ fn read_pro_cache() -> Option<StoredState> {
     let cache: ProCacheFile = serde_json::from_str(&data).ok()?;
     Some(StoredState {
         account: cache.account,
-        refresh_token: ***
+        refresh_token: String::new(),
         license: cache.license,
         token: match (
             cache.token_payload,
@@ -615,6 +615,7 @@ fn save_session(conn: &Connection, session: &Session) -> Result<(), CatermError>
         .map_err(db_err)?;
     }
     *ACCESS.lock() = Some((session.access_token.clone(), session.access_expires_at));
+    persist_pro_cache(conn);
     Ok(())
 }
 
@@ -641,6 +642,7 @@ fn save_license(
         ],
     )
     .map_err(db_err)?;
+    persist_pro_cache(conn);
     Ok(())
 }
 
@@ -648,6 +650,7 @@ fn clear_local(conn: &Connection) -> Result<(), CatermError> {
     ensure_table(conn)?;
     conn.execute("DELETE FROM pro_state", []).map_err(db_err)?;
     *ACCESS.lock() = None;
+    clear_pro_cache();
     Ok(())
 }
 
@@ -861,7 +864,7 @@ pub fn status() -> Result<ProStatus, CatermError> {
         // Persisted Pro session survives vault lock (Option 3): serve cached Pro status
         if pending.is_none() {
             if let Some(cached) = read_pro_cache() {
-                let hwid = hwid().ok()?;
+                let hwid = hwid().unwrap_or_default();
                 let token = cached
                     .token
                     .as_ref()
