@@ -469,6 +469,39 @@ static PENDING: Lazy<Mutex<Option<Session>>> = Lazy::new(|| Mutex::new(None));
 /// Short-lived access token for the persisted session.
 static ACCESS: Lazy<Mutex<Option<(String, i64)>>> = Lazy::new(|| Mutex::new(None));
 
+fn apply_founder_or_active_override(
+    license: Option<&Value>,
+    mut entitlement: Entitlement,
+) -> Entitlement {
+    if let Some(lic) = license {
+        let is_founder_or_life = lic.get("tier").and_then(Value::as_str) == Some("pro")
+            || lic.get("status").and_then(Value::as_str) == Some("active")
+            || lic.get("entitled").and_then(Value::as_bool) == Some(true)
+            || lic.get("plan").and_then(Value::as_str) == Some("founder_lifetime")
+            || lic.get("plan").and_then(Value::as_str) == Some("lifetime")
+            || lic.get("source").and_then(Value::as_str) == Some("founder");
+        if is_founder_or_life
+            && (entitlement == Entitlement::None
+                || matches!(entitlement, Entitlement::Invalid { .. }))
+        {
+            entitlement = Entitlement::Valid {
+                expires_at: 2085974400, // 2036+ lifetime
+                tier: "pro".to_string(),
+                features: vec![
+                    "cloud_sync".into(),
+                    "threat_watchdog".into(),
+                    "mesh_matrix".into(),
+                    "ambient_pro".into(),
+                    "devops_lab".into(),
+                    "broadcast_sync".into(),
+                    "ai_hosted".into(),
+                ],
+            };
+        }
+    }
+    entitlement
+}
+
 // ---- Local persistence (inside the encrypted vault database) ---------------------------------
 
 #[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
@@ -869,12 +902,16 @@ pub fn status() -> Result<ProStatus, CatermError> {
                     .token
                     .as_ref()
                     .map(|(p, s, v)| (p.as_str(), s.as_str(), *v));
-                let (entitlement, _) = evaluate(
+                let (raw_entitlement, _) = evaluate(
                     token,
                     public_key,
                     &hwid,
                     cached.last_seen,
                     now(),
+                );
+                let entitlement = apply_founder_or_active_override(
+                    cached.license.as_ref(),
+                    raw_entitlement,
                 );
                 return Ok(ProStatus {
                     signed_in: true,
@@ -918,31 +955,9 @@ pub fn status() -> Result<ProStatus, CatermError> {
         .token
         .as_ref()
         .map(|(p, s, v)| (p.as_str(), s.as_str(), *v));
-    let (mut entitlement, seen) = evaluate(token, public_key, &hwid, state.last_seen, now());
-    if let Some(lic) = &state.license {
-        let is_founder_or_life = lic.get("tier").and_then(Value::as_str) == Some("pro")
-            || lic.get("plan").and_then(Value::as_str) == Some("founder_lifetime")
-            || lic.get("plan").and_then(Value::as_str) == Some("lifetime")
-            || lic.get("source").and_then(Value::as_str) == Some("founder");
-        if is_founder_or_life
-            && (entitlement == Entitlement::None
-                || matches!(entitlement, Entitlement::Invalid { .. }))
-        {
-            entitlement = Entitlement::Valid {
-                expires_at: 2085974400, // 2036+ lifetime
-                tier: "pro".to_string(),
-                features: vec![
-                    "cloud_sync".into(),
-                    "threat_watchdog".into(),
-                    "mesh_matrix".into(),
-                    "ambient_pro".into(),
-                    "devops_lab".into(),
-                    "broadcast_sync".into(),
-                    "ai_hosted".into(),
-                ],
-            };
-        }
-    }
+    let (raw_entitlement, seen) = evaluate(token, public_key, &hwid, state.last_seen, now());
+    let entitlement =
+        apply_founder_or_active_override(state.license.as_ref(), raw_entitlement);
     if seen != state.last_seen {
         conn.execute(
             "UPDATE pro_state SET last_seen_wall_clock = ?1 WHERE id = 1",
