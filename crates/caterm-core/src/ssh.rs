@@ -37,6 +37,15 @@ pub struct SshSession {
     pub host_id: String,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ConnectionTestResult {
+    pub success: bool,
+    pub latency_ms: u64,
+    pub banner: Option<String>,
+    pub message: String,
+}
+
 /// Something that happened on a live PTY session, pushed out as it happens instead of
 /// waiting for the frontend to ask. `caterm-app` turns these into Tauri events (K2-1: the
 /// core stays GUI-free and only knows about this callback).
@@ -490,6 +499,143 @@ where
         .lock()
         .map_err(|_| invalid("Exec session mutex poisoned".to_string()))?;
     f(&sess)
+}
+
+/// Tests TCP connectivity, SSH handshake, and credentials for a given host configuration.
+/// Does not add the session to any pool or PTY registry.
+pub fn test_host_connection(
+    input: &crate::store::HostInput,
+) -> Result<ConnectionTestResult, CatermError> {
+    let start = Instant::now();
+    let port = if input.port == 0 { 22 } else { input.port };
+    let addr = format!("{}:{port}", input.address);
+    let lookup_addr = if input.address.contains(':') && !input.address.starts_with('[') {
+        format!("[{}]:{port}", input.address)
+    } else {
+        addr.clone()
+    };
+
+    // 1. TCP Connect
+    let tcp = match connect_resolved(&lookup_addr, Duration::from_secs(6)) {
+        Ok(t) => t,
+        Err(e) => {
+            return Ok(ConnectionTestResult {
+                success: false,
+                latency_ms: start.elapsed().as_millis() as u64,
+                banner: None,
+                message: format!("Gagal menghubungi {addr}: {e}"),
+            });
+        }
+    };
+
+    // If protocol is not ssh/sftp (e.g. ftp/ftps/webdav/s3), report TCP connectivity success
+    let proto = input
+        .protocol
+        .unwrap_or(crate::store::ConnectionProtocol::Ssh);
+    if proto != crate::store::ConnectionProtocol::Ssh
+        && proto != crate::store::ConnectionProtocol::Scp
+    {
+        let latency_ms = start.elapsed().as_millis() as u64;
+        return Ok(ConnectionTestResult {
+            success: true,
+            latency_ms,
+            banner: None,
+            message: format!("Port TCP {port} berhasil dihubungi ({latency_ms} ms)"),
+        });
+    }
+
+    // 2. SSH Handshake
+    let _ = tcp.set_nonblocking(false);
+    let mut sess = match ssh2::Session::new() {
+        Ok(s) => s,
+        Err(e) => {
+            return Ok(ConnectionTestResult {
+                success: false,
+                latency_ms: start.elapsed().as_millis() as u64,
+                banner: None,
+                message: format!("Inisialisasi sesi SSH gagal: {e}"),
+            });
+        }
+    };
+    sess.set_tcp_stream(tcp);
+    sess.set_timeout(6_000);
+
+    if let Err(e) = sess.handshake() {
+        return Ok(ConnectionTestResult {
+            success: false,
+            latency_ms: start.elapsed().as_millis() as u64,
+            banner: None,
+            message: format!("SSH Handshake gagal: {e}"),
+        });
+    }
+
+    let banner = sess.banner().map(str::to_string);
+
+    // 3. Resolve credential
+    let secret = if let Some(ref s) = input.secret {
+        if !s.is_empty() {
+            Some(s.clone())
+        } else if let Some(ref id) = input.id {
+            crate::store::load_host_for_connect(id)
+                .ok()
+                .and_then(|(_, s)| s)
+        } else {
+            None
+        }
+    } else if let Some(ref id) = input.id {
+        crate::store::load_host_for_connect(id)
+            .ok()
+            .and_then(|(_, s)| s)
+    } else {
+        None
+    };
+
+    let dummy_host = crate::store::HostRecord {
+        id: input.id.clone().unwrap_or_else(|| "test-host".into()),
+        label: input.label.clone(),
+        address: input.address.clone(),
+        port,
+        username: input.username.clone(),
+        auth_method: input.auth_method.clone(),
+        tags: input.tags.clone(),
+        os: input.os.clone(),
+        protocol: crate::store::ConnectionProtocol::Ssh,
+        created_at: 0,
+        updated_at: 0,
+        has_secret: secret.is_some(),
+    };
+
+    // 4. Try Authentication
+    if let Err(e) = authenticate(&sess, &dummy_host, secret) {
+        return Ok(ConnectionTestResult {
+            success: false,
+            latency_ms: start.elapsed().as_millis() as u64,
+            banner,
+            message: format!("Autentikasi gagal untuk user '{}': {e}", input.username),
+        });
+    }
+
+    if !sess.authenticated() {
+        return Ok(ConnectionTestResult {
+            success: false,
+            latency_ms: start.elapsed().as_millis() as u64,
+            banner,
+            message: format!(
+                "Kredensial ditolak untuk user '{}'. Periksa kembali password atau SSH key.",
+                input.username
+            ),
+        });
+    }
+
+    let latency_ms = start.elapsed().as_millis() as u64;
+    let srv_banner = banner.as_deref().unwrap_or("SSH-2.0");
+    let msg = format!("Koneksi & Autentikasi SSH Berhasil! Server: {srv_banner} ({latency_ms} ms)");
+    Ok(ConnectionTestResult {
+        success: true,
+        latency_ms,
+        banner,
+        message: msg,
+    })
 }
 
 /// Splits off every complete UTF-8 character currently in `buf`, leaving a partial trailing

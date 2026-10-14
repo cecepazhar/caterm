@@ -10,6 +10,7 @@ const COMMANDS: &[&str] = &[
     // Hosts
     "list_hosts",
     "save_host",
+    "test_host_connection",
     "delete_host",
     // Groups
     "list_groups",

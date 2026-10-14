@@ -187,6 +187,7 @@ pub fn run_with_start(start: std::time::Instant) {
         .invoke_handler(tauri::generate_handler![
             commands::list_hosts,
             commands::save_host,
+            commands::test_host_connection,
             commands::delete_host,
             commands::list_groups,
             commands::save_group,

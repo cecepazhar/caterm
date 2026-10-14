@@ -9,6 +9,7 @@
     "core:window:allow-start-dragging",
     "allow-list-hosts",
     "allow-save-host",
+    "allow-test-host-connection",
     "allow-delete-host",
     "allow-list-groups",
     "allow-save-group",

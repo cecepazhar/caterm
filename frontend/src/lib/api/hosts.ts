@@ -46,6 +46,15 @@ export function saveHost(input: HostInput): Promise<HostRecord> {
   return invoke('save_host', { input });
 }
 
+export function testHostConnection(input: HostInput): Promise<{
+  success: boolean;
+  latencyMs: number;
+  banner: string | null;
+  message: string;
+}> {
+  return invoke('test_host_connection', { input });
+}
+
 export function deleteHost(id: string): Promise<void> {
   return invoke('delete_host', { id });
 }

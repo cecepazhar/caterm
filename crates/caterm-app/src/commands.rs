@@ -431,6 +431,13 @@ pub async fn save_host(input: store::HostInput) -> Result<store::HostRecord, Cat
 }
 
 #[tauri::command]
+pub async fn test_host_connection(
+    input: store::HostInput,
+) -> Result<ssh::ConnectionTestResult, CatermError> {
+    run_blocking(move || ssh::test_host_connection(&input)).await
+}
+
+#[tauri::command]
 pub async fn delete_host(id: String) -> Result<(), CatermError> {
     run_blocking(move || store::delete_host(&id)).await
 }
