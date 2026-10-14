@@ -599,6 +599,11 @@ pub async fn ssh_disconnect(session_id: String) -> Result<(), CatermError> {
 }
 
 #[tauri::command]
+pub async fn ssh_clear_host_key(address: String, port: Option<u16>) -> Result<bool, CatermError> {
+    run_blocking(move || ssh::clear_known_host(&address, port)).await
+}
+
+#[tauri::command]
 pub async fn detect_host_os(host_id: String) -> Result<String, CatermError> {
     run_blocking(move || ssh::detect_host_os(&host_id)).await
 }

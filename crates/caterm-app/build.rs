@@ -113,6 +113,7 @@ const COMMANDS: &[&str] = &[
     "ssh_read",
     "ssh_resize",
     "ssh_disconnect",
+    "ssh_clear_host_key",
     "detect_host_os",
     "run_network_security_audit",
     "run_server_benchmark",

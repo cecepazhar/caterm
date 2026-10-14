@@ -96,6 +96,7 @@
     "allow-ssh-read",
     "allow-ssh-resize",
     "allow-ssh-disconnect",
+    "allow-ssh-clear-host-key",
     "allow-detect-host-os",
     "allow-run-network-security-audit",
     "allow-run-server-benchmark",

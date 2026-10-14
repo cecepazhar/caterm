@@ -373,6 +373,73 @@ fn verify_host_key(sess: &ssh2::Session, host: &HostRecord, port: u16) -> Result
     }
 }
 
+/// Clears any cached host key entry for the given address (and optional port) from known_hosts files.
+pub fn clear_known_host(address: &str, port: Option<u16>) -> Result<bool, CatermError> {
+    let mut modified = false;
+    let data_info = crate::paths::resolve_data_dir()?;
+    let kh_file = data_info.path.join("known_hosts");
+
+    let mut paths_to_check = vec![kh_file];
+    if let Some(base) = directories::BaseDirs::new() {
+        let legacy = base.data_dir().join("com.fathforce.caterm").join("known_hosts");
+        if !paths_to_check.contains(&legacy) {
+            paths_to_check.push(legacy);
+        }
+    }
+
+    let pattern1 = if let Some(p) = port {
+        if p != 22 {
+            format!("[{address}]:{p}")
+        } else {
+            address.to_string()
+        }
+    } else {
+        address.to_string()
+    };
+    let pattern_bracket = format!("[{address}]:");
+
+    for p in paths_to_check {
+        if p.exists() {
+            if let Ok(content) = std::fs::read_to_string(&p) {
+                let mut new_lines = Vec::new();
+                let mut file_changed = false;
+                for line in content.lines() {
+                    let trimmed = line.trim();
+                    if trimmed.is_empty() || trimmed.starts_with('#') {
+                        new_lines.push(line.to_string());
+                        continue;
+                    }
+                    let first_token = trimmed.split_whitespace().next().unwrap_or("");
+                    let matches = first_token == pattern1
+                        || first_token == address
+                        || (port.is_none() && first_token.starts_with(&pattern_bracket))
+                        || first_token.split(',').any(|part| {
+                            part == pattern1
+                                || part == address
+                                || (port.is_none() && part.starts_with(&pattern_bracket))
+                        });
+
+                    if matches {
+                        file_changed = true;
+                        modified = true;
+                    } else {
+                        new_lines.push(line.to_string());
+                    }
+                }
+                if file_changed {
+                    let mut out = new_lines.join("\n");
+                    if !out.is_empty() {
+                        out.push('\n');
+                    }
+                    let _ = std::fs::write(&p, out);
+                }
+            }
+        }
+    }
+
+    Ok(modified)
+}
+
 fn authenticate(
     sess: &ssh2::Session,
     host: &HostRecord,
