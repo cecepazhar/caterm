@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Button } from '@cecepazhar/caui';
   import { submitFeedback } from '$lib/api/feedback';
   import { showToast } from '$lib/stores/uiNotifications.svelte';
   import { errorText } from '$lib/errors';
@@ -97,17 +98,19 @@
 
 <div class="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6 space-y-5 text-neutral-900 dark:text-neutral-100 relative shadow-sm">
   {#if dismissible}
-    <button
+    <Button
       type="button"
+      variant="ghost"
+      size="icon"
       onclick={handleDismiss}
-      class="absolute top-4 right-4 text-neutral-400 hover:text-neutral-700 dark:hover:text-white p-1 rounded transition-colors"
+      class="absolute top-4 right-4 text-neutral-400 hover:text-neutral-700 dark:hover:text-white !p-1 rounded transition-colors"
       aria-label="Close"
       title="Close"
     >
       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
       </svg>
-    </button>
+    </Button>
   {/if}
 
   <div>
@@ -133,21 +136,25 @@
         </div>
       </div>
       <div class="pt-2 flex gap-3">
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="sm"
           onclick={handleReset}
-          class="text-xs text-sky-600 dark:text-sky-400 hover:underline font-medium transition-colors"
+          class="text-xs text-sky-600 dark:text-sky-400 hover:underline font-medium transition-colors !p-0"
         >
           Send another feedback
-        </button>
+        </Button>
         {#if dismissible}
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="sm"
             onclick={handleDismiss}
-            class="text-xs text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200 font-medium transition-colors"
+            class="text-xs text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200 font-medium transition-colors !p-0"
           >
             Close
-          </button>
+          </Button>
         {/if}
       </div>
     </div>
@@ -161,15 +168,17 @@
         <div id="feedback-stars" class="flex items-center gap-2">
           <div class="flex items-center gap-1" role="radiogroup" aria-label="Star rating">
             {#each [1, 2, 3, 4, 5] as star}
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="icon"
                 role="radio"
                 aria-checked={rating === star}
                 aria-label="{star} out of 5 stars"
                 onclick={() => (rating = star)}
                 onmouseenter={() => (hoverRating = star)}
                 onmouseleave={() => (hoverRating = 0)}
-                class="p-1 text-neutral-400 dark:text-neutral-600 hover:scale-110 transition-transform focus:outline-none focus:ring-1 focus:ring-sky-500 rounded"
+                class="!p-1 text-neutral-400 dark:text-neutral-600 hover:scale-110 transition-transform focus:outline-none focus:ring-1 focus:ring-sky-500 rounded"
               >
                 <svg
                   class="w-7 h-7 transition-colors {(hoverRating || rating) >= star ? 'text-amber-400 fill-amber-400' : 'text-neutral-300 dark:text-neutral-700'}"
@@ -184,7 +193,7 @@
                     d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
                   />
                 </svg>
-              </button>
+              </Button>
             {/each}
           </div>
           <span class="text-xs font-medium text-neutral-600 dark:text-neutral-400 ml-2">
@@ -261,10 +270,12 @@
 
       <!-- Actions -->
       <div class="flex items-center gap-3 pt-1">
-        <button
+        <Button
           type="submit"
+          variant="primary"
           disabled={isSubmitting}
-          class="px-5 py-2.5 bg-sky-600 hover:bg-sky-500 disabled:opacity-50 text-white text-sm font-medium rounded-md transition-colors flex items-center gap-2 cursor-pointer disabled:cursor-not-allowed shadow-sm"
+          loading={isSubmitting}
+          class="!px-5 !py-2.5 !bg-sky-600 hover:!bg-sky-500 disabled:opacity-50 text-white text-sm font-medium rounded-md transition-colors flex items-center gap-2 cursor-pointer disabled:cursor-not-allowed shadow-sm"
         >
           {#if isSubmitting}
             <svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
@@ -275,16 +286,18 @@
           {:else}
             <span>Send Feedback</span>
           {/if}
-        </button>
+        </Button>
 
         {#if dismissible}
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="md"
             onclick={handleDismiss}
             class="px-4 py-2 text-sm text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200 transition-colors"
           >
             Maybe later
-          </button>
+          </Button>
         {/if}
       </div>
     </form>

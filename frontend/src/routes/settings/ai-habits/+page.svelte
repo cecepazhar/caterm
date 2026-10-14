@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import PageHeader from '$lib/components/PageHeader.svelte';
+  import { PageHeader, Button, Input, Badge, Card, ProgressBar } from '@cecepazhar/caui';
   import AiNavTabs from '$lib/components/AiNavTabs.svelte';
   import { showToast, confirmModal } from '$lib/stores/uiNotifications.svelte';
   import {
@@ -102,15 +102,15 @@
   </div>
 
   {#if loading}
-    <div class="{CARD} flex items-center justify-center py-12 text-sm {MUTED}">
+    <Card class="flex items-center justify-center py-12 text-sm text-neutral-500 dark:text-neutral-400" variant="primary" size="lg">
       <svg class="w-5 h-5 animate-spin mr-3 text-sky-500" fill="none" viewBox="0 0 24 24">
         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
       </svg>
       Loading Habit Memories...
-    </div>
+    </Card>
   {:else}
-    <div class="{CARD} space-y-4">
+    <Card class="space-y-4" variant="primary" size="lg">
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div class="flex items-center gap-3">
           <span class="text-xs font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
@@ -123,39 +123,43 @@
 
         <!-- Search Bar -->
         <div class="flex gap-2 max-w-sm w-full">
-          <input
-            type="text"
+          <Input
             bind:value={searchQuery}
             placeholder="Search habits via FTS5..."
-            class="{INPUT} text-xs"
+            size="sm"
+            class="flex-1"
             onkeydown={(e) => { if (e.key === 'Enter') handleSearch(); }}
           />
-          <button
+          <Button
             onclick={handleSearch}
             disabled={searching}
-            class="px-3 py-1.5 text-xs font-semibold rounded bg-teal-600 hover:bg-teal-500 disabled:opacity-50 text-white transition-colors"
+            loading={searching}
+            variant="primary"
+            size="sm"
+            class="w-20"
           >
-            {searching ? '...' : 'Search'}
-          </button>
+            Search
+          </Button>
           {#if searchQuery}
-            <button
+            <Button
               onclick={() => { searchQuery = ''; loadData(); }}
-              class="px-2.5 py-1.5 text-xs font-medium rounded border border-neutral-300 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+              variant="secondary"
+              size="sm"
             >
               Clear
-            </button>
+            </Button>
           {/if}
         </div>
       </div>
 
       {#if habits.length === 0}
-        <div class="{SUBCARD} text-center py-8 text-neutral-500 dark:text-neutral-400 text-xs">
+        <Card class="text-center py-8 text-neutral-500 dark:text-neutral-400 text-xs" variant="secondary" size="md">
           {#if searchQuery}
             No habits matched FTS5 query "{searchQuery}".
           {:else}
             No developer habits recorded yet. As you execute commands in the terminal (e.g. git, podman, nvim), CATerm will passively learn your preferences!
           {/if}
-        </div>
+        </Card>
       {:else}
         <div class="overflow-x-auto border border-neutral-200 dark:border-neutral-800 rounded-lg">
           <table class="w-full text-left text-xs">
@@ -182,39 +186,35 @@
                     {h.fact_content}
                   </td>
                   <td class="px-4 py-3">
-                    <span class="px-2 py-0.5 rounded text-[10px] font-mono font-medium bg-neutral-200 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300">
-                      {h.category}
-                    </span>
+                    <Badge variant="neutral" size="xs">{h.category}</Badge>
                   </td>
                   <td class="px-4 py-3">
-                    <div class="flex items-center gap-2">
-                      <div class="w-16 bg-neutral-200 dark:bg-neutral-700 h-1.5 rounded-full overflow-hidden">
-                        <div
-                          class="bg-teal-500 h-full rounded-full"
-                          style="width: {Math.min(100, Math.round(h.confidence_score * 100))}%"
-                        ></div>
-                      </div>
-                      <span class="font-mono text-[11px] text-neutral-600 dark:text-neutral-400">
-                        {(h.confidence_score * 100).toFixed(0)}%
-                      </span>
+                    <div class="w-28">
+                      <ProgressBar
+                        value={Math.round(h.confidence_score * 100)}
+                        variant="brand"
+                        size="sm"
+                      />
                     </div>
                   </td>
                   <td class="px-4 py-3 font-mono text-neutral-600 dark:text-neutral-400">
                     {h.occurrence_count}x
                   </td>
-                  <td class="px-4 py-3 text-right space-x-2">
-                    <button
+                  <td class="px-4 py-3 text-right space-x-1">
+                    <Button
+                      size="sm"
+                      variant="warning"
                       onclick={() => handleTogglePin(h)}
-                      class="text-amber-600 dark:text-amber-400 hover:underline font-medium"
                     >
                       {h.is_pinned ? 'Unpin' : 'Pin'}
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="danger"
                       onclick={() => handleDeleteHabit(h)}
-                      class="text-rose-600 dark:text-rose-400 hover:underline font-medium"
                     >
                       Delete
-                    </button>
+                    </Button>
                   </td>
                 </tr>
               {/each}
@@ -222,6 +222,6 @@
           </table>
         </div>
       {/if}
-    </div>
+    </Card>
   {/if}
 </div>

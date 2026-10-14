@@ -3,7 +3,7 @@ import { t } from '$lib/i18n/index.svelte';
 
 export interface Toast {
   id: string;
-  type: 'success' | 'error' | 'info';
+  type: 'success' | 'error' | 'info' | 'warning';
   message: string;
 }
 
@@ -31,9 +31,10 @@ export function getToasts(): Toast[] {
   return toasts;
 }
 
-export function showToast(message: string, type: 'success' | 'error' | 'info' = 'info') {
+export function showToast(message: string, type: 'success' | 'error' | 'info' | 'warning' | 'default' = 'info') {
+  const normalizedType = type === 'default' ? 'info' : type;
   const id = `toast-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
-  toasts = [...toasts, { id, type, message }];
+  toasts = [...toasts, { id, type: normalizedType, message }];
   setTimeout(() => {
     removeToast(id);
   }, 4000);

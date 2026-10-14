@@ -1,9 +1,12 @@
 <script lang="ts">
+  import { Button } from '@cecepazhar/caui';
   import { onMount } from 'svelte';
   import { Terminal } from '@xterm/xterm';
   import { FitAddon } from '@xterm/addon-fit';
   import { WebglAddon } from '@xterm/addon-webgl';
   import { CanvasAddon } from '@xterm/addon-canvas';
+  import { WebLinksAddon } from '@xterm/addon-web-links';
+  import { openExternalUrl } from '$lib/utils/url';
   import '@xterm/xterm/css/xterm.css';
   import type { UnlistenFn } from '@tauri-apps/api/event';
   import {
@@ -309,7 +312,7 @@
     markActive();
     requestAnimationFrame(() => {
       fitAddon?.fit();
-      if (term) {
+      if (term && session) {
         term.refresh(0, (term.rows ?? 1) - 1);
         void sshResize(session.sessionId, term.cols, term.rows).catch(() => {});
         term.focus();
@@ -323,9 +326,20 @@
       fontFamily: 'Menlo, Monaco, "Courier New", monospace',
       fontSize: terminalPrefs.fontSize,
       cursorBlink: true,
-      scrollback: 1000
+      scrollback: 1000,
+      linkHandler: {
+        activate: (_event, text) => {
+          void openExternalUrl(text);
+        }
+      }
     });
     term = terminal;
+
+    // Web links detector for clickable URLs in terminal output
+    const webLinks = new WebLinksAddon((_event, uri) => {
+      void openExternalUrl(uri);
+    });
+    terminal.loadAddon(webLinks);
 
     // Paste Sentinel: intercept clipboard paste into the terminal
     const handlePaste = async (e: ClipboardEvent) => {
@@ -693,20 +707,24 @@
 			</div>
     <div class="flex items-center gap-2 text-neutral-500 dark:text-neutral-400 shrink-0">
       <!-- Autocomplete toggle button -->
-      <button
+      <Button
+        variant="ghost"
+        size="sm"
         onclick={() => { autocompleteEnabled = !autocompleteEnabled; if (!autocompleteEnabled) suggestions = []; }}
-        class="px-1.5 py-0.5 rounded text-[10px] font-sans font-semibold transition-colors flex items-center gap-1 {autocompleteEnabled ? 'bg-sky-500/15 dark:bg-sky-500/20 text-sky-700 dark:text-sky-400 border border-sky-500/30' : 'bg-neutral-200 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400 border border-transparent'}"
+        class="!px-1.5 !py-0.5 rounded text-[10px] font-sans font-semibold transition-colors flex items-center gap-1 {autocompleteEnabled ? 'bg-sky-500/15 dark:bg-sky-500/20 text-sky-700 dark:text-sky-400 border border-sky-500/30' : 'bg-neutral-200 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400 border border-transparent'}"
         title={t('terminal.toggleAutocompleteTitle')}
         aria-label={t('terminal.toggleAutocomplete')}
       >
         <span class="w-1.5 h-1.5 rounded-full {autocompleteEnabled ? 'bg-sky-400' : 'bg-neutral-500'}"></span>
         <span>{t('terminal.autocomplete')}</span>
-      </button>
+      </Button>
 
       <!-- AI Error Diagnose button -->
-      <button
+      <Button
+        variant="ghost"
+        size="sm"
         onclick={triggerErrorDiagnostic}
-        class="px-1.5 py-0.5 rounded text-[10px] font-sans font-semibold transition-colors flex items-center gap-1 bg-purple-500/15 dark:bg-purple-500/20 text-purple-700 dark:text-purple-400 border border-purple-500/30 hover:bg-purple-500/25"
+        class="!px-1.5 !py-0.5 rounded text-[10px] font-sans font-semibold transition-colors flex items-center gap-1 bg-purple-500/15 dark:bg-purple-500/20 text-purple-700 dark:text-purple-400 border border-purple-500/30 hover:bg-purple-500/25"
         title="Diagnose Recent Errors with Master AI Router"
         aria-label="AI Diagnose"
       >
@@ -714,24 +732,24 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
         </svg>
         <span>Diagnose</span>
-      </button>
+      </Button>
 
       {#if onSplitRight}
-        <button onclick={onSplitRight} class="hover:text-sky-600 dark:hover:text-sky-400 p-0.5 rounded transition-colors" title={t('terminal.splitRightTitle')} aria-label={t('terminal.splitRight')}>
+        <Button variant="ghost" size="icon" onclick={onSplitRight} class="hover:text-sky-600 dark:hover:text-sky-400 !p-0.5 rounded transition-colors" title={t('terminal.splitRightTitle')} aria-label={t('terminal.splitRight')}>
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M12 3v18M5 3h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2z"></path></svg>
-        </button>
+        </Button>
       {/if}
       {#if onSplitDown}
-        <button onclick={onSplitDown} class="hover:text-sky-600 dark:hover:text-sky-400 p-0.5 rounded transition-colors" title={t('terminal.splitDownTitle')} aria-label={t('terminal.splitDown')}>
+        <Button variant="ghost" size="icon" onclick={onSplitDown} class="hover:text-sky-600 dark:hover:text-sky-400 !p-0.5 rounded transition-colors" title={t('terminal.splitDownTitle')} aria-label={t('terminal.splitDown')}>
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M3 12h18M5 3h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2z"></path></svg>
-        </button>
+        </Button>
       {/if}
       <span class="ml-1 text-neutral-500 hidden sm:inline">SSH</span>
       <span class="text-neutral-500 hidden sm:inline">UTF-8</span>
       {#if onClose}
-        <button onclick={onClose} class="hover:text-rose-600 dark:hover:text-rose-400 p-0.5 rounded transition-colors ml-1" title={t('terminal.closePane')} aria-label={t('terminal.closePane')}>
+        <Button variant="ghost" size="icon" onclick={onClose} class="hover:text-rose-600 dark:hover:text-rose-400 !p-0.5 rounded transition-colors ml-1" title={t('terminal.closePane')} aria-label={t('terminal.closePane')}>
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" stroke-linecap="round" d="M6 18L18 6M6 6l12 12"></path></svg>
-        </button>
+        </Button>
       {/if}
     </div>
   </div>
@@ -775,12 +793,16 @@
               </span>
             {/if}
           </div>
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
             onclick={() => (showDiagnosticModal = false)}
-            class="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 font-bold text-lg"
+            class="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 font-bold text-lg !p-1"
+            title="Tutup"
+            aria-label="Tutup"
           >
             &times;
-          </button>
+          </Button>
         </div>
 
         <div class="flex-1 overflow-y-auto space-y-3 text-xs">
@@ -806,12 +828,14 @@
         <div class="flex justify-between items-center pt-2 border-t border-neutral-200 dark:border-neutral-800">
           <span class="text-[10px] text-neutral-400">Zero-knowledge local memory & PII scrubber enabled.</span>
           <div class="flex gap-2">
-            <button
+            <Button
+              variant="secondary"
+              size="sm"
               onclick={() => (showDiagnosticModal = false)}
               class="px-3 py-1.5 rounded border border-neutral-300 dark:border-neutral-700 text-xs font-medium hover:bg-neutral-100 dark:hover:bg-neutral-800"
             >
               Close
-            </button>
+            </Button>
           </div>
         </div>
       </div>

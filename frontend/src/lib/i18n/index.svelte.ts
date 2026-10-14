@@ -8,6 +8,7 @@
 // goes through `t()`.
 import en, { type Dictionary } from './locales/en';
 import id from './locales/id';
+import { setLocale as setCauiLocale } from '@cecepazhar/caui';
 
 export type Locale = 'en' | 'id';
 
@@ -30,7 +31,13 @@ function detectInitialLocale(): Locale {
   return 'en';
 }
 
-let locale = $state<Locale>(typeof window === 'undefined' ? 'en' : detectInitialLocale());
+const initialLocale = typeof window === 'undefined' ? 'en' : detectInitialLocale();
+let locale = $state<Locale>(initialLocale);
+try {
+  setCauiLocale(initialLocale);
+} catch {
+  // Headless / non-browser environment
+}
 
 export function getLocale(): Locale {
   return locale;
@@ -45,6 +52,11 @@ export function setLocale(next: Locale) {
   }
   if (typeof document !== 'undefined') {
     document.documentElement.lang = next;
+  }
+  try {
+    setCauiLocale(next);
+  } catch {
+    // Keep internal sync intact even if external caller fails
   }
 }
 

@@ -7,8 +7,7 @@
   import { listScheduledTasks, type ScheduledTaskRecord } from '$lib/api/tasks';
   import { invoke } from '@tauri-apps/api/core';
   import { t } from '$lib/i18n/index.svelte';
-  import PageHeader from '$lib/components/PageHeader.svelte';
-  import Pagination from '$lib/components/Pagination.svelte';
+  import { PageHeader, Button, Input, Badge, Modal, Pagination } from '@cecepazhar/caui';
   import { showToast, confirmModal } from '$lib/stores/uiNotifications.svelte';
   import { copyText } from '$lib/utils/clipboard';
 
@@ -87,8 +86,8 @@
     invoke('list_investigations').then((res: any) => { availableInvestigations = res || []; }).catch(() => {});
   }
 
-  onMount(async () => {
-    await loadAllData();
+  onMount(() => {
+    void loadAllData();
     const handleUpdate = () => { void loadAllData(); };
     window.addEventListener('caterm:groups-updated', handleUpdate);
     window.addEventListener('caterm:hosts-updated', handleUpdate);
@@ -269,32 +268,32 @@
   >
     {#snippet actions()}
       <div class="flex items-center gap-2">
-        <button
-          type="button"
+        <Button
+          variant="secondary"
+          size="sm"
           onclick={importGroupsJson}
-          class="px-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 text-xs font-semibold text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
           title="Impor Grup Kerja dari JSON"
         >
           📥 Impor
-        </button>
-        <button
-          type="button"
+        </Button>
+        <Button
+          variant="secondary"
+          size="sm"
           onclick={exportGroupsJson}
-          class="px-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 text-xs font-semibold text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
           title="Ekspor Grup Kerja ke JSON"
         >
           📤 Ekspor
-        </button>
-        <button
-          type="button"
+        </Button>
+        <Button
+          variant="info"
+          size="sm"
           onclick={openAddModal}
-          class="px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white font-semibold text-xs rounded-xl transition-all flex items-center gap-1.5 shadow-md shadow-sky-600/20"
         >
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
           </svg>
           + Buat Work Group
-        </button>
+        </Button>
       </div>
     {/snippet}
   </PageHeader>
@@ -307,37 +306,39 @@
   <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-neutral-200 dark:border-neutral-800 pb-3">
     <!-- Category Tabs -->
     <div class="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
-      <button
-        type="button"
+      <Button
+        variant={activeCategoryFilter === 'all' ? 'secondary' : 'ghost'}
+        size="sm"
         onclick={() => { activeCategoryFilter = 'all'; currentPage = 1; }}
-        class="px-3 py-1.5 rounded-lg font-medium transition-colors {activeCategoryFilter === 'all' ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900' : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800'}"
       >
         Semua Kategori
-      </button>
+      </Button>
       {#each ALL_CATEGORIES as cat}
-        <button
-          type="button"
+        <Button
+          variant={activeCategoryFilter === cat.id ? 'info' : 'ghost'}
+          size="sm"
           onclick={() => { activeCategoryFilter = cat.id; currentPage = 1; }}
-          class="px-2.5 py-1.5 rounded-lg font-medium transition-colors flex items-center gap-1.5 {activeCategoryFilter === cat.id ? 'bg-sky-600 text-white' : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800'}"
         >
           <span>{cat.icon}</span>
           <span>{cat.label}</span>
-        </button>
+        </Button>
       {/each}
     </div>
 
     <!-- Search Box -->
     <div class="relative w-full sm:w-60 shrink-0">
-      <input
-        type="text"
+      <Input
         bind:value={searchQuery}
         oninput={() => (currentPage = 1)}
         placeholder="Cari Work Group..."
-        class="w-full pl-8 pr-3 py-1.5 text-xs rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:border-sky-500"
-      />
-      <svg class="w-3.5 h-3.5 text-neutral-400 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-      </svg>
+        size="sm"
+      >
+        {#snippet leadingIcon()}
+          <svg class="w-3.5 h-3.5 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        {/snippet}
+      </Input>
     </div>
   </div>
 
@@ -353,13 +354,14 @@
       <p class="text-xs text-neutral-500 max-w-sm mx-auto">
         Buat grup kerja untuk mengkategorikan host, snippet, tugas cron, kunci SSH, 2FA, dan port forwarding dalam satu kesatuan.
       </p>
-      <button
-        type="button"
+      <Button
+        variant="info"
+        size="sm"
         onclick={openAddModal}
-        class="mt-2 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-sky-600 hover:bg-sky-500 text-white transition-colors"
+        class="mt-2"
       >
         + Buat Work Group Pertama
-      </button>
+      </Button>
     </div>
   {:else}
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -377,14 +379,14 @@
                 <h3 class="font-bold text-neutral-900 dark:text-white text-base truncate">{group.name}</h3>
               </div>
               {#if group.hostIds.length > 0}
-                <button
-                  type="button"
+                <Button
+                  variant="info"
+                  size="sm"
                   onclick={() => openSession(group.hostIds)}
-                  class="px-2.5 py-1 bg-sky-500/10 hover:bg-sky-500 text-sky-600 dark:text-sky-400 hover:text-white rounded-lg text-xs font-semibold transition-colors flex items-center gap-1"
                   title="Buka semua host di grup ini"
                 >
                   <span>⚡ Launch</span>
-                </button>
+                </Button>
               {/if}
             </div>
 
@@ -393,9 +395,9 @@
               {#each cats as cId}
                 {@const catMeta = ALL_CATEGORIES.find(c => c.id === cId)}
                 {#if catMeta}
-                  <span class="text-[10px] font-medium px-2 py-0.5 rounded-md bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 border border-neutral-200 dark:border-neutral-700/80">
+                  <Badge variant="neutral" size="xs">
                     {catMeta.icon} {catMeta.label}
-                  </span>
+                  </Badge>
                 {/if}
               {/each}
             </div>
@@ -422,9 +424,9 @@
                 <span class="text-[10px] font-semibold uppercase tracking-wider text-neutral-400 block mb-1">Assigned Hosts</span>
                 <div class="flex gap-1 flex-wrap">
                   {#each group.hostIds as hostId}
-                    <span class="px-2 py-0.5 bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700/80 text-neutral-700 dark:text-neutral-300 rounded-md text-xs font-mono">
+                    <Badge variant="neutral" size="xs" class="font-mono">
                       {hostLabel(hostId)}
-                    </span>
+                    </Badge>
                   {/each}
                 </div>
               </div>
@@ -437,143 +439,132 @@
               {cats.length} Kategori Aktif
             </span>
             <div class="flex gap-1.5">
-              <button
-                type="button"
+              <Button
+                variant="secondary"
+                size="sm"
                 onclick={() => openEditModal(group)}
-                class="px-2.5 py-1 bg-neutral-100 dark:bg-neutral-800 hover:bg-sky-600 hover:text-white rounded-lg text-neutral-700 dark:text-neutral-300 transition-colors"
               >
                 {t('common.edit')}
-              </button>
-              <button
-                type="button"
+              </Button>
+              <Button
+                variant="danger"
+                size="sm"
                 onclick={() => removeGroup(group.id, group.name)}
-                class="px-2.5 py-1 bg-neutral-100 dark:bg-neutral-800 hover:bg-rose-600 hover:text-white text-neutral-700 dark:text-neutral-300 rounded-lg transition-colors"
               >
                 {t('common.delete')}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
       {/each}
     </div>
 
-    <!-- Reusable Pagination Component -->
+    <!-- CAUI Pagination Component -->
     <Pagination
-      totalItems={filteredGroups.length}
-      bind:page={currentPage}
-      bind:pageSize
+      total={filteredGroups.length}
+      page={currentPage}
+      pageSize={pageSize}
       pageSizeOptions={[9, 18, 36]}
+      onPageChange={(p) => (currentPage = p)}
+      onPageSizeChange={(ps) => { pageSize = ps; currentPage = 1; }}
+      size="sm"
     />
   {/if}
 </div>
 
 <!-- Create / Edit Work Group Modal -->
-{#if isAddModalOpen}
-  <div class="fixed inset-0 bg-black/60 dark:bg-black/80 flex items-center justify-center p-4 z-50 backdrop-blur-xs">
-    <div
-      role="dialog"
-      aria-modal="true"
-      class="bg-white dark:bg-[#141414] border border-neutral-200 dark:border-neutral-800 rounded-2xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto space-y-4 shadow-2xl animate-in fade-in zoom-in-95 duration-150 text-xs"
-    >
-      <div class="flex items-center justify-between border-b border-neutral-200 dark:border-neutral-800 pb-3">
-        <h3 class="text-base font-bold text-neutral-900 dark:text-white">
-          {editingId ? 'Edit Work Group' : 'Buat Work Group Baru'}
-        </h3>
-        <button
-          type="button"
-          onclick={() => (isAddModalOpen = false)}
-          class="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 text-lg font-bold"
-        >
-          ×
-        </button>
-      </div>
-      
-      <form onsubmit={handleSaveGroup} class="space-y-4">
-        <!-- Name -->
-        <div>
-          <label class="block font-medium text-neutral-700 dark:text-neutral-300 mb-1">Nama Work Group *</label>
-          <input
-            bind:value={formName}
-            required
-            placeholder="misal: Production VPS / Client Riset / Gerlink Store"
-            class="w-full px-3 py-2 bg-neutral-50 dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-800 rounded-lg text-neutral-900 dark:text-white focus:outline-none focus:border-sky-500"
-          />
-        </div>
-
-        <!-- Color -->
-        <div>
-          <span class="block font-medium text-neutral-700 dark:text-neutral-300 mb-2">{t('groups.color')}</span>
-          <div class="flex gap-2">
-            {#each colors as c}
-              <button 
-                type="button"
-                onclick={() => (formColor = c)}
-                class="w-7 h-7 rounded-full transition-transform border-2 {formColor === c ? 'border-white scale-110 shadow-md' : 'border-transparent'}" 
-                style="background-color: {c}"
-                aria-label={`Warna ${c}`}>
-              </button>
-            {/each}
-          </div>
-        </div>
-
-        <!-- Category Checklist (REQ: Multi-Category Scope) -->
-        <div>
-          <span class="block font-medium text-neutral-700 dark:text-neutral-300 mb-1">
-            Kategori yang Didukung Work Group Ini:
-          </span>
-          <div class="grid grid-cols-2 gap-1.5 p-2.5 bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl">
-            {#each ALL_CATEGORIES as cat}
-              <label class="flex items-center gap-2 p-1.5 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 cursor-pointer text-neutral-800 dark:text-neutral-200 select-none">
-                <input
-                  type="checkbox"
-                  checked={formSelectedCategories.includes(cat.id)}
-                  onchange={() => toggleCategory(cat.id)}
-                  class="rounded bg-white dark:bg-neutral-900 border-neutral-300 dark:border-neutral-700 text-sky-600 focus:ring-sky-500"
-                />
-                <span class="text-xs">{cat.icon} {cat.label}</span>
-              </label>
-            {/each}
-          </div>
-          <p class="text-[11px] text-neutral-500 mt-1">
-            Resource pada menu yang dicentang dapat dimasukkan ke dalam grup kerja ini.
-          </p>
-        </div>
-
-        <!-- Linked Hosts (if hosts category enabled) -->
-        {#if formSelectedCategories.includes('hosts')}
-          <div>
-            <span class="block font-medium text-neutral-700 dark:text-neutral-300 mb-1">Pilih Server Host untuk Grup Ini:</span>
-            <div class="space-y-1 max-h-36 overflow-y-auto p-2 bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg">
-              {#each availableHosts as h}
-                <label class="flex items-center gap-2 p-1.5 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-md cursor-pointer text-neutral-700 dark:text-neutral-300 select-none">
-                  <input 
-                    type="checkbox" 
-                    checked={formSelectedHosts.includes(h.id)} 
-                    onchange={() => toggleHost(h.id)}
-                    class="rounded bg-white dark:bg-neutral-900 border-neutral-300 dark:border-neutral-700 text-sky-600 focus:ring-sky-500"
-                  />
-                  <span class="font-medium">{h.label}</span>
-                  <span class="text-[10px] text-neutral-400 font-mono ml-auto">{h.address}</span>
-                </label>
-              {/each}
-            </div>
-          </div>
-        {/if}
-
-        <div class="flex justify-end gap-2 pt-3 border-t border-neutral-200 dark:border-neutral-800">
-          <button 
-            type="button"
-            onclick={() => (isAddModalOpen = false)} 
-            class="px-4 py-2 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-300 rounded-lg font-semibold transition-colors">
-            {t('common.cancel')}
-          </button>
-          <button 
-            type="submit"
-            class="px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-lg font-semibold shadow-md shadow-sky-600/20 transition-colors">
-            {editingId ? 'Simpan Perubahan' : 'Buat Work Group'}
-          </button>
-        </div>
-      </form>
+<Modal bind:open={isAddModalOpen} title={editingId ? 'Edit Work Group' : 'Buat Work Group Baru'} size="lg">
+  <form id="caterm-group-form" onsubmit={handleSaveGroup} class="space-y-4 text-xs">
+    <!-- Name -->
+    <div>
+      <label for="group-name" class="block font-medium text-neutral-700 dark:text-neutral-300 mb-1">Nama Work Group *</label>
+      <Input
+        id="group-name"
+        bind:value={formName}
+        required
+        placeholder="misal: Production VPS / Client Riset / Gerlink Store"
+        size="sm"
+      />
     </div>
-  </div>
-{/if}
+
+    <!-- Color -->
+    <div>
+      <span class="block font-medium text-neutral-700 dark:text-neutral-300 mb-2">{t('groups.color')}</span>
+      <div class="flex gap-2">
+        {#each colors as c}
+          <Button
+            type="button"
+            size="icon"
+            variant="ghost"
+            onclick={() => (formColor = c)}
+            class="w-7 h-7 min-w-0 p-0 rounded-full transition-transform border-2 {formColor === c ? 'border-white scale-110 shadow-md' : 'border-transparent'} cursor-pointer"
+            aria-label={`Warna ${c}`}
+          >
+            <span class="w-full h-full rounded-full" style="background-color: {c};"></span>
+          </Button>
+        {/each}
+      </div>
+    </div>
+
+    <!-- Category Checklist (REQ: Multi-Category Scope) -->
+    <div>
+      <span class="block font-medium text-neutral-700 dark:text-neutral-300 mb-1">
+        Kategori yang Didukung Work Group Ini:
+      </span>
+      <div class="grid grid-cols-2 gap-1.5 p-2.5 bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl">
+        {#each ALL_CATEGORIES as cat}
+          <label class="flex items-center gap-2 p-1.5 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 cursor-pointer text-neutral-800 dark:text-neutral-200 select-none">
+            <input
+              type="checkbox"
+              checked={formSelectedCategories.includes(cat.id)}
+              onchange={() => toggleCategory(cat.id)}
+              class="rounded bg-white dark:bg-neutral-900 border-neutral-300 dark:border-neutral-700 text-sky-600 focus:ring-sky-500"
+            />
+            <span class="text-xs">{cat.icon} {cat.label}</span>
+          </label>
+        {/each}
+      </div>
+      <p class="text-[11px] text-neutral-500 mt-1">
+        Resource pada menu yang dicentang dapat dimasukkan ke dalam grup kerja ini.
+      </p>
+    </div>
+
+    <!-- Linked Hosts (if hosts category enabled) -->
+    {#if formSelectedCategories.includes('hosts')}
+      <div>
+        <span class="block font-medium text-neutral-700 dark:text-neutral-300 mb-1">Pilih Server Host untuk Grup Ini:</span>
+        <div class="space-y-1 max-h-36 overflow-y-auto p-2 bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg">
+          {#each availableHosts as h}
+            <label class="flex items-center gap-2 p-1.5 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-md cursor-pointer text-neutral-700 dark:text-neutral-300 select-none">
+              <input
+                type="checkbox"
+                checked={formSelectedHosts.includes(h.id)}
+                onchange={() => toggleHost(h.id)}
+                class="rounded bg-white dark:bg-neutral-900 border-neutral-300 dark:border-neutral-700 text-sky-600 focus:ring-sky-500"
+              />
+              <span class="font-medium">{h.label}</span>
+              <span class="text-[10px] text-neutral-400 font-mono ml-auto">{h.address}</span>
+            </label>
+          {/each}
+        </div>
+      </div>
+    {/if}
+  </form>
+
+  {#snippet footer()}
+    <Button type="button" variant="secondary" size="sm" onclick={() => (isAddModalOpen = false)}>
+      {t('common.cancel')}
+    </Button>
+    <Button
+      type="submit"
+      variant="info"
+      size="sm"
+      onclick={(e) => {
+        e.preventDefault();
+        handleSaveGroup(e as unknown as Event);
+      }}
+    >
+      {editingId ? 'Simpan Perubahan' : 'Buat Work Group'}
+    </Button>
+  {/snippet}
+</Modal>

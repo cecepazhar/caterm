@@ -2,6 +2,7 @@
   // The single AI configuration form. It used to live only inside a modal in Prompt Studio,
   // which meant the AI credentials were the one setting you could not find on the Settings
   // page. Extracted as a component so Settings owns it and everything else links there.
+  import { Button } from '@cecepazhar/caui';
   import { onMount } from 'svelte';
   import { aiChat, getAiSettings, saveAiSettings, type AiSettings } from '$lib/api/ai';
   import { showToast } from '$lib/stores/uiNotifications.svelte';
@@ -122,11 +123,14 @@
         placeholder="sk-..."
         class="w-full font-mono bg-neutral-50 dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-800 rounded-lg px-3 py-2 text-xs md:text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-violet-500 transition-colors pr-10"
       />
-      <button
+      <Button
         type="button"
+        variant="ghost"
+        size="icon"
         onclick={() => (showApiKey = !showApiKey)}
-        class="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200"
+        class="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 !p-1"
         aria-label={showApiKey ? t('aiSettings.hideApiKey') : t('aiSettings.showApiKey')}
+        title={showApiKey ? t('aiSettings.hideApiKey') : t('aiSettings.showApiKey')}
       >
         {#if showApiKey}
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -138,7 +142,7 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
           </svg>
         {/if}
-      </button>
+      </Button>
     </div>
     <p class="text-[11px] text-neutral-500 mt-1">
       {t('aiSettings.apiKeyHint')}
@@ -171,29 +175,37 @@
   {/if}
 
   <div class="flex items-center justify-between pt-3 border-t border-neutral-200 dark:border-neutral-800 gap-2">
-    <button
+    <Button
       type="button"
+      variant="ghost"
+      size="sm"
       onclick={handleReset}
-      class="text-xs text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 transition-colors shrink-0"
+      class="text-xs text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 transition-colors shrink-0 !p-0"
     >
       {t('aiSettings.resetDefault')}
-    </button>
+    </Button>
     <div class="flex items-center gap-2">
-      <button
+      <Button
         type="button"
+        variant="secondary"
+        size="sm"
         onclick={handleTest}
         disabled={isTesting || isLoading}
+        loading={isTesting}
         class="px-4 py-2 rounded-lg text-xs font-semibold border border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-50 transition-colors"
       >
         {isTesting ? t('aiSettings.testing') : t('aiSettings.testConnection')}
-      </button>
-      <button
+      </Button>
+      <Button
         type="submit"
+        variant="primary"
+        size="sm"
         disabled={isSaving || isLoading}
-        class="px-5 py-2 rounded-lg text-xs font-semibold bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white shadow transition-colors"
+        loading={isSaving}
+        class="!px-5 !py-2 rounded-lg text-xs font-semibold !bg-violet-600 hover:!bg-violet-500 disabled:opacity-50 text-white shadow transition-colors"
       >
         {isSaving ? t('aiSettings.saving') : t('aiSettings.saveSettings')}
-      </button>
+      </Button>
     </div>
   </div>
 </form>

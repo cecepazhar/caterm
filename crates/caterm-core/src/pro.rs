@@ -26,7 +26,7 @@ use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 use std::time::Duration;
 
-const DEFAULT_API_BASE: &str = "https://caterm.fathforce.com/api/pro/v1";
+const DEFAULT_API_BASE: &str = "https://gcc.fathforce.com/api/caterm/pro/v1";
 const CLIENT_VERSION: &str = env!("CARGO_PKG_VERSION");
 /// NTP jitter we tolerate before treating a clock that went backwards as tampering.
 const CLOCK_DRIFT_TOLERANCE_SECS: i64 = 300;
@@ -440,10 +440,17 @@ struct Session {
     refresh_token: String,
     access_token: String,
     access_expires_at: i64,
+    license: Option<Value>,
+    token: Option<SignedToken>,
 }
 
 fn parse_session(body: &Value) -> Result<Session, CatermError> {
     let field = |k: &str| body.get(k).and_then(Value::as_str).map(str::to_string);
+    let license = body.get("license").filter(|l| !l.is_null()).cloned();
+    let token = body
+        .get("token")
+        .filter(|t| !t.is_null())
+        .and_then(|t| serde_json::from_value(t.clone()).ok());
     Ok(Session {
         account: body
             .get("account")
@@ -455,6 +462,8 @@ fn parse_session(body: &Value) -> Result<Session, CatermError> {
             .get("access_expires_at")
             .and_then(Value::as_i64)
             .unwrap_or(0),
+        license,
+        token,
     })
 }
 
@@ -515,7 +524,9 @@ struct ProCacheFile {
 }
 
 fn pro_cache_path() -> Option<std::path::PathBuf> {
-    crate::paths::resolve_data_dir().ok().map(|d| d.path.join("pro_cache.json"))
+    crate::paths::resolve_data_dir()
+        .ok()
+        .map(|d| d.path.join("pro_cache.json"))
 }
 
 fn write_pro_cache(state: &StoredState) {
@@ -615,15 +626,15 @@ fn load_state(conn: &Connection) -> Result<Option<StoredState>, CatermError> {
     )
     .optional()
     .map_err(db_err)
-    }
+}
 
-    /// Persists the pro session to the unencrypted `pro_cache.json` outside the vault so it
-    /// remains visible when the main vault is locked or the app is restarted.
-    fn persist_pro_cache(conn: &Connection) {
+/// Persists the pro session to the unencrypted `pro_cache.json` outside the vault so it
+/// remains visible when the main vault is locked or the app is restarted.
+fn persist_pro_cache(conn: &Connection) {
     if let Ok(Some(state)) = load_state(conn) {
-    write_pro_cache(&state);
+        write_pro_cache(&state);
     }
-    }
+}
 
 fn save_session(conn: &Connection, session: &Session) -> Result<(), CatermError> {
     ensure_table(conn)?;
@@ -633,21 +644,70 @@ fn save_session(conn: &Connection, session: &Session) -> Result<(), CatermError>
     let same_account =
         previous_account.as_deref() == account_from(&session.account).map(|a| a.id).as_deref();
     let account_json = session.account.to_string();
+    let license_json = session
+        .license
+        .as_ref()
+        .filter(|l| !l.is_null())
+        .map(|l| l.to_string());
+    let token_payload = session.token.as_ref().map(|t| t.payload.clone());
+    let token_signature = session.token.as_ref().map(|t| t.signature.clone());
+    let token_key_version = session.token.as_ref().map(|t| t.key_version);
     if same_account {
-        conn.execute(
-            "UPDATE pro_state SET account_json = ?1, refresh_token = ?2 WHERE id = 1",
-            params![account_json, session.refresh_token],
-        )
-        .map_err(db_err)?;
+        // Same account: keep the stored licence, overwrite it only when the server
+        // sent one with this response.
+        if let Some(lic) = &license_json {
+            conn.execute(
+                "UPDATE pro_state SET account_json = ?1, refresh_token = ?2, license_json = ?3,
+                token_payload = ?4, token_signature = ?5, token_key_version = ?6,
+                last_sync_at = ?7 WHERE id = 1",
+                params![
+                    account_json,
+                    session.refresh_token,
+                    lic,
+                    token_payload,
+                    token_signature,
+                    token_key_version,
+                    now()
+                ],
+            )
+            .map_err(db_err)?;
+        } else {
+            conn.execute(
+                "UPDATE pro_state SET account_json = ?1, refresh_token = ?2 WHERE id = 1",
+                params![account_json, session.refresh_token],
+            )
+            .map_err(db_err)?;
+        }
     } else {
-        // Different (or first) account: the previous account's licence must not carry over.
-        conn.execute(
-            "INSERT OR REPLACE INTO pro_state (id, account_json, refresh_token) VALUES (1, ?1, ?2)",
-            params![account_json, session.refresh_token],
-        )
-        .map_err(db_err)?;
+        // Different (or first) account: the previous account's licence must not carry over,
+        // but persist this session's licence/token when the server provided one.
+        if let Some(lic) = &license_json {
+            conn.execute(
+                "INSERT OR REPLACE INTO pro_state (id, account_json, refresh_token, license_json,
+                token_payload, token_signature, token_key_version, last_sync_at)
+                VALUES (1, ?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+                params![
+                    account_json,
+                    session.refresh_token,
+                    lic,
+                    token_payload,
+                    token_signature,
+                    token_key_version,
+                    now()
+                ],
+            )
+            .map_err(db_err)?;
+        } else {
+            conn.execute(
+                "INSERT OR REPLACE INTO pro_state (id, account_json, refresh_token) VALUES (1, ?1, ?2)",
+                params![account_json, session.refresh_token],
+            )
+            .map_err(db_err)?;
+        }
     }
     *ACCESS.lock() = Some((session.access_token.clone(), session.access_expires_at));
+    // Mirror the full DB row (account + refresh_token + license + token) to
+    // pro_cache.json so entitlement survives a vault lock or app restart.
     persist_pro_cache(conn);
     Ok(())
 }
@@ -709,10 +769,13 @@ fn access_token(conn: &Connection) -> Result<String, CatermError> {
         Some(&json!({ "refresh_token": state.refresh_token, "hwid": hwid()? })),
     )?;
     if status == 401 {
+        // Refresh token refused: session revoked (password reset / logout elsewhere).
         clear_local(conn)?;
         return Err(pro_err("SESSION_EXPIRED"));
     }
     if status != 200 {
+        // 5xx / 530 / network error: the server may be down. Keep the local session
+        // (license + token) intact so offline entitlement still works; never clear.
         return Err(api_error(status, &body));
     }
     let session = parse_session(&body)?;
@@ -862,18 +925,52 @@ pub fn login(email: &str, password: &str) -> Result<ProAccount, CatermError> {
     if crate::vault::is_unlocked().unwrap_or(false) {
         save_session(&open_db()?, &session)?;
     } else {
-        *PENDING.lock() = Some(session);
+        *PENDING.lock() = Some(session.clone());
+        let state = StoredState {
+            account: session.account.clone(),
+            refresh_token: session.refresh_token.clone(),
+            license: session.license.clone(),
+            token: session
+                .token
+                .as_ref()
+                .map(|t| (t.payload.clone(), t.signature.clone(), t.key_version)),
+            last_seen: now(),
+            last_sync_at: Some(now()),
+        };
+        write_pro_cache(&state);
     }
     Ok(account)
 }
 
 /// Saves a lock-screen sign-in into the now-unlocked vault. Returns false if there was none.
 pub fn commit_pending() -> Result<bool, CatermError> {
-    let Some(session) = PENDING.lock().take() else {
-        return Ok(false);
-    };
-    save_session(&open_db()?, &session)?;
-    Ok(true)
+    let pending_opt = PENDING.lock().take();
+    if let Some(session) = pending_opt {
+        save_session(&open_db()?, &session)?;
+        return Ok(true);
+    }
+    // If the app was closed before unlocking the vault, in-memory PENDING was lost.
+    // Recover the cached session from pro_cache.json if pro_state is empty.
+    let conn = open_db()?;
+    if load_state(&conn)?.is_none() {
+        if let Some(cached) = read_pro_cache() {
+            let session = Session {
+                account: cached.account,
+                refresh_token: cached.refresh_token,
+                access_token: String::new(),
+                access_expires_at: 0,
+                license: cached.license,
+                token: cached.token.map(|(p, s, v)| SignedToken {
+                    payload: p,
+                    signature: s,
+                    key_version: v,
+                }),
+            };
+            save_session(&conn, &session)?;
+            return Ok(true);
+        }
+    }
+    Ok(false)
 }
 
 /// # Infallible: returns false when status check fails or unentitled.
@@ -889,49 +986,67 @@ pub fn is_pro() -> bool {
 /// Offline status: what this device is entitled to right now, from the stored signed token.
 pub fn status() -> Result<ProStatus, CatermError> {
     if !crate::vault::is_unlocked().unwrap_or(false) {
-        let pending = PENDING
-            .lock()
-            .as_ref()
-            .and_then(|s| account_from(&s.account));
-
-        // Persisted Pro session survives vault lock (Option 3): serve cached Pro status
-        if pending.is_none() {
-            if let Some(cached) = read_pro_cache() {
-                let hwid = hwid().unwrap_or_default();
-                let token = cached
+        // A sign-in made on the lock screen (PENDING) may already carry the server's
+        // licence/token — serve it so Pro works before the vault unlocks.
+        let pending = PENDING.lock().as_ref().cloned();
+        if let Some(pending) = pending {
+            let pending_account = account_from(&pending.account);
+            let license = pending
+                .license
+                .as_ref()
+                .and_then(|l| serde_json::from_value(l.clone()).ok());
+            let token = pending
+                .token
+                .as_ref()
+                .map(|t| (t.payload.as_str(), t.signature.as_str(), t.key_version));
+            let hwid = hwid().unwrap_or_default();
+            let (raw_entitlement, _) = evaluate(token, public_key, &hwid, now(), now());
+            let entitlement =
+                apply_founder_or_active_override(pending.license.as_ref(), raw_entitlement);
+            return Ok(ProStatus {
+                signed_in: true,
+                pending: true,
+                account: pending_account,
+                license,
+                entitlement,
+                last_sync_at: pending
                     .token
                     .as_ref()
-                    .map(|(p, s, v)| (p.as_str(), s.as_str(), *v));
-                let (raw_entitlement, _) = evaluate(
-                    token,
-                    public_key,
-                    &hwid,
-                    cached.last_seen,
-                    now(),
-                );
-                let entitlement = apply_founder_or_active_override(
-                    cached.license.as_ref(),
-                    raw_entitlement,
-                );
-                return Ok(ProStatus {
-                    signed_in: true,
-                    pending: false,
-                    account: account_from(&cached.account),
-                    license: cached
-                        .license
-                        .as_ref()
-                        .and_then(|l| serde_json::from_value(l.clone()).ok()),
-                    entitlement,
-                    last_sync_at: cached.last_sync_at,
-                    key_configured: key_configured(),
-                });
-            }
+                    .map(|_| now())
+                    .or_else(|| pending.license.as_ref().map(|_| now())),
+                key_configured: key_configured(),
+            });
+        }
+
+        // No in-memory sign-in: the persisted Pro session survives the vault lock
+        // (Option 3) — serve cached Pro status from pro_cache.json.
+        if let Some(cached) = read_pro_cache() {
+            let hwid = hwid().unwrap_or_default();
+            let token = cached
+                .token
+                .as_ref()
+                .map(|(p, s, v)| (p.as_str(), s.as_str(), *v));
+            let (raw_entitlement, _) = evaluate(token, public_key, &hwid, cached.last_seen, now());
+            let entitlement =
+                apply_founder_or_active_override(cached.license.as_ref(), raw_entitlement);
+            return Ok(ProStatus {
+                signed_in: true,
+                pending: false,
+                account: account_from(&cached.account),
+                license: cached
+                    .license
+                    .as_ref()
+                    .and_then(|l| serde_json::from_value(l.clone()).ok()),
+                entitlement,
+                last_sync_at: cached.last_sync_at,
+                key_configured: key_configured(),
+            });
         }
 
         return Ok(ProStatus {
-            signed_in: pending.is_some(),
-            pending: pending.is_some(),
-            account: pending,
+            signed_in: false,
+            pending: false,
+            account: None,
             license: None,
             entitlement: Entitlement::None,
             last_sync_at: None,
@@ -956,8 +1071,7 @@ pub fn status() -> Result<ProStatus, CatermError> {
         .as_ref()
         .map(|(p, s, v)| (p.as_str(), s.as_str(), *v));
     let (raw_entitlement, seen) = evaluate(token, public_key, &hwid, state.last_seen, now());
-    let entitlement =
-        apply_founder_or_active_override(state.license.as_ref(), raw_entitlement);
+    let entitlement = apply_founder_or_active_override(state.license.as_ref(), raw_entitlement);
     if seen != state.last_seen {
         conn.execute(
             "UPDATE pro_state SET last_seen_wall_clock = ?1 WHERE id = 1",

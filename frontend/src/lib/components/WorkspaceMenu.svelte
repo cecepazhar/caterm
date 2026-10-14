@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Button } from '@cecepazhar/caui';
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import {
@@ -242,16 +243,18 @@
 
 <div class="relative inline-block text-left {className}" bind:this={dropdownRef}>
   <!-- Sleek Icon-Only "Workspaces" Trigger Button -->
-  <button
-    type="button"
+  <Button
+    variant={isOpen ? 'info' : 'outline'}
+    size="icon"
     onclick={(e) => {
       e.stopPropagation();
       isOpen = !isOpen;
     }}
-    class="p-1.5 rounded-md border transition-colors relative flex items-center justify-center {isOpen
+    class="relative p-1.5 {isOpen
       ? 'bg-sky-600/15 text-sky-600 dark:text-sky-400 border-sky-500/30'
       : 'bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-300 border-neutral-300 dark:border-neutral-800 hover:text-neutral-900 dark:hover:text-white hover:border-neutral-400 dark:hover:border-neutral-700'}"
     title={t('workspaces.manage')}
+    aria-label={t('workspaces.manage')}
     aria-expanded={isOpen}
     aria-haspopup="true"
   >
@@ -271,7 +274,7 @@
         {workspaces.length}
       </span>
     {/if}
-  </button>
+  </Button>
 
   <!-- Dropdown Menu -->
   {#if isOpen}
@@ -295,16 +298,17 @@
           </svg>
           <span class="text-xs font-semibold text-neutral-900 dark:text-white">{t('workspaces.title')}</span>
         </div>
-        <button
-          type="button"
+        <Button
+          variant="primary"
+          size="sm"
           onclick={openSaveModal}
-          class="px-2 py-1 bg-sky-600 hover:bg-sky-500 text-white rounded-md text-xs font-medium transition-colors flex items-center gap-1 shadow-xs cursor-pointer"
+          class="!px-2 !py-1 !text-xs !rounded-md"
         >
           <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
           </svg>
           <span>{t('workspaces.saveCurrent')}</span>
-        </button>
+        </Button>
       </div>
 
       <!-- Workspaces List -->
@@ -357,19 +361,21 @@
                 {/if}
               </div>
               <div class="flex items-center gap-1 shrink-0">
-                <button
-                  type="button"
+                <Button
+                  variant="outline"
+                  size="sm"
                   onclick={() => handleLoadWorkspace(ws)}
                   disabled={isLoadingWs}
-                  class="px-2 py-1 bg-sky-600/10 hover:bg-sky-600 text-sky-600 hover:text-white dark:bg-sky-500/20 dark:text-sky-300 dark:hover:bg-sky-600 dark:hover:text-white border border-sky-500/30 rounded text-xs font-medium transition-colors shadow-xs cursor-pointer"
+                  class="bg-sky-600/10 hover:!bg-sky-600 text-sky-600 hover:!text-white dark:bg-sky-500/20 dark:text-sky-300 dark:hover:!bg-sky-600 dark:hover:!text-white border-sky-500/30 shadow-xs"
                   title={t('workspaces.loadTitle', { name: ws.name })}
                 >
                   {t('workspaces.load')}
-                </button>
-                <button
-                  type="button"
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
                   onclick={() => handleDeleteWorkspace(ws)}
-                  class="p-1 text-neutral-400 hover:text-rose-500 hover:bg-rose-500/10 rounded transition-colors cursor-pointer"
+                  class="text-neutral-400 hover:!text-rose-500 hover:!bg-rose-500/10"
                   title={t('workspaces.deleteTitle', { name: ws.name })}
                   aria-label={t('workspaces.deleteTitle', { name: ws.name })}
                 >
@@ -381,7 +387,7 @@
                       d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
                     />
                   </svg>
-                </button>
+                </Button>
               </div>
             </div>
           {/each}
@@ -415,16 +421,17 @@
             <p class="text-[11px] text-neutral-500 dark:text-neutral-400">{t('workspaces.saveSubtitle')}</p>
           </div>
         </div>
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          size="icon"
           onclick={closeSaveModal}
-          class="p-1 rounded-lg text-neutral-400 hover:text-neutral-600 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+          class="text-neutral-400 hover:text-neutral-600 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800"
           aria-label={t('workspaces.closeDialog')}
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
           </svg>
-        </button>
+        </Button>
       </div>
 
       <!-- Form Section -->
@@ -496,24 +503,23 @@
 
       <!-- Modal Footer / Actions -->
       <div class="flex justify-end gap-2 pt-2 border-t border-neutral-100 dark:border-neutral-800">
-        <button
-          type="button"
+        <Button
+          variant="secondary"
+          size="sm"
           onclick={closeSaveModal}
-          class="px-3.5 py-1.5 bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-300 rounded-lg text-xs font-medium transition-colors cursor-pointer"
         >
           {t('common.cancel')}
-        </button>
-        <button
-          type="button"
+        </Button>
+        <Button
+          variant="primary"
+          size="sm"
+          loading={isSaving}
           onclick={handleSaveWorkspace}
-          disabled={!workspaceName.trim() || activeHostIds.length === 0 || isSaving}
-          class="px-4 py-1.5 bg-sky-600 hover:bg-sky-500 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-lg text-xs font-medium transition-colors shadow-lg shadow-sky-600/20 flex items-center gap-1.5 cursor-pointer"
+          disabled={!workspaceName.trim() || activeHostIds.length === 0}
+          class="!bg-sky-600 hover:!bg-sky-500 !border-transparent shadow-lg shadow-sky-600/20 gap-1.5"
         >
-          {#if isSaving}
-            <span class="animate-spin text-xs">●</span>
-          {/if}
           <span>{t('workspaces.saveTitle')}</span>
-        </button>
+        </Button>
       </div>
     </div>
   </div>

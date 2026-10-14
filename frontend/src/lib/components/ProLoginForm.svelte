@@ -2,6 +2,7 @@
   // Sign in / create account / forgot password for CATerm Pro. Used on the lock screen (before
   // the vault is open — the backend holds the session until unlock) and in Settings.
   // The Pro password is deliberately separate from the vault master password.
+  import { Button } from '@cecepazhar/caui';
   import { t, getLocale } from '$lib/i18n/index.svelte';
   import {
     proLogin,
@@ -119,9 +120,9 @@
     <div class="p-3 text-xs rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-700 dark:text-rose-400 space-y-1.5" role="alert">
       <p>{error}</p>
       {#if errorCode === 'EMAIL_NOT_VERIFIED'}
-        <button type="button" class={LINK} disabled={busy} onclick={resendVerification}>{t('pro.login.resendVerification')}</button>
+        <Button type="button" variant="ghost" size="sm" class="{LINK} !p-0" disabled={busy} onclick={resendVerification}>{t('pro.login.resendVerification')}</Button>
       {:else if errorCode === 'PASSWORD_NOT_SET'}
-        <button type="button" class={LINK} disabled={busy} onclick={sendSetPasswordLink}>{t('pro.login.sendSetPassword')}</button>
+        <Button type="button" variant="ghost" size="sm" class="{LINK} !p-0" disabled={busy} onclick={sendSetPasswordLink}>{t('pro.login.sendSetPassword')}</Button>
       {/if}
     </div>
   {/if}
@@ -131,8 +132,8 @@
 
   {#if mode === 'checkEmail'}
     <div class="flex flex-col gap-2 text-xs text-center">
-      <button type="button" class={LINK} disabled={busy} onclick={resendVerification}>{t('pro.login.resendVerification')}</button>
-      <button type="button" class={LINK} onclick={() => switchMode('login')}>{t('pro.login.backToLogin')}</button>
+      <Button type="button" variant="ghost" size="sm" class="{LINK} !p-0" disabled={busy} onclick={resendVerification}>{t('pro.login.resendVerification')}</Button>
+      <Button type="button" variant="ghost" size="sm" class="{LINK} !p-0" onclick={() => switchMode('login')}>{t('pro.login.backToLogin')}</Button>
     </div>
   {:else}
     <form onsubmit={submit} class="space-y-3">
@@ -159,10 +160,12 @@
         </div>
       {/if}
 
-      <button
+      <Button
         type="submit"
+        variant="primary"
         disabled={busy}
-        class="w-full py-2.5 bg-sky-600 hover:bg-sky-500 disabled:opacity-50 text-white font-medium rounded-lg shadow-sm transition-colors text-sm"
+        loading={busy}
+        class="w-full !py-2.5 !bg-sky-600 hover:!bg-sky-500 disabled:opacity-50 text-white font-medium rounded-lg shadow-sm transition-colors text-sm justify-center"
       >
         {#if busy}
           {t('pro.login.working')}
@@ -173,15 +176,15 @@
         {:else}
           {t('pro.login.signIn')}
         {/if}
-      </button>
+      </Button>
     </form>
 
     <div class="flex items-center justify-between text-xs">
       {#if mode === 'login'}
-        <button type="button" class={LINK} onclick={() => switchMode('register')}>{t('pro.login.noAccount')}</button>
-        <button type="button" class={LINK} onclick={() => switchMode('forgot')}>{t('pro.login.forgot')}</button>
+        <Button type="button" variant="ghost" size="sm" class="{LINK} !p-0" onclick={() => switchMode('register')}>{t('pro.login.noAccount')}</Button>
+        <Button type="button" variant="ghost" size="sm" class="{LINK} !p-0" onclick={() => switchMode('forgot')}>{t('pro.login.forgot')}</Button>
       {:else}
-        <button type="button" class={LINK} onclick={() => switchMode('login')}>{t('pro.login.backToLogin')}</button>
+        <Button type="button" variant="ghost" size="sm" class="{LINK} !p-0" onclick={() => switchMode('login')}>{t('pro.login.backToLogin')}</Button>
       {/if}
     </div>
   {/if}

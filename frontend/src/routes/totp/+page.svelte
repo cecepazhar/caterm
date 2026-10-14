@@ -2,7 +2,7 @@
   import { onMount, onDestroy } from 'svelte';
   import { invoke } from '@tauri-apps/api/core';
   import TotpBadge from '$lib/components/TotpBadge.svelte';
-  import PageHeader from '$lib/components/PageHeader.svelte';
+  import { PageHeader, Button, Input, Modal } from '@cecepazhar/caui';
   import { showToast, confirmModal } from '$lib/stores/uiNotifications.svelte';
   import { t } from '$lib/i18n/index.svelte';
 
@@ -153,31 +153,33 @@
     subtitle={t('totp.subtitle')}
   >
     {#snippet actions()}
-      <button
-        type="button"
+      <Button
+        variant="info"
+        size="sm"
         onclick={openAddModal}
-        class="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold bg-sky-600 hover:bg-sky-500 text-white shadow-md shadow-sky-600/20 transition-all shrink-0"
       >
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
         </svg>
         {t('totp.newKey')}
-      </button>
+      </Button>
     {/snippet}
   </PageHeader>
 
   <!-- Search & Stats Bar -->
   <div class="flex items-center justify-between gap-3">
     <div class="relative flex-1 max-w-md">
-      <input
-        type="text"
+      <Input
         bind:value={searchQuery}
         placeholder={t('totp.searchPlaceholder')}
-        class="w-full pl-9 pr-3 py-2 text-xs rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:border-sky-500 shadow-2xs"
-      />
-      <svg class="w-4 h-4 text-neutral-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-      </svg>
+        size="sm"
+      >
+        {#snippet leadingIcon()}
+          <svg class="w-4 h-4 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        {/snippet}
+      </Input>
     </div>
     <span class="text-xs font-medium text-neutral-500 shrink-0">
       {filteredEntries.length} {t('totp.title')}
@@ -196,13 +198,14 @@
       <p class="text-xs text-neutral-500 max-w-sm mx-auto">
         {t('totp.emptyBody')}
       </p>
-      <button
-        type="button"
+      <Button
+        variant="secondary"
+        size="sm"
         onclick={openAddModal}
-        class="mt-2 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-neutral-100 dark:bg-neutral-800 hover:bg-sky-500 hover:text-white text-neutral-700 dark:text-neutral-300 transition-colors"
+        class="mt-2"
       >
         {t('totp.addFirst')}
-      </button>
+      </Button>
     </div>
   {:else}
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
@@ -222,93 +225,61 @@
 </div>
 
 <!-- Add / Edit 2FA Modal -->
-{#if isAddModalOpen}
-  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 dark:bg-black/80 backdrop-blur-xs">
-    <div
-      role="dialog"
-      aria-modal="true"
-      class="w-full max-w-md bg-white dark:bg-[#141414] border border-neutral-200 dark:border-neutral-800 rounded-2xl p-6 space-y-4 shadow-2xl animate-in fade-in zoom-in-95 duration-150"
-    >
-      <div class="flex items-center justify-between border-b border-neutral-200 dark:border-neutral-800 pb-3">
-        <h3 class="text-base font-bold text-neutral-900 dark:text-white">
-          {editingId ? 'Edit Token 2FA' : 'Tambah Token 2FA Baru'}
-        </h3>
-        <button
-          type="button"
-          onclick={() => (isAddModalOpen = false)}
-          class="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 text-lg font-bold"
-        >
-          ×
-        </button>
+<Modal bind:open={isAddModalOpen} title={editingId ? 'Edit Token 2FA' : 'Tambah Token 2FA Baru'} size="md">
+  <div class="space-y-4 text-xs">
+    {#if formError}
+      <div class="p-2.5 text-xs rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-400">
+        {formError}
       </div>
+    {/if}
 
-      {#if formError}
-        <div class="p-2.5 text-xs rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-400">
-          {formError}
-        </div>
-      {/if}
+    <div>
+      <label for="totp-label" class="block font-medium text-neutral-700 dark:text-neutral-300 mb-1">
+        Nama Akun / Server *
+      </label>
+      <Input
+        id="totp-label"
+        bind:value={formLabel}
+        placeholder="misal: Production Bastion / AWS Root"
+        size="sm"
+      />
+    </div>
 
-      <div class="space-y-3 text-xs">
-        <div>
-          <label for="totp-label" class="block font-medium text-neutral-700 dark:text-neutral-300 mb-1">
-            Nama Akun / Server *
-          </label>
-          <input
-            id="totp-label"
-            type="text"
-            bind:value={formLabel}
-            placeholder="misal: Production Bastion / AWS Root"
-            class="w-full px-3 py-2 rounded-lg bg-neutral-50 dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-800 text-neutral-900 dark:text-white focus:outline-none focus:border-sky-500"
-          />
-        </div>
+    <div>
+      <label for="totp-issuer" class="block font-medium text-neutral-700 dark:text-neutral-300 mb-1">
+        Penerbit / Layanan (Opsional)
+      </label>
+      <Input
+        id="totp-issuer"
+        bind:value={formIssuer}
+        placeholder="misal: AWS, Cloudflare, GitHub, Gerlink"
+        size="sm"
+      />
+    </div>
 
-        <div>
-          <label for="totp-issuer" class="block font-medium text-neutral-700 dark:text-neutral-300 mb-1">
-            Penerbit / Layanan (Opsional)
-          </label>
-          <input
-            id="totp-issuer"
-            type="text"
-            bind:value={formIssuer}
-            placeholder="misal: AWS, Cloudflare, GitHub, Gerlink"
-            class="w-full px-3 py-2 rounded-lg bg-neutral-50 dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-800 text-neutral-900 dark:text-white focus:outline-none focus:border-sky-500"
-          />
-        </div>
-
-        <div>
-          <label for="totp-secret" class="block font-medium text-neutral-700 dark:text-neutral-300 mb-1">
-            Secret Key (Base32 atau URL otpauth://) {editingId ? '(Kosongkan jika tidak ingin mengubah)' : '*'}
-          </label>
-          <input
-            id="totp-secret"
-            type="password"
-            bind:value={formSecret}
-            placeholder="misal: JBSWY3DPEHPK3PXP atau otpauth://totp/..."
-            class="w-full px-3 py-2 rounded-lg font-mono bg-neutral-50 dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-800 text-neutral-900 dark:text-white focus:outline-none focus:border-sky-500"
-          />
-          <p class="text-[11px] text-neutral-500 mt-1">
-            Kunci rahasia akan langsung dienkripsi menggunakan Zero-Knowledge AES-256-GCM vault.
-          </p>
-        </div>
-      </div>
-
-      <div class="flex justify-end gap-2.5 pt-4 border-t border-neutral-200 dark:border-neutral-800">
-        <button
-          type="button"
-          onclick={() => (isAddModalOpen = false)}
-          class="px-4 py-2 rounded-lg text-xs font-semibold bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-300 transition-colors"
-        >
-          Batal
-        </button>
-        <button
-          type="button"
-          onclick={handleSave}
-          disabled={isLoading}
-          class="px-4 py-2 rounded-lg text-xs font-semibold bg-sky-600 hover:bg-sky-500 disabled:opacity-50 text-white shadow-md shadow-sky-600/20 transition-colors"
-        >
-          {isLoading ? 'Menyimpan...' : 'Simpan Token'}
-        </button>
-      </div>
+    <div>
+      <label for="totp-secret" class="block font-medium text-neutral-700 dark:text-neutral-300 mb-1">
+        Secret Key (Base32 atau URL otpauth://) {editingId ? '(Kosongkan jika tidak ingin mengubah)' : '*'}
+      </label>
+      <Input
+        id="totp-secret"
+        type="password"
+        bind:value={formSecret}
+        placeholder="misal: JBSWY3DPEHPK3PXP atau otpauth://totp/..."
+        size="sm"
+        class="font-mono"
+      />
+      <p class="text-[11px] text-neutral-500 mt-1">
+        Kunci rahasia akan langsung dienkripsi menggunakan Zero-Knowledge AES-256-GCM vault.
+      </p>
     </div>
   </div>
-{/if}
+  {#snippet footer()}
+    <Button variant="secondary" size="sm" onclick={() => (isAddModalOpen = false)}>
+      Batal
+    </Button>
+    <Button variant="info" size="sm" onclick={handleSave} disabled={isLoading} loading={isLoading}>
+      {isLoading ? 'Menyimpan...' : 'Simpan Token'}
+    </Button>
+  {/snippet}
+</Modal>

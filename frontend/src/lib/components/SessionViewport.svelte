@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Button } from '@cecepazhar/caui';
   import { t } from '$lib/i18n/index.svelte';
   import { onMount } from 'svelte';
   import { page } from '$app/state';
@@ -137,20 +138,24 @@
                 </span>
                 <span class="text-[10px] text-neutral-500 hidden sm:inline">— Setiap ketikan dikirim serentak ke semua pane</span>
               </div>
-              <button
+              <Button
                 type="button"
+                variant="warning"
+                size="sm"
                 onclick={() => (view.broadcastInput = false)}
-                class="px-2 py-0.5 rounded text-[10px] bg-amber-500/20 hover:bg-amber-500/30 text-amber-700 dark:text-amber-300 font-sans font-medium transition-colors"
+                class="!px-2 !py-0.5 rounded text-[10px] bg-amber-500/20 hover:bg-amber-500/30 text-amber-700 dark:text-amber-300 font-sans font-medium transition-colors"
               >
                 Nonaktifkan (Ctrl+Shift+B)
-              </button>
+              </Button>
             </div>
           {/if}
 
           {#if tabs.length > 1 && !isWideViewport}
             <div class="flex items-center gap-1 overflow-x-auto pb-1.5 mb-1 scrollbar-none shrink-0">
               {#each tabs as tab (tab.id)}
-                <button
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onclick={() => setSelectedTabId(tab.id)}
                   class="px-2.5 py-1 rounded text-xs font-mono transition-colors shrink-0 flex items-center gap-1.5 {view.selectedTabId === tab.id ? 'bg-sky-600 text-white font-semibold shadow-xs' : 'bg-white dark:bg-neutral-900 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200 border border-neutral-200 dark:border-neutral-800'}"
                 >
@@ -161,7 +166,7 @@
                       {tab.group}
                     </span>
                   {/if}
-                </button>
+                </Button>
               {/each}
             </div>
           {/if}

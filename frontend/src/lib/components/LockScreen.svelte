@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Button } from '@cecepazhar/caui';
   import { onMount, onDestroy } from 'svelte';
   import { isVaultInitialized, validateVaultPassword, resetVault } from '$lib/api/vault';
   import { showToast, confirmModal } from '$lib/stores/uiNotifications.svelte';
@@ -7,6 +8,7 @@
   import ProfileAvatar, { AVATARS } from './ProfileAvatar.svelte';
   import AvatarPicker from './AvatarPicker.svelte';
   import { getProfile, saveProfile, DEFAULT_AVATAR } from '$lib/stores/profile.svelte';
+  import { getPro } from '$lib/stores/pro.svelte';
   import { APP_VERSION } from '$lib/appInfo';
   import { getCurrentWindow } from '@tauri-apps/api/window';
   import { invoke } from '@tauri-apps/api/core';
@@ -99,9 +101,9 @@
   let setupName = $state('');
   let setupAvatar = $state(DEFAULT_AVATAR);
 
+  const pro = getPro();
   const isProUser = $derived(
-    profile.plan === 'pro' ||
-    Boolean(proAccount)
+    pro.isPro || Boolean(proAccount)
   );
 
   const isTauri = typeof window !== 'undefined' && Boolean((window as any).__TAURI_INTERNALS__ || (window as any).__TAURI__);
@@ -311,51 +313,61 @@
     <LanguageSwitcher />
 
     <div class="flex items-center p-0.5 rounded-lg border border-neutral-200 dark:border-neutral-800" role="group" aria-label={t('shell.theme')}>
-      <button
+      <Button
+        variant="ghost"
+        size="icon"
         onclick={() => setTheme('light')}
         aria-pressed={theme.name !== 'dark'}
-        class="p-1 rounded-md transition-colors {theme.name !== 'dark' ? 'bg-white text-amber-500 shadow-sm' : 'hover:text-neutral-900 dark:hover:text-white'}"
+        class="!p-1 rounded-md transition-colors {theme.name !== 'dark' ? 'bg-white text-amber-500 shadow-sm' : 'hover:text-neutral-900 dark:hover:text-white'}"
         title={t('shell.lightTheme')}
         aria-label={t('shell.lightTheme')}
       >
         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
-      </button>
-      <button
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon"
         onclick={() => setTheme('dark')}
         aria-pressed={theme.name === 'dark'}
-        class="p-1 rounded-md transition-colors {theme.name === 'dark' ? 'bg-neutral-800 text-white' : 'hover:text-neutral-900'}"
+        class="!p-1 rounded-md transition-colors {theme.name === 'dark' ? 'bg-neutral-800 text-white' : 'hover:text-neutral-900'}"
         title={t('shell.darkTheme')}
         aria-label={t('shell.darkTheme')}
       >
         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
-      </button>
+      </Button>
     </div>
 
     <div class="flex items-center gap-0.5 ml-1 border-l border-neutral-200 dark:border-neutral-800 pl-2">
-      <button
+      <Button
+        variant="ghost"
+        size="icon"
         onclick={() => minimizeWindow()}
-        class="p-1.5 hover:bg-neutral-200 dark:hover:bg-neutral-800 text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors cursor-pointer rounded"
+        class="!p-1.5 hover:bg-neutral-200 dark:hover:bg-neutral-800 text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors cursor-pointer rounded"
         title={t('lock.minimize')}
         aria-label={t('lock.minimize')}
       >
         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path></svg>
-      </button>
-      <button
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon"
         onclick={() => maximizeWindow()}
-        class="p-1.5 hover:bg-neutral-200 dark:hover:bg-neutral-800 text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors cursor-pointer rounded"
+        class="!p-1.5 hover:bg-neutral-200 dark:hover:bg-neutral-800 text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors cursor-pointer rounded"
         title={t('lock.maximize')}
         aria-label={t('lock.maximize')}
       >
         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2" stroke-width="2"></rect></svg>
-      </button>
-      <button
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon"
         onclick={() => closeWindow()}
-        class="p-1.5 hover:bg-rose-600 hover:text-white text-neutral-500 dark:text-neutral-400 transition-colors cursor-pointer rounded"
+        class="!p-1.5 hover:bg-rose-600 hover:text-white text-neutral-500 dark:text-neutral-400 transition-colors cursor-pointer rounded"
         title={t('lock.close')}
         aria-label={t('lock.close')}
       >
         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-      </button>
+      </Button>
     </div>
   </div>
 
@@ -437,20 +449,22 @@
       </div>
 
       <div class="grid grid-cols-2 p-1 rounded-lg bg-neutral-200/60 dark:bg-neutral-900 text-xs font-semibold" role="tablist">
-        <button
+        <Button
           type="button"
+          variant="ghost"
           role="tab"
           aria-selected={loginMode === 'vault'}
           onclick={() => (loginMode = 'vault')}
-          class="py-1.5 rounded-md transition-colors {loginMode === 'vault' ? 'bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white shadow-sm' : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'}"
-        >{t('pro.lock.vaultTab')}</button>
-        <button
+          class="py-1.5 rounded-md transition-colors w-full justify-center {loginMode === 'vault' ? 'bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white shadow-sm' : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'}"
+        >{t('pro.lock.vaultTab')}</Button>
+        <Button
           type="button"
+          variant="ghost"
           role="tab"
           aria-selected={loginMode === 'pro'}
           onclick={() => (loginMode = 'pro')}
-          class="py-1.5 rounded-md transition-colors {loginMode === 'pro' ? 'bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white shadow-sm' : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'}"
-        >{t('pro.lock.proTab')}</button>
+          class="py-1.5 rounded-md transition-colors w-full justify-center {loginMode === 'pro' ? 'bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white shadow-sm' : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'}"
+        >{t('pro.lock.proTab')}</Button>
       </div>
 
       {#if proAccount && loginMode === 'vault'}
@@ -520,11 +534,13 @@
                 placeholder="••••••••••••"
                 class="w-full pl-4 pr-11 py-3 bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-800 rounded-lg text-neutral-900 dark:text-white placeholder-neutral-400 dark:placeholder-neutral-600 focus:outline-none focus:border-sky-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               />
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="icon"
                 onclick={() => (showPassword = !showPassword)}
                 disabled={isLockedOut}
-                class="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors p-1 disabled:opacity-30"
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors !p-1 disabled:opacity-30"
                 aria-label={showPassword ? t('lock.hidePassword') : t('lock.showPassword')}
                 title={showPassword ? t('lock.hidePassword') : t('lock.showPassword')}
               >
@@ -538,24 +554,26 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                   </svg>
                 {/if}
-              </button>
+              </Button>
             </div>
           </div>
 
-          <button
+          <Button
+            type="button"
+            variant="primary"
             onclick={handleUnlock}
             disabled={isLoading || isLockedOut}
-            class="w-full py-3 bg-sky-600 hover:bg-sky-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium rounded-lg shadow-lg shadow-sky-600/20 transition-all flex items-center justify-center gap-2 text-sm cursor-pointer"
+            loading={isLoading}
+            class="w-full !py-3 !bg-sky-600 hover:!bg-sky-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium rounded-lg shadow-lg shadow-sky-600/20 transition-all flex items-center justify-center gap-2 text-sm cursor-pointer"
           >
             {#if isLoading}
-              <svg class="w-4 h-4 animate-spin text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
               {isSetup ? t('lock.settingUp') : t('lock.unlocking')}
             {:else if isLockedOut}
               {formatTime(lockoutRemainingSeconds)}
             {:else}
               {isSetup ? t('lock.createVault') : t('lock.unlockVault')}
             {/if}
-          </button>
+          </Button>
         </div>
       {:else}
         <ProLoginForm onSignedIn={handleProSignedIn} />
@@ -563,9 +581,15 @@
 
       <div class="flex items-center justify-between text-xs text-neutral-500 pt-4 border-t border-neutral-200 dark:border-neutral-900">
         {#if !isSetup}
-          <button onclick={handleReset} class="hover:text-rose-600 dark:hover:text-rose-400 transition-colors cursor-pointer">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onclick={handleReset}
+            class="hover:text-rose-600 dark:hover:text-rose-400 transition-colors cursor-pointer !p-0"
+          >
             {t('lock.resetVault')}
-          </button>
+          </Button>
         {:else}
           <span></span>
         {/if}

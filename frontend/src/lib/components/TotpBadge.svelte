@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Button } from '@cecepazhar/caui';
   import { showToast } from '$lib/stores/uiNotifications.svelte';
   import { copyText } from '$lib/utils/clipboard';
 
@@ -98,10 +99,12 @@
         <span class="font-mono text-xl sm:text-2xl font-bold tracking-wider text-neutral-900 dark:text-white select-all">
           {displayToken}
         </span>
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="icon"
           onclick={toggleShowCode}
-          class="p-0.5 rounded text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors shrink-0"
+          class="!p-0.5 rounded text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors shrink-0"
           title={showCode ? 'Sembunyikan Kode 2FA' : 'Tampilkan Kode 2FA'}
           aria-label={showCode ? 'Sembunyikan Kode 2FA' : 'Tampilkan Kode 2FA'}
         >
@@ -115,7 +118,7 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
             </svg>
           {/if}
-        </button>
+        </Button>
       </div>
     </div>
 
@@ -153,33 +156,39 @@
     </span>
 
     {#if onEdit}
-      <button
+      <Button
         type="button"
+        variant="ghost"
+        size="icon"
         onclick={onEdit}
-        class="ml-auto w-8 h-8 flex items-center justify-center rounded-lg text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+        class="ml-auto !w-8 !h-8 flex items-center justify-center rounded-lg text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors !p-0"
         title="Ubah Kunci 2FA"
         aria-label="Ubah Kunci 2FA"
       >
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M16.9 4.1a2.1 2.1 0 013 3L8.5 18.5 4 20l1.5-4.5z" /></svg>
-      </button>
+      </Button>
     {/if}
 
     {#if onDelete}
-      <button
+      <Button
         type="button"
+        variant="danger"
+        size="icon"
         onclick={onDelete}
-        class="w-8 h-8 flex items-center justify-center rounded-lg text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors"
+        class="!w-8 !h-8 flex items-center justify-center rounded-lg text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors !p-0"
         title="Hapus Kunci 2FA"
         aria-label="Hapus Kunci 2FA"
       >
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-      </button>
+      </Button>
     {/if}
 
-    <button
+    <Button
       type="button"
+      variant="primary"
+      size="sm"
       onclick={handleCopy}
-      class="h-8 px-3 flex items-center gap-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold transition-colors"
+      class="!h-8 !px-3 flex items-center gap-1.5 !bg-sky-600 hover:!bg-sky-500 text-white text-xs font-semibold transition-colors"
       title="Salin Kode 2FA"
       aria-label="Salin Kode 2FA"
     >
@@ -194,6 +203,6 @@
         </svg>
         <span>Salin Kode</span>
       {/if}
-    </button>
+    </Button>
   </div>
 </div>

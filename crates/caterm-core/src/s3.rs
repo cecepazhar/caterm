@@ -507,7 +507,8 @@ impl RemoteFileSystem for S3FileSystem {
             }),
             (Some(bucket), Some(key)) => {
                 let path = format!("/{key}");
-                let resp = self.sign_and_execute_bucket("HEAD", Some(&bucket), &path, &[], &[], &[])?;
+                let resp =
+                    self.sign_and_execute_bucket("HEAD", Some(&bucket), &path, &[], &[], &[])?;
                 let status = resp.status().as_u16();
                 if !(200..300).contains(&status) {
                     // Check if it's a virtual folder

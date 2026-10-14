@@ -3,7 +3,7 @@
   import { listKeys, generateKey, importKey, deleteKey, deployPublicKey, type KeyRecord } from '$lib/api/keys';
   import { listHosts, type HostRecord } from '$lib/api/hosts';
   import { t, intlLocale } from '$lib/i18n/index.svelte';
-  import PageHeader from '$lib/components/PageHeader.svelte';
+  import { PageHeader, Button, Input, Badge, Modal } from '@cecepazhar/caui';
   import { confirmModal } from '$lib/stores/uiNotifications.svelte';
 
   let keys: KeyRecord[] = [];
@@ -130,12 +130,8 @@
     subtitle={t('sshKeys.subtitle')}
   >
     {#snippet actions()}
-      <button onclick={() => showImportModal = true} class="px-3.5 py-2 bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-200 rounded-lg text-sm font-medium transition-colors border border-neutral-200 dark:border-neutral-700">
-        {t('sshKeys.import')}
-      </button>
-      <button onclick={() => showGenerateModal = true} class="px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-lg text-sm font-medium transition-colors shadow shadow-sky-600/20">
-        {t('sshKeys.generate')}
-      </button>
+      <Button variant="secondary" size="sm" onclick={() => (showImportModal = true)}>{t('sshKeys.import')}</Button>
+      <Button variant="info" size="sm" onclick={() => (showGenerateModal = true)}>{t('sshKeys.generate')}</Button>
     {/snippet}
   </PageHeader>
 
@@ -161,12 +157,8 @@
       <h3 class="text-lg font-medium text-neutral-900 dark:text-white mb-2">{t('sshKeys.emptyTitle')}</h3>
       <p class="text-sm text-neutral-500 dark:text-neutral-400 max-w-md">{t('sshKeys.emptyBody')}</p>
       <div class="mt-6 flex gap-3">
-        <button onclick={() => showImportModal = true} class="px-4 py-2 bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-neutral-900 dark:text-white rounded-lg text-sm font-medium transition-colors border border-neutral-300 dark:border-neutral-700">
-          {t('sshKeys.importKey')}
-        </button>
-        <button onclick={() => showGenerateModal = true} class="px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-lg text-sm font-medium transition-colors shadow-lg shadow-sky-600/20">
-          {t('sshKeys.generateKeypair')}
-        </button>
+        <Button variant="secondary" onclick={() => (showImportModal = true)}>{t('sshKeys.importKey')}</Button>
+        <Button variant="info" onclick={() => (showGenerateModal = true)}>{t('sshKeys.generateKeypair')}</Button>
       </div>
     </div>
   {:else}
@@ -178,9 +170,9 @@
               <svg class="w-4 h-4 text-rose-500 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
               {key.name}
             </h3>
-            <span class="text-xs px-2 py-0.5 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 font-mono">
+            <Badge variant="neutral" size="xs" class="font-mono">
               {key.algorithm}
-            </span>
+            </Badge>
           </div>
 
           <div class="space-y-2 mb-4">
@@ -194,18 +186,22 @@
               {new Date(key.createdAt).toLocaleDateString(intlLocale())}
             </span>
             <div class="flex items-center gap-2">
-              <button
+              <Button
+                variant="ghost"
+                size="sm"
                 onclick={() => openDeployModal(key.id)}
-                class="text-xs text-sky-600 dark:text-sky-400 hover:text-sky-500 dark:hover:text-sky-300 font-medium px-2 py-1 rounded hover:bg-sky-500/10 transition-colors"
+                class="text-sky-600 dark:text-sky-400"
               >
                 {t('sshKeys.deployToServer')}
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
                 onclick={() => handleDelete(key.id, key.name)}
-                class="text-xs text-rose-600 dark:text-rose-500 hover:text-rose-500 dark:hover:text-rose-400 font-medium px-2 py-1 rounded hover:bg-rose-500/10 transition-colors"
+                class="text-rose-600 dark:text-rose-500"
               >
                 {t('common.delete')}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -215,102 +211,88 @@
 </div>
 
 {#if showDeployModal}
-<div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 dark:bg-black/60 backdrop-blur-sm">
-  <div class="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl w-full max-w-md shadow-2xl p-6">
-    <h3 class="text-lg font-semibold text-neutral-900 dark:text-white mb-4">{t('sshKeys.deployTitle')}</h3>
-
-    <div class="space-y-4">
-      <div>
-        <label for="deploy-host" class="block text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-1">{t('sshKeys.targetHost')}</label>
-        {#if hosts.length === 0}
-          <div class="p-3 bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg text-sm text-neutral-500">
-            {t('sshKeys.noHostsAddOne')}
-          </div>
-        {:else}
-          <select id="deploy-host" bind:value={deployHostId} class="w-full bg-neutral-50 dark:bg-black/40 border border-neutral-300 dark:border-neutral-800 rounded-lg px-3 py-2 text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-sky-500 transition-colors">
-            {#each hosts as h}
-              <option value={h.id}>{h.label} ({h.username}@{h.address})</option>
-            {/each}
-          </select>
-        {/if}
-      </div>
-      <p class="text-xs text-neutral-500">
-        {t('sshKeys.deployNote')}
-      </p>
+<Modal bind:open={showDeployModal} title={t('sshKeys.deployTitle')} size="md">
+  <div class="space-y-4 text-sm">
+    <div>
+      <label for="deploy-host" class="block text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-1">{t('sshKeys.targetHost')}</label>
+      {#if hosts.length === 0}
+        <div class="p-3 bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg text-sm text-neutral-500">
+          {t('sshKeys.noHostsAddOne')}
+        </div>
+      {:else}
+        <select id="deploy-host" bind:value={deployHostId} class="w-full bg-neutral-50 dark:bg-black/40 border border-neutral-300 dark:border-neutral-800 rounded-lg px-3 py-2 text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-sky-500 transition-colors">
+          {#each hosts as h}
+            <option value={h.id}>{h.label} ({h.username}@{h.address})</option>
+          {/each}
+        </select>
+      {/if}
     </div>
-
-    <div class="flex justify-end gap-3 mt-6">
-      <button onclick={() => showDeployModal = false} class="px-4 py-2 text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors text-sm font-medium">{t('common.cancel')}</button>
-      <button onclick={handleDeploy} disabled={!deployHostId || isDeploying} class="px-4 py-2 bg-sky-600 hover:bg-sky-500 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors">
-        {isDeploying ? t('sshKeys.deploying') : t('sshKeys.deployAction')}
-      </button>
-    </div>
+    <p class="text-xs text-neutral-500">
+      {t('sshKeys.deployNote')}
+    </p>
   </div>
-</div>
+  {#snippet footer()}
+    <Button variant="ghost" size="sm" onclick={() => (showDeployModal = false)}>{t('common.cancel')}</Button>
+    <Button variant="info" size="sm" onclick={handleDeploy} disabled={!deployHostId || isDeploying} loading={isDeploying}>
+      {isDeploying ? t('sshKeys.deploying') : t('sshKeys.deployAction')}
+    </Button>
+  {/snippet}
+</Modal>
 {/if}
 
 {#if showGenerateModal}
-<div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 dark:bg-black/60 backdrop-blur-sm">
-  <div class="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl w-full max-w-md shadow-2xl p-6">
-    <h3 class="text-lg font-semibold text-neutral-900 dark:text-white mb-4">{t('sshKeys.generateTitle')}</h3>
-
-    <div class="space-y-4">
-      <div>
-        <label for="gen-name" class="block text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-1">{t('sshKeys.keyName')}</label>
-        <input id="gen-name" type="text" bind:value={generateName} placeholder={t('sshKeys.keyNamePlaceholder')} class="w-full bg-neutral-50 dark:bg-black/40 border border-neutral-300 dark:border-neutral-800 rounded-lg px-3 py-2 text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-sky-500 transition-colors" />
-      </div>
-      <div>
-        <label for="gen-alg" class="block text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-1">{t('sshKeys.algorithm')}</label>
-        <select id="gen-alg" bind:value={generateAlg} class="w-full bg-neutral-50 dark:bg-black/40 border border-neutral-300 dark:border-neutral-800 rounded-lg px-3 py-2 text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-sky-500 transition-colors">
-          <option value="Ed25519">{t('sshKeys.algoEd25519')}</option>
-          <option value="RSA-4096">{t('sshKeys.algoRsa')}</option>
-        </select>
-      </div>
-      <p class="text-xs text-neutral-500">
-        {t('sshKeys.generateNote')}
-      </p>
+<Modal bind:open={showGenerateModal} title={t('sshKeys.generateTitle')} size="md">
+  <div class="space-y-4">
+    <div>
+      <label for="gen-name" class="block text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-1">{t('sshKeys.keyName')}</label>
+      <Input id="gen-name" bind:value={generateName} placeholder={t('sshKeys.keyNamePlaceholder')} />
     </div>
-
-    <div class="flex justify-end gap-3 mt-6">
-      <button onclick={() => showGenerateModal = false} class="px-4 py-2 text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors text-sm font-medium">{t('common.cancel')}</button>
-      <button onclick={handleGenerate} disabled={!generateName.trim() || isGenerating} class="px-4 py-2 bg-sky-600 hover:bg-sky-500 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors">
-        {isGenerating ? t('sshKeys.generating') : t('sshKeys.generateAction')}
-      </button>
+    <div>
+      <label for="gen-alg" class="block text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-1">{t('sshKeys.algorithm')}</label>
+      <select id="gen-alg" bind:value={generateAlg} class="w-full bg-neutral-50 dark:bg-black/40 border border-neutral-300 dark:border-neutral-800 rounded-lg px-3 py-2 text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-sky-500 transition-colors">
+        <option value="Ed25519">{t('sshKeys.algoEd25519')}</option>
+        <option value="RSA-4096">{t('sshKeys.algoRsa')}</option>
+      </select>
     </div>
+    <p class="text-xs text-neutral-500">
+      {t('sshKeys.generateNote')}
+    </p>
   </div>
-</div>
+  {#snippet footer()}
+    <Button variant="ghost" size="sm" onclick={() => (showGenerateModal = false)}>{t('common.cancel')}</Button>
+    <Button variant="info" size="sm" onclick={handleGenerate} disabled={!generateName.trim() || isGenerating} loading={isGenerating}>
+      {isGenerating ? t('sshKeys.generating') : t('sshKeys.generateAction')}
+    </Button>
+  {/snippet}
+</Modal>
 {/if}
 
 {#if showImportModal}
-<div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 dark:bg-black/60 backdrop-blur-sm">
-  <div class="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl w-full max-w-2xl shadow-2xl p-6">
-    <h3 class="text-lg font-semibold text-neutral-900 dark:text-white mb-4">{t('sshKeys.importTitle')}</h3>
-
-    <div class="space-y-4">
-      <div>
-        <label for="imp-name" class="block text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-1">{t('sshKeys.keyName')}</label>
-        <input id="imp-name" type="text" bind:value={importName} placeholder="e.g. AWS Legacy Key" class="w-full bg-neutral-50 dark:bg-black/40 border border-neutral-300 dark:border-neutral-800 rounded-lg px-3 py-2 text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-sky-500 transition-colors" />
-      </div>
-      <div>
-        <label for="imp-pem" class="block text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-1">{t('sshKeys.privateKeyPem')}</label>
-        <textarea id="imp-pem" bind:value={importPem} rows="6" placeholder={t('sshKeys.privateKeyPlaceholder')} class="w-full font-mono bg-neutral-50 dark:bg-black/40 border border-neutral-300 dark:border-neutral-800 rounded-lg px-3 py-2 text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-sky-500 transition-colors resize-none"></textarea>
-      </div>
-      <div>
-        <label for="imp-pass" class="block text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-1">{t('sshKeys.passphraseIfEncrypted')}</label>
-        <div class="relative">
-          <input
-            id="imp-pass"
-            type={showImportPassphrase ? 'text' : 'password'}
-            bind:value={importPassphrase}
-            placeholder={t('sshKeys.passphrasePlaceholder')}
-            class="w-full bg-neutral-50 dark:bg-black/40 border border-neutral-300 dark:border-neutral-800 rounded-lg pl-3 pr-10 py-2 text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-sky-500 transition-colors"
-          />
-          <button
+<Modal bind:open={showImportModal} title={t('sshKeys.importTitle')} size="lg">
+  <div class="space-y-4">
+    <div>
+      <label for="imp-name" class="block text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-1">{t('sshKeys.keyName')}</label>
+      <Input id="imp-name" bind:value={importName} placeholder="e.g. AWS Legacy Key" />
+    </div>
+    <div>
+      <label for="imp-pem" class="block text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-1">{t('sshKeys.privateKeyPem')}</label>
+      <textarea id="imp-pem" bind:value={importPem} rows="6" placeholder={t('sshKeys.privateKeyPlaceholder')} class="w-full font-mono bg-neutral-50 dark:bg-black/40 border border-neutral-300 dark:border-neutral-800 rounded-lg px-3 py-2 text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-sky-500 transition-colors resize-none"></textarea>
+    </div>
+    <div>
+      <label for="imp-pass" class="block text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-1">{t('sshKeys.passphraseIfEncrypted')}</label>
+      <Input
+        id="imp-pass"
+        type={showImportPassphrase ? 'text' : 'password'}
+        bind:value={importPassphrase}
+        placeholder={t('sshKeys.passphrasePlaceholder')}
+      >
+        {#snippet trailingAction()}
+          <Button
             type="button"
-            onclick={() => (showImportPassphrase = !showImportPassphrase)}
-            class="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors p-1"
+            variant="ghost"
+            size="icon"
             aria-label={showImportPassphrase ? t('sshKeys.hidePassphrase') : t('sshKeys.showPassphrase')}
-            title={showImportPassphrase ? t('sshKeys.hidePassphrase') : t('sshKeys.showPassphrase')}
+            onclick={() => (showImportPassphrase = !showImportPassphrase)}
           >
             {#if showImportPassphrase}
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -322,20 +304,19 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
               </svg>
             {/if}
-          </button>
-        </div>
-      </div>
-      <p class="text-xs text-neutral-500">
-        {t('sshKeys.importNote')}
-      </p>
+          </Button>
+        {/snippet}
+      </Input>
     </div>
-
-    <div class="flex justify-end gap-3 mt-6">
-      <button onclick={() => showImportModal = false} class="px-4 py-2 text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors text-sm font-medium">{t('common.cancel')}</button>
-      <button onclick={handleImport} disabled={!importName.trim() || !importPem.trim() || isImporting} class="px-4 py-2 bg-sky-600 hover:bg-sky-500 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors">
-        {isImporting ? t('sshKeys.importing') : t('sshKeys.importAction')}
-      </button>
-    </div>
+    <p class="text-xs text-neutral-500">
+      {t('sshKeys.importNote')}
+    </p>
   </div>
-</div>
+  {#snippet footer()}
+    <Button variant="ghost" size="sm" onclick={() => (showImportModal = false)}>{t('common.cancel')}</Button>
+    <Button variant="info" size="sm" onclick={handleImport} disabled={!importName.trim() || !importPem.trim() || isImporting} loading={isImporting}>
+      {isImporting ? t('sshKeys.importing') : t('sshKeys.importAction')}
+    </Button>
+  {/snippet}
+</Modal>
 {/if}

@@ -5,8 +5,7 @@
   import { listGroups, type GroupRecord } from '$lib/api/groups';
   import { t } from '$lib/i18n/index.svelte';
   import { showToast, confirmModal } from '$lib/stores/uiNotifications.svelte';
-  import PageHeader from '$lib/components/PageHeader.svelte';
-  import Pagination from '$lib/components/Pagination.svelte';
+  import { PageHeader, Button, Input, Badge, Modal, Pagination } from '@cecepazhar/caui';
   import { save, open } from '@tauri-apps/plugin-dialog';
   import { writeTextFile, readTextFile } from '@tauri-apps/plugin-fs';
 
@@ -263,31 +262,31 @@
   >
     {#snippet actions()}
       <div class="flex items-center gap-2">
-        <button
-          type="button"
+        <Button
+          variant="secondary"
+          size="sm"
           onclick={importSnippets}
-          class="px-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 text-xs font-semibold text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors flex items-center gap-1.5 shadow-2xs"
           title={t('snippets.import')}
         >
           📥 {t('snippets.import')}
-        </button>
-        <button
-          type="button"
+        </Button>
+        <Button
+          variant="secondary"
+          size="sm"
           onclick={exportSnippets}
           disabled={snippets.length === 0}
-          class="px-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 text-xs font-semibold text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-40 transition-colors flex items-center gap-1.5 shadow-2xs"
           title={t('snippets.export')}
         >
           📤 {t('snippets.export')}
-        </button>
-        <button
-          type="button"
+        </Button>
+        <Button
+          variant="info"
+          size="sm"
           onclick={() => { resetModal(); isAddModalOpen = true; }}
-          class="px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white font-semibold text-xs rounded-xl transition-all flex items-center gap-1.5 shadow-md shadow-sky-600/20"
         >
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+          <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
           {t('snippets.addSnippet')}
-        </button>
+        </Button>
       </div>
     {/snippet}
   </PageHeader>
@@ -321,16 +320,18 @@
 
     <!-- Search Box -->
     <div class="relative w-full sm:w-64">
-      <input
-        type="text"
+      <Input
         bind:value={searchQuery}
         oninput={() => (currentPage = 1)}
         placeholder="Cari snippet atau perintah..."
-        class="w-full pl-8 pr-3 py-1.5 text-xs rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:border-sky-500 shadow-2xs"
-      />
-      <svg class="w-3.5 h-3.5 text-neutral-400 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-      </svg>
+        size="sm"
+      >
+        {#snippet leadingIcon()}
+          <svg class="w-3.5 h-3.5 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        {/snippet}
+      </Input>
     </div>
   </div>
 
@@ -343,28 +344,28 @@
             <div class="flex justify-between items-start gap-2">
               <h3 class="font-bold text-neutral-900 dark:text-white text-sm">{snip.label}</h3>
               <div class="flex items-center gap-1 shrink-0">
-                <button
-                  type="button"
+                <Button
+                  variant="info"
+                  size="sm"
                   onclick={() => injectSnippet(snip.command)}
                   disabled={!hasActiveSession()}
-                  class="text-sky-600 dark:text-sky-400 hover:text-white hover:bg-sky-600 px-2 py-1 bg-sky-500/10 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg text-xs font-semibold transition-colors"
                 >
                   {t('snippets.inject')}
-                </button>
-                <button
-                  type="button"
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
                   onclick={() => openEditModal(snip)}
-                  class="text-neutral-500 hover:text-neutral-900 dark:hover:text-white px-2 py-1 bg-neutral-100 dark:bg-neutral-800 rounded-lg text-xs transition-colors"
                 >
                   {t('common.edit')}
-                </button>
-                <button
-                  type="button"
+                </Button>
+                <Button
+                  variant="danger"
+                  size="sm"
                   onclick={() => removeSnippet(snip.id, snip.label)}
-                  class="text-rose-600 hover:text-white hover:bg-rose-600 px-2 py-1 bg-rose-500/10 rounded-lg text-xs transition-colors"
                 >
                   {t('common.delete')}
-                </button>
+                </Button>
               </div>
             </div>
             {#if snip.description}
@@ -380,9 +381,9 @@
         <!-- Tags & Group Footer -->
         <div class="px-4 py-2 bg-neutral-50/50 dark:bg-neutral-900/50 flex gap-1.5 flex-wrap border-t border-neutral-100 dark:border-neutral-800/80">
           {#each snip.tags as tag}
-            <span class="px-2 py-0.5 bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700/80 text-neutral-600 dark:text-neutral-300 rounded-md text-[11px] font-medium">
+            <Badge variant="neutral" size="xs">
               #{tag}
-            </span>
+            </Badge>
           {/each}
         </div>
       </div>
@@ -396,115 +397,124 @@
     {/if}
   </div>
 
-  <!-- Pagination Component -->
+  <!-- CAUI Pagination Component -->
   <Pagination
-    totalItems={filteredSnippets.length}
-    bind:page={currentPage}
-    bind:pageSize
+    total={filteredSnippets.length}
+    page={currentPage}
+    pageSize={pageSize}
     pageSizeOptions={[10, 20, 50]}
+    onPageChange={(p) => (currentPage = p)}
+    onPageSizeChange={(ps) => { pageSize = ps; currentPage = 1; }}
+    size="sm"
   />
 </div>
 
 <!-- Modal Create / Edit Snippet -->
-{#if isAddModalOpen}
-  <div class="fixed inset-0 bg-black/60 dark:bg-black/80 flex items-center justify-center p-4 z-50 backdrop-blur-xs">
-    <div
-      role="dialog"
-      aria-modal="true"
-      class="bg-white dark:bg-[#141414] border border-neutral-200 dark:border-neutral-800 rounded-2xl p-6 max-w-lg w-full space-y-4 shadow-2xl animate-in fade-in zoom-in-95 duration-150 text-xs"
-    >
-      <div class="flex justify-between items-center border-b border-neutral-200 dark:border-neutral-800 pb-3">
+<Modal bind:open={isAddModalOpen} title={editingId ? t('snippets.editSnippet') : t('snippets.addSnippet')} size="lg">
+  {#snippet header()}
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-2">
         <h3 class="text-base font-bold text-neutral-900 dark:text-white">{editingId ? t('snippets.editSnippet') : t('snippets.addSnippet')}</h3>
-        <span class="text-xs font-semibold bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 px-2 py-0.5 rounded-md">
-          {t('common.step', { current: creationStep, total: 2 })}
-        </span>
+        <Badge variant="neutral" size="xs">{t('common.step', { current: creationStep, total: 2 })}</Badge>
+      </div>
+    </div>
+  {/snippet}
+
+  {#if creationStep === 1}
+    <div class="space-y-4 text-xs">
+      <div>
+        <label for="snippet-cmd" class="block font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">{t('snippets.bashCommand')} *</label>
+        <textarea
+          id="snippet-cmd"
+          bind:value={newSnippet.cmd}
+          rows="5"
+          placeholder={t('snippets.commandPlaceholder')}
+          class="w-full px-3 py-2 bg-neutral-50 dark:bg-neutral-900 font-mono border border-neutral-300 dark:border-neutral-800 rounded-xl text-neutral-900 dark:text-white focus:outline-none focus:border-sky-500"
+        ></textarea>
+      </div>
+      <div class="flex justify-end gap-2">
+        <Button
+          variant="secondary"
+          size="sm"
+          onclick={resetModal}
+        >
+          {t('common.cancel')}
+        </Button>
+        <Button
+          variant="info"
+          size="sm"
+          onclick={() => (creationStep = 2)}
+          disabled={!newSnippet.cmd.trim()}
+        >
+          {t('common.next')} →
+        </Button>
+      </div>
+    </div>
+  {:else}
+    <form id="caterm-snippet-form" onsubmit={handleSaveSnippet} class="space-y-3 text-xs">
+      <div>
+        <label for="snippet-label" class="block font-medium text-neutral-700 dark:text-neutral-300 mb-1">{t('snippets.label')} *</label>
+        <Input id="snippet-label" bind:value={newSnippet.label} required placeholder={t('snippets.labelPlaceholder')} size="sm" />
       </div>
 
-      {#if creationStep === 1}
-        <div class="space-y-4">
-          <div>
-            <label class="block font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">{t('snippets.bashCommand')} *</label>
-            <textarea
-              bind:value={newSnippet.cmd}
-              rows="5"
-              placeholder={t('snippets.commandPlaceholder')}
-              class="w-full px-3 py-2 bg-neutral-50 dark:bg-neutral-900 font-mono border border-neutral-300 dark:border-neutral-800 rounded-xl text-neutral-900 dark:text-white focus:outline-none focus:border-sky-500"
-            ></textarea>
-          </div>
-          <div class="flex justify-end gap-2 pt-2 border-t border-neutral-200 dark:border-neutral-800">
-            <button
-              type="button"
-              onclick={resetModal}
-              class="px-4 py-2 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-300 rounded-lg font-semibold"
-            >
-              {t('common.cancel')}
-            </button>
-            <button
-              type="button"
-              onclick={() => (creationStep = 2)}
-              disabled={!newSnippet.cmd.trim()}
-              class="px-4 py-2 bg-sky-600 hover:bg-sky-500 disabled:opacity-50 text-white rounded-lg font-semibold shadow-md shadow-sky-600/20"
-            >
-              {t('common.next')} →
-            </button>
-          </div>
+      <div>
+        <label for="snippet-group" class="block font-medium text-neutral-700 dark:text-neutral-300 mb-1">Work Group (Opsional)</label>
+        <select
+          id="snippet-group"
+          bind:value={newSnippet.selectedGroup}
+          class="w-full px-3 py-2 bg-neutral-50 dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-800 rounded-lg text-neutral-900 dark:text-white focus:outline-none focus:border-sky-500 text-xs"
+        >
+          <option value="">Tanpa Work Group</option>
+          {#each snippetGroups as g}
+            <option value={g.name}>{g.name}</option>
+          {/each}
+        </select>
+      </div>
+
+      <div>
+        <label for="snippet-desc" class="block font-medium text-neutral-700 dark:text-neutral-300 mb-1">{t('snippets.descriptionOptional')}</label>
+        <Input id="snippet-desc" bind:value={newSnippet.desc} placeholder={t('snippets.descriptionPlaceholder')} size="sm" />
+      </div>
+
+      <div>
+        <label for="snippet-tags" class="block font-medium text-neutral-700 dark:text-neutral-300 mb-1">{t('snippets.tagsCommaSeparated')}</label>
+        <Input id="snippet-tags" bind:value={newSnippet.tags} placeholder="misal: docker, logs, maintenance" size="sm" />
+      </div>
+    </form>
+
+    {#snippet footer()}
+      <div class="flex justify-between items-center w-full">
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onclick={() => (creationStep = 1)}
+          class="text-neutral-500"
+        >
+          ← {t('common.back')}
+        </Button>
+        <div class="flex gap-2">
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onclick={resetModal}
+          >
+            {t('common.cancel')}
+          </Button>
+          <Button
+            type="submit"
+            variant="success"
+            size="sm"
+            onclick={(e) => {
+              e.preventDefault();
+              handleSaveSnippet(e as unknown as Event);
+            }}
+          >
+            {t('snippets.saveSnippet')}
+          </Button>
         </div>
-      {:else}
-        <form onsubmit={handleSaveSnippet} class="space-y-3">
-          <div>
-            <label class="block font-medium text-neutral-700 dark:text-neutral-300 mb-1">{t('snippets.label')} *</label>
-            <input bind:value={newSnippet.label} required placeholder={t('snippets.labelPlaceholder')} class="w-full px-3 py-2 bg-neutral-50 dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-800 rounded-lg text-neutral-900 dark:text-white focus:outline-none focus:border-sky-500" />
-          </div>
-
-          <div>
-            <label class="block font-medium text-neutral-700 dark:text-neutral-300 mb-1">Work Group (Opsional)</label>
-            <select
-              bind:value={newSnippet.selectedGroup}
-              class="w-full px-3 py-2 bg-neutral-50 dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-800 rounded-lg text-neutral-900 dark:text-white focus:outline-none focus:border-sky-500"
-            >
-              <option value="">Tanpa Work Group</option>
-              {#each snippetGroups as g}
-                <option value={g.name}>{g.name}</option>
-              {/each}
-            </select>
-          </div>
-
-          <div>
-            <label class="block font-medium text-neutral-700 dark:text-neutral-300 mb-1">{t('snippets.descriptionOptional')}</label>
-            <input bind:value={newSnippet.desc} placeholder={t('snippets.descriptionPlaceholder')} class="w-full px-3 py-2 bg-neutral-50 dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-800 rounded-lg text-neutral-900 dark:text-white focus:outline-none focus:border-sky-500" />
-          </div>
-
-          <div>
-            <label class="block font-medium text-neutral-700 dark:text-neutral-300 mb-1">{t('snippets.tagsCommaSeparated')}</label>
-            <input bind:value={newSnippet.tags} placeholder="misal: docker, logs, maintenance" class="w-full px-3 py-2 bg-neutral-50 dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-800 rounded-lg text-neutral-900 dark:text-white focus:outline-none focus:border-sky-500" />
-          </div>
-
-          <div class="flex justify-between items-center pt-3 border-t border-neutral-200 dark:border-neutral-800">
-            <button
-              type="button"
-              onclick={() => (creationStep = 1)}
-              class="text-neutral-500 hover:text-neutral-900 dark:hover:text-white font-semibold transition-colors"
-            >
-              ← {t('common.back')}
-            </button>
-            <div class="flex gap-2">
-              <button
-                type="button"
-                onclick={resetModal}
-                class="px-4 py-2 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-300 rounded-lg font-semibold"
-              >
-                {t('common.cancel')}
-              </button>
-              <button
-                type="submit"
-                class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-semibold shadow-md shadow-emerald-600/20"
-              >
-                {t('snippets.saveSnippet')}
-              </button>
-            </div>
-          </div>
-        </form>
-      {/if}
-    </div>
-  </div>
-{/if}
+      </div>
+    {/snippet}
+  {/if}
+</Modal>

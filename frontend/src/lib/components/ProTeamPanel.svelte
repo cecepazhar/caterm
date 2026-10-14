@@ -2,6 +2,7 @@
   // Settings → Subscription → Team: the owner's team (invite, members, pending invites), the
   // team this account belongs to, and invitations addressed to it. Invitees need no Pro, only a
   // free CATerm account with the invited email (pricing notes §2 v1.3).
+  import { Button } from '@cecepazhar/caui';
   import { onMount } from 'svelte';
   import {
     proTeam,
@@ -124,13 +125,13 @@
       <p class="text-sm font-semibold text-neutral-900 dark:text-white">{t('pro.team.title')}</p>
       <p class="text-xs {MUTED} mt-0.5">{t('pro.team.subtitle', { count: PRO_PRICING.maxMembers - 1 })}</p>
     </div>
-    <button type="button" onclick={load} disabled={busy} class={SMALL_BUTTON}>{t('pro.team.refresh')}</button>
+    <Button type="button" variant="secondary" size="sm" onclick={load} disabled={busy} loading={busy}>{t('pro.team.refresh')}</Button>
   </div>
 
   {#if loadError}
     <div class="flex items-center justify-between gap-3 text-xs">
       <p class={MUTED}>{pro.serverAvailable === false ? t('pro.team.unavailable') : loadError}</p>
-      <button type="button" onclick={load} class={SMALL_BUTTON}>{t('pro.team.retry')}</button>
+      <Button type="button" variant="secondary" size="sm" onclick={load}>{t('pro.team.retry')}</Button>
     </div>
   {:else if !view}
     <p class="text-xs {MUTED}">{t('pro.team.loading')}</p>
@@ -148,15 +149,17 @@
           {/if}
         </div>
         <div class="flex gap-2 shrink-0">
-          <button
+          <Button
             type="button"
+            variant="primary"
+            size="sm"
             onclick={() => accept(invitation.id, invitation.owner)}
             disabled={busy || !!view.membership}
             class="px-3 py-1.5 text-xs font-semibold rounded-md bg-sky-600 hover:bg-sky-500 text-white disabled:opacity-50 transition-colors"
           >
             {t('pro.team.accept')}
-          </button>
-          <button type="button" onclick={() => decline(invitation.id)} disabled={busy} class={SMALL_BUTTON}>{t('pro.team.decline')}</button>
+          </Button>
+          <Button type="button" variant="secondary" size="sm" onclick={() => decline(invitation.id)} disabled={busy}>{t('pro.team.decline')}</Button>
         </div>
       </div>
     {/each}
@@ -181,7 +184,7 @@
         {#if !pro.isPro}
           <p class="text-xs {MUTED}">{t('pro.team.membershipBody', { count: PRO_PRICING.syncDevices })}</p>
         {/if}
-        <button type="button" onclick={() => leave(membership.owner)} disabled={busy} class="text-xs {DANGER_LINK}">{t('pro.team.leave')}</button>
+        <Button type="button" variant="ghost" size="sm" onclick={() => leave(membership.owner)} disabled={busy} class="text-xs {DANGER_LINK} !p-0">{t('pro.team.leave')}</Button>
       </div>
     {/if}
 
@@ -208,13 +211,16 @@
               aria-label={t('pro.team.invite')}
               class="flex-1 min-w-0 px-3 py-1.5 bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-md text-sm text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:border-sky-500 disabled:opacity-60"
             />
-            <button
+            <Button
               type="submit"
+              variant="primary"
+              size="sm"
               disabled={busy || full || !inviteEmail.trim()}
+              loading={busy}
               class="px-4 py-1.5 text-sm font-semibold rounded-md bg-sky-600 hover:bg-sky-500 text-white disabled:opacity-50 transition-colors shrink-0"
             >
               {busy ? t('pro.team.inviting') : t('pro.team.invite')}
-            </button>
+            </Button>
           </form>
           {#if full}
             <p class="text-xs {MUTED}">{t('pro.team.full')}</p>
@@ -235,7 +241,7 @@
                       .join(' · ')}
                   </p>
                 </div>
-                <button type="button" onclick={() => removeMember(member.accountId, member.name || member.email)} disabled={busy} class={DANGER_LINK}>{t('pro.team.remove')}</button>
+                <Button type="button" variant="ghost" size="sm" onclick={() => removeMember(member.accountId, member.name || member.email)} disabled={busy} class="{DANGER_LINK} !p-0">{t('pro.team.remove')}</Button>
               </li>
             {/each}
             {#each view.owned.invites as pending (pending.id)}
@@ -244,7 +250,7 @@
                   <p class="font-medium text-neutral-700 dark:text-neutral-300 truncate">{pending.email}</p>
                   <p class="text-neutral-500 truncate">{t('pro.team.pending', { date: formatDate(pending.expiresAt) })}</p>
                 </div>
-                <button type="button" onclick={() => cancelInvite(pending.id)} disabled={busy} class="text-neutral-600 dark:text-neutral-300 hover:underline shrink-0 disabled:opacity-50">{t('pro.team.cancelInvite')}</button>
+                <Button type="button" variant="ghost" size="sm" onclick={() => cancelInvite(pending.id)} disabled={busy} class="text-neutral-600 dark:text-neutral-300 hover:underline shrink-0 disabled:opacity-50 !p-0">{t('pro.team.cancelInvite')}</Button>
               </li>
             {/each}
           </ul>

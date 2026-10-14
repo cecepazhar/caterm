@@ -1,41 +1,30 @@
 <script lang="ts">
+  import { Modal } from '@cecepazhar/caui';
   import { t } from '$lib/i18n/index.svelte';
   import Logo from './Logo.svelte';
   import { APP_VERSION, REPO_URL, WEBSITE_URL, AUTHOR_URL } from '$lib/appInfo';
 
   let { onClose }: { onClose: () => void } = $props();
+
+  let open = $state(true);
+
+  function handleClose() {
+    open = false;
+    onClose();
+  }
 </script>
 
-<svelte:window onkeydown={(e) => e.key === 'Escape' && onClose()} />
-
-<div class="fixed inset-0 z-[100] flex items-center justify-center p-4">
-  <button
-    type="button"
-    class="absolute inset-0 bg-black/60 backdrop-blur-sm cursor-default"
-    aria-label={t('about.closeDialog')}
-    onclick={onClose}
-  ></button>
-
-  <div
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="about-title"
-    class="no-drag relative w-full max-w-sm rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#141414] shadow-2xl p-6 text-center"
-  >
-    <button
-      type="button"
-      onclick={onClose}
-      class="absolute top-3 right-3 p-1.5 rounded-lg text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
-      aria-label={t('common.close')}
-    >
-      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
-    </button>
-
+<Modal
+  bind:open={open}
+  onclose={handleClose}
+  title="CATerm"
+  size="sm"
+>
+  <div class="text-center">
     <div class="flex justify-center mb-3">
       <Logo size={48} mode="brand" />
     </div>
-    <h2 id="about-title" class="text-lg font-bold text-neutral-900 dark:text-white">CATerm</h2>
-    <p class="mt-1 text-xs font-mono text-sky-600 dark:text-sky-400">v{APP_VERSION}</p>
+    <p class="text-xs font-mono text-sky-600 dark:text-sky-400">v{APP_VERSION}</p>
     <p class="mt-3 text-sm text-neutral-500 dark:text-neutral-400">
       {t('about.tagline')}
     </p>
@@ -97,4 +86,4 @@
       </div>
     </div>
   </div>
-</div>
+</Modal>

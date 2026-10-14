@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
+  import { Button, ProGate as CaiProGate } from '@cecepazhar/caui';
   import { getPro } from '$lib/stores/pro.svelte';
   import { openExternalUrl } from '$lib/utils/url';
 
@@ -16,7 +17,6 @@
   }: Props = $props();
 
   const pro = getPro();
-
   const pricingUrl = 'https://caterm.fathforce.com/pricing';
 
   function handleUpgrade() {
@@ -24,9 +24,7 @@
   }
 </script>
 
-{#if pro.isPro}
-  {@render children?.()}
-{:else}
+{#if pro && !pro.isPro}
   <div class="relative w-full h-full min-h-[220px] rounded-xl overflow-hidden border border-neutral-200/80 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/50">
     <!-- Blurred Background Content Preview -->
     <div class="filter blur-md pointer-events-none select-none opacity-30 p-4 w-full h-full" aria-hidden="true">
@@ -48,13 +46,15 @@
       </p>
 
       <div class="flex items-center gap-3">
-        <button
+        <Button
           type="button"
+          variant="primary"
+          size="md"
           onclick={handleUpgrade}
-          class="px-5 py-2 rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-neutral-950 font-semibold text-xs tracking-wide shadow-md transition-all duration-150 transform hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+          class="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-neutral-950 font-semibold tracking-wide border-0 shadow-md transform hover:scale-[1.02] active:scale-[0.98]"
         >
           Aktivasi Pro ($10/bulan)
-        </button>
+        </Button>
         <a
           href="/settings"
           class="px-4 py-2 rounded-lg border border-neutral-600 hover:border-neutral-400 text-neutral-300 hover:text-white text-xs font-medium transition-colors"
@@ -68,4 +68,8 @@
       </p>
     </div>
   </div>
+{:else}
+  <CaiProGate locked={pro && !pro.isPro} featureName={title} onUpgrade={handleUpgrade}>
+    {@render children?.()}
+  </CaiProGate>
 {/if}

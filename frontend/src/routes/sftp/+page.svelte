@@ -37,7 +37,7 @@
   import DirectorySync from '$lib/components/DirectorySync.svelte';
   import ProGate from '$lib/components/ProGate.svelte';
   import PageContainer from '$lib/components/PageContainer.svelte';
-  import PageHeader from '$lib/components/PageHeader.svelte';
+  import { PageHeader, Button, Input, Badge, Modal } from '@cecepazhar/caui';
   import { t, intlLocale } from '$lib/i18n/index.svelte';
 
   interface TransferItem {
@@ -977,9 +977,9 @@
         </select>
         {#if currentHost}
           <div class="flex items-center gap-1.5 ml-1">
-            <span class="px-2 py-0.5 rounded text-[11px] font-semibold bg-cyan-100 dark:bg-cyan-950/80 text-cyan-700 dark:text-cyan-300 border border-cyan-300 dark:border-cyan-800">
+            <Badge variant="info" size="xs">
               {activeProtocolBadge}
-            </span>
+            </Badge>
             <select
               value={currentHost.protocol || 'ssh'}
               onchange={(e) => switchCurrentProtocol((e.currentTarget as HTMLSelectElement).value as ConnectionProtocol)}
@@ -995,46 +995,41 @@
             </select>
           </div>
         {/if}
-        <button
+        <Button
+          variant={showProtocolSelector ? 'primary' : 'secondary'}
+          size="sm"
           onclick={() => (showProtocolSelector = !showProtocolSelector)}
-          class={`px-2.5 py-1 rounded text-xs font-medium border transition flex items-center gap-1 ${
-            showProtocolSelector
-              ? 'bg-cyan-600 text-white border-cyan-500'
-              : 'bg-neutral-100 dark:bg-slate-800 text-neutral-700 dark:text-slate-300 border-neutral-300 dark:border-slate-700 hover:bg-neutral-200 dark:hover:bg-slate-700'
-          }`}
           title="Koneksi Cepat VFS / Ganti Sumber"
         >
           <span>⚡ Quick Connect</span>
-        </button>
+        </Button>
       </div>
 
       <div class="flex items-center border border-neutral-300 dark:border-slate-700 rounded bg-neutral-100 dark:bg-slate-900 p-0.5 text-xs">
-        <button
+        <Button
+          variant={viewMode === 'dual' ? 'primary' : 'ghost'}
+          size="sm"
           onclick={() => (viewMode = 'dual')}
-          class={`px-2.5 py-1 rounded font-medium transition ${
-            viewMode === 'dual' ? 'bg-cyan-600 text-white' : 'text-neutral-600 dark:text-slate-400 hover:text-neutral-900 dark:hover:text-white'
-          }`}
         >
           {t('sftp.dualPane')}
-        </button>
-        <button
+        </Button>
+        <Button
+          variant={viewMode === 'single' ? 'primary' : 'ghost'}
+          size="sm"
           onclick={() => (viewMode = 'single')}
-          class={`px-2.5 py-1 rounded font-medium transition ${
-            viewMode === 'single' ? 'bg-cyan-600 text-white' : 'text-neutral-600 dark:text-slate-400 hover:text-neutral-900 dark:hover:text-white'
-          }`}
         >
           {t('sftp.remoteOnly')}
-        </button>
+        </Button>
       </div>
     </div>
 
     <!-- Quick Action Hotkeys Reference -->
     <div class="hidden lg:flex items-center gap-2 text-xs text-neutral-500 dark:text-slate-400">
-      <span class="bg-neutral-100 dark:bg-slate-800 px-1.5 py-0.5 rounded border border-neutral-300 dark:border-slate-700 text-neutral-700 dark:text-slate-300 font-mono">F5</span> {t('sftp.hkCopy')}
-      <span class="bg-neutral-100 dark:bg-slate-800 px-1.5 py-0.5 rounded border border-neutral-300 dark:border-slate-700 text-neutral-700 dark:text-slate-300 font-mono">F7</span> {t('sftp.hkNewFolder')}
-      <span class="bg-neutral-100 dark:bg-slate-800 px-1.5 py-0.5 rounded border border-neutral-300 dark:border-slate-700 text-neutral-700 dark:text-slate-300 font-mono">F8</span> {t('sftp.hkDelete')}
-      <span class="bg-neutral-100 dark:bg-slate-800 px-1.5 py-0.5 rounded border border-neutral-300 dark:border-slate-700 text-neutral-700 dark:text-slate-300 font-mono">F2</span> {t('sftp.hkRename')}
-      <span class="bg-neutral-100 dark:bg-slate-800 px-1.5 py-0.5 rounded border border-neutral-300 dark:border-slate-700 text-neutral-700 dark:text-slate-300 font-mono">F4</span> {t('sftp.hkEdit')}
+      <Badge variant="neutral" size="xs">F5</Badge> {t('sftp.hkCopy')}
+      <Badge variant="neutral" size="xs">F7</Badge> {t('sftp.hkNewFolder')}
+      <Badge variant="neutral" size="xs">F8</Badge> {t('sftp.hkDelete')}
+      <Badge variant="neutral" size="xs">F2</Badge> {t('sftp.hkRename')}
+      <Badge variant="neutral" size="xs">F4</Badge> {t('sftp.hkEdit')}
     </div>
 
     {#if currentHostId}
@@ -1054,13 +1049,13 @@
   {#if errorMsg}
     <div class="bg-red-50 dark:bg-red-950/80 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-xs px-3 py-2 rounded flex justify-between items-center">
       <span>{errorMsg}</span>
-      <button onclick={() => (errorMsg = '')} class="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-200" aria-label={t('sftp.dismiss')}>✕</button>
+      <Button variant="ghost" size="icon" onclick={() => (errorMsg = '')} class="h-5 w-5 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-200" aria-label={t('sftp.dismiss')}>✕</Button>
     </div>
   {/if}
   {#if successMsg}
     <div class="bg-emerald-50 dark:bg-emerald-950/80 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-xs px-3 py-2 rounded flex justify-between items-center">
       <span>{successMsg}</span>
-      <button onclick={() => (successMsg = '')} class="text-emerald-500 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-200" aria-label={t('sftp.dismiss')}>✕</button>
+      <Button variant="ghost" size="icon" onclick={() => (successMsg = '')} class="h-5 w-5 text-emerald-500 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-200" aria-label={t('sftp.dismiss')}>✕</Button>
     </div>
   {/if}
 
@@ -1072,12 +1067,15 @@
           <span class="font-bold text-neutral-900 dark:text-slate-100">⚡ Unified VFS Quick Connect</span>
           <span class="text-neutral-500 dark:text-slate-400 text-[11px]">(SFTP, S3, WebDAV, FTP/FTPS)</span>
         </div>
-        <button
+        <Button
+          variant="ghost"
+          size="icon"
           onclick={() => (showProtocolSelector = false)}
-          class="text-neutral-400 hover:text-neutral-600 dark:hover:text-slate-200"
+          class="h-6 w-6 text-neutral-400 hover:text-neutral-600 dark:hover:text-slate-200"
+          aria-label="Close Quick Connect"
         >
           ✕
-        </button>
+        </Button>
       </div>
 
       {#if qcError}
@@ -1088,89 +1086,71 @@
 
       <!-- Protocol Tabs -->
       <div class="flex flex-wrap gap-1.5 bg-neutral-100 dark:bg-slate-900 p-1 rounded border border-neutral-200 dark:border-slate-800">
-        <button
-          type="button"
+        <Button
+          variant={qcProtocol === 'ssh' ? 'primary' : 'ghost'}
+          size="sm"
           onclick={() => { qcProtocol = 'ssh'; qcPort = 22; }}
-          class={`px-3 py-1 rounded font-medium text-xs transition ${
-            qcProtocol === 'ssh' ? 'bg-cyan-600 text-white shadow-xs' : 'text-neutral-600 dark:text-slate-400 hover:text-neutral-900 dark:hover:text-white'
-          }`}
         >
           SSH / SFTP
-        </button>
-        <button
-          type="button"
+        </Button>
+        <Button
+          variant={qcProtocol === 's3' ? 'primary' : 'ghost'}
+          size="sm"
           onclick={() => { qcProtocol = 's3'; qcPort = 443; }}
-          class={`px-3 py-1 rounded font-medium text-xs transition ${
-            qcProtocol === 's3' ? 'bg-cyan-600 text-white shadow-xs' : 'text-neutral-600 dark:text-slate-400 hover:text-neutral-900 dark:hover:text-white'
-          }`}
         >
           Amazon S3 / R2 / MinIO
-        </button>
-        <button
-          type="button"
+        </Button>
+        <Button
+          variant={qcProtocol === 'webdav' ? 'primary' : 'ghost'}
+          size="sm"
           onclick={() => { qcProtocol = 'webdav'; qcPort = 443; }}
-          class={`px-3 py-1 rounded font-medium text-xs transition ${
-            qcProtocol === 'webdav' ? 'bg-cyan-600 text-white shadow-xs' : 'text-neutral-600 dark:text-slate-400 hover:text-neutral-900 dark:hover:text-white'
-          }`}
         >
           WebDAV
-        </button>
-        <button
-          type="button"
+        </Button>
+        <Button
+          variant={qcProtocol === 'ftp' ? 'primary' : 'ghost'}
+          size="sm"
           onclick={() => { qcProtocol = 'ftp'; qcPort = 21; }}
-          class={`px-3 py-1 rounded font-medium text-xs transition ${
-            qcProtocol === 'ftp' ? 'bg-cyan-600 text-white shadow-xs' : 'text-neutral-600 dark:text-slate-400 hover:text-neutral-900 dark:hover:text-white'
-          }`}
         >
           FTP
-        </button>
-        <button
-          type="button"
+        </Button>
+        <Button
+          variant={qcProtocol === 'ftps' ? 'primary' : 'ghost'}
+          size="sm"
           onclick={() => { qcProtocol = 'ftps'; qcPort = 21; }}
-          class={`px-3 py-1 rounded font-medium text-xs transition ${
-            qcProtocol === 'ftps' ? 'bg-cyan-600 text-white shadow-xs' : 'text-neutral-600 dark:text-slate-400 hover:text-neutral-900 dark:hover:text-white'
-          }`}
         >
           FTPS
-        </button>
+        </Button>
       </div>
 
       <!-- Credential Fields -->
       <div class="grid grid-cols-1 md:grid-cols-4 gap-2.5">
         <div class="space-y-1 md:col-span-1">
-          <label class="block text-[11px] font-semibold text-neutral-600 dark:text-slate-400" for="qc-label">
-            Label
-          </label>
-          <input
+          <Input
             id="qc-label"
-            type="text"
+            size="sm"
+            label="Label"
             bind:value={qcLabel}
             placeholder={qcProtocol.toUpperCase() + ' Connection'}
-            class="w-full bg-white dark:bg-slate-900 border border-neutral-300 dark:border-slate-700 rounded px-2.5 py-1 text-xs text-neutral-800 dark:text-slate-200 focus:outline-none focus:border-cyan-500"
           />
         </div>
 
         <div class="space-y-1 md:col-span-2">
-          <label class="block text-[11px] font-semibold text-neutral-600 dark:text-slate-400" for="qc-address">
-            {#if qcProtocol === 's3'}
-              Endpoint URL / S3 Host (e.g. s3.amazonaws.com or https://minio.local:9000)
-            {:else if qcProtocol === 'webdav'}
-              WebDAV URL (e.g. https://cloud.example.com/remote.php/dav/files/user/)
-            {:else}
-              Host / Address
-            {/if}
-          </label>
-          <input
+          <Input
             id="qc-address"
-            type="text"
+            size="sm"
+            label={qcProtocol === 's3'
+              ? 'Endpoint URL / S3 Host (e.g. s3.amazonaws.com or https://minio.local:9000)'
+              : qcProtocol === 'webdav'
+                ? 'WebDAV URL (e.g. https://cloud.example.com/remote.php/dav/files/user/)'
+                : 'Host / Address'}
             bind:value={qcAddress}
             placeholder={qcProtocol === 's3' ? 's3.amazonaws.com' : qcProtocol === 'webdav' ? 'https://dav.mailbox.org/servlet/webdav.infostore' : '192.168.1.10'}
-            class="w-full bg-white dark:bg-slate-900 border border-neutral-300 dark:border-slate-700 rounded px-2.5 py-1 text-xs font-mono text-neutral-800 dark:text-slate-200 focus:outline-none focus:border-cyan-500"
           />
         </div>
 
         <div class="space-y-1 md:col-span-1">
-          <label class="block text-[11px] font-semibold text-neutral-600 dark:text-slate-400" for="qc-port">
+          <label for="qc-port" class="block text-[11px] font-semibold text-neutral-600 dark:text-slate-400">
             Port
           </label>
           <input
@@ -1184,64 +1164,46 @@
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5">
         <div class="space-y-1">
-          <label class="block text-[11px] font-semibold text-neutral-600 dark:text-slate-400" for="qc-username">
-            {#if qcProtocol === 's3'}
-              Access Key ID
-            {:else if qcProtocol === 'webdav'}
-              Username
-            {:else}
-              Username
-            {/if}
-          </label>
-          <input
+          <Input
             id="qc-username"
-            type="text"
+            size="sm"
+            label={qcProtocol === 's3' ? 'Access Key ID' : 'Username'}
             bind:value={qcUsername}
-            placeholder={qcProtocol === 's3' ? 'AKIAIOSFODNN7EXAMPLE' : 'admin'}
-            class="w-full bg-white dark:bg-slate-900 border border-neutral-300 dark:border-slate-700 rounded px-2.5 py-1 text-xs font-mono text-neutral-800 dark:text-slate-200 focus:outline-none focus:border-cyan-500"
+            placeholder={qcProtocol === 's3' ? '«redacted:AKIA…»' : 'admin'}
           />
         </div>
 
         <div class="space-y-1">
-          <label class="block text-[11px] font-semibold text-neutral-600 dark:text-slate-400" for="qc-password">
-            {#if qcProtocol === 's3'}
-              Secret Access Key
-            {:else if qcProtocol === 'webdav'}
-              Password / Token
-            {:else}
-              Password
-            {/if}
-          </label>
-          <input
+          <Input
             id="qc-password"
+            size="sm"
             type="password"
+            label={qcProtocol === 's3' ? 'Secret Access Key' : (qcProtocol === 'webdav' ? 'Password / Token' : 'Password')}
             bind:value={qcPassword}
             placeholder="••••••••••••"
-            class="w-full bg-white dark:bg-slate-900 border border-neutral-300 dark:border-slate-700 rounded px-2.5 py-1 text-xs font-mono text-neutral-800 dark:text-slate-200 focus:outline-none focus:border-cyan-500"
           />
         </div>
       </div>
 
       <div class="flex justify-end gap-2 pt-1">
-        <button
+        <Button
           type="button"
+          variant="secondary"
+          size="sm"
           onclick={() => (showProtocolSelector = false)}
-          class="px-3 py-1 bg-neutral-100 hover:bg-neutral-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-neutral-700 dark:text-slate-300 rounded text-xs"
         >
           {t('common.cancel')}
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
+          variant="primary"
+          size="sm"
           disabled={qcConnecting || !qcAddress.trim()}
+          loading={qcConnecting}
           onclick={handleQuickConnect}
-          class="px-4 py-1 bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 text-white rounded text-xs font-medium flex items-center gap-1.5 transition"
         >
-          {#if qcConnecting}
-            <span class="animate-spin inline-block">⏳</span> {t('sftp.connecting')}
-          {:else}
-            Connect VFS
-          {/if}
-        </button>
+          Connect VFS
+        </Button>
       </div>
     </div>
   {/if}
@@ -1265,36 +1227,44 @@
         <div class="p-2 bg-neutral-50 dark:bg-[#1e232a] border-b border-neutral-200 dark:border-slate-800 flex items-center justify-between gap-2">
           <div class="flex items-center gap-1.5">
             <span class="text-xs font-bold text-amber-600 dark:text-amber-400">{t('sftp.local')}</span>
-            <button
+            <Button
+              variant="ghost"
+              size="icon"
               onclick={goUpLocal}
-              class="p-1 hover:bg-neutral-200 dark:hover:bg-slate-700 rounded text-neutral-600 dark:text-slate-300 text-xs flex items-center gap-1"
               title={t('sftp.parentDir')}
+              aria-label={t('sftp.parentDir')}
+              class="h-6 w-6"
             >
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18" />
               </svg>
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
               onclick={() => navigateLocal('~')}
-              class="p-1 hover:bg-neutral-200 dark:hover:bg-slate-700 rounded text-neutral-600 dark:text-slate-300 text-xs"
               title={t('sftp.homeDir')}
+              aria-label={t('sftp.homeDir')}
+              class="h-6 w-6"
             >
               ~
-            </button>
+            </Button>
           </div>
-          <input
-            type="text"
+          <Input
+            variant="outline"
+            size="sm"
             bind:value={localPath}
             onkeydown={(e) => e.key === 'Enter' && fetchLocalFiles()}
-            class="flex-1 bg-neutral-100 dark:bg-slate-900 border border-neutral-300 dark:border-slate-700 rounded px-2 py-0.5 text-xs text-neutral-800 dark:text-slate-200 font-mono focus:outline-none focus:border-cyan-500"
+            class="flex-1 font-mono"
           />
-          <button
+          <Button
+            variant="secondary"
+            size="sm"
             onclick={() => openNewFolderModal('local')}
-            class="px-2 py-1 bg-neutral-100 dark:bg-slate-800 hover:bg-neutral-200 dark:hover:bg-slate-700 rounded text-xs text-neutral-700 dark:text-slate-300 border border-neutral-300 dark:border-slate-700 flex items-center gap-1"
             title={t('sftp.newFolder')}
           >
             {t('sftp.addDir')}
-          </button>
+          </Button>
         </div>
 
         <!-- Local File Table -->
@@ -1369,95 +1339,103 @@
       <div class="p-2 bg-neutral-50 dark:bg-[#1e232a] border-b border-neutral-200 dark:border-slate-800 flex items-center justify-between gap-2">
         <div class="flex items-center gap-1.5">
           <span class="text-xs font-bold text-cyan-600 dark:text-cyan-400">{t('sftp.remote')}</span>
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
             onclick={goUpRemote}
-            class="p-1 hover:bg-neutral-200 dark:hover:bg-slate-700 rounded text-neutral-600 dark:text-slate-300 text-xs flex items-center gap-1"
             title={t('sftp.parentDir')}
+            aria-label={t('sftp.parentDir')}
+            class="h-6 w-6"
           >
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18" />
             </svg>
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
             onclick={() => navigateRemote('/')}
-            class="p-1 hover:bg-neutral-200 dark:hover:bg-slate-700 rounded text-neutral-600 dark:text-slate-300 text-xs"
             title={t('sftp.rootDir')}
+            aria-label={t('sftp.rootDir')}
+            class="h-6 w-6"
           >
             /
-          </button>
+          </Button>
         </div>
-        <input
-          type="text"
+        <Input
+          variant="outline"
+          size="sm"
           bind:value={remotePath}
           onkeydown={(e) => e.key === 'Enter' && fetchRemoteFiles()}
-          class="flex-1 bg-neutral-100 dark:bg-slate-900 border border-neutral-300 dark:border-slate-700 rounded px-2 py-0.5 text-xs text-neutral-800 dark:text-slate-200 font-mono focus:outline-none focus:border-cyan-500"
+          class="flex-1 font-mono"
         />
-        <button
+        <Button
+          variant="secondary"
+          size="sm"
           onclick={() => openNewFolderModal('remote')}
-          class="px-2 py-1 bg-neutral-100 dark:bg-slate-800 hover:bg-neutral-200 dark:hover:bg-slate-700 rounded text-xs text-neutral-700 dark:text-slate-300 border border-neutral-300 dark:border-slate-700 flex items-center gap-1"
           title={t('sftp.newFolder')}
         >
           {t('sftp.addDir')}
-        </button>
-        <button
+        </Button>
+        <Button
+          variant="secondary"
+          size="sm"
           onclick={openCompressModal}
-          class="px-2 py-1 bg-neutral-100 dark:bg-slate-800 hover:bg-neutral-200 dark:hover:bg-slate-700 rounded text-xs text-neutral-700 dark:text-slate-300 border border-neutral-300 dark:border-slate-700 flex items-center gap-1"
           title={t('sftp.compressSelected')}
         >
           {t('sftp.zip')}
-        </button>
-        <button
+        </Button>
+        <Button
+          variant="secondary"
+          size="sm"
           onclick={() => (showSyncModal = true)}
-          class="px-2 py-1 bg-neutral-100 dark:bg-slate-800 hover:bg-neutral-200 dark:hover:bg-slate-700 rounded text-xs text-neutral-700 dark:text-slate-300 border border-neutral-300 dark:border-slate-700 flex items-center gap-1"
           title={t('sftp.syncTitle')}
         >
           {t('sftp.sync')}
-        </button>
-        <button
+        </Button>
+        <Button
+          variant={showRemoteSearch ? 'primary' : 'secondary'}
+          size="sm"
           onclick={() => (showRemoteSearch = !showRemoteSearch)}
-          class={`px-2 py-1 rounded text-xs border flex items-center gap-1 transition ${
-            showRemoteSearch
-              ? "bg-cyan-600 text-white border-cyan-500"
-              : "bg-neutral-100 dark:bg-slate-800 hover:bg-neutral-200 dark:hover:bg-slate-700 text-neutral-700 dark:text-slate-300 border-neutral-300 dark:border-slate-700"
-          }`}
           title={t('sftp.searchTitle')}
         >
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
           {t('sftp.search')}
-        </button>
+        </Button>
       </div>
 
       <!-- Remote Search & Filter Drawer -->
       {#if showRemoteSearch}
         <div class="p-2.5 bg-neutral-100/90 dark:bg-[#151921] border-b border-neutral-200 dark:border-slate-800 flex flex-col gap-2 text-xs">
           <div class="flex items-center gap-2">
-            <input
-              type="text"
+            <Input
+              variant="outline"
+              size="sm"
               placeholder={t('sftp.searchPlaceholder')}
               bind:value={remoteSearchQuery}
               onkeydown={(e) => e.key === "Enter" && executeRemoteSearch()}
-              class="flex-1 bg-white dark:bg-slate-900 border border-neutral-300 dark:border-slate-700 rounded px-2.5 py-1 text-xs text-neutral-800 dark:text-slate-200 font-mono focus:outline-none focus:border-cyan-500"
+              class="flex-1 font-mono"
             />
-            <button
+            <Button
+              variant="primary"
+              size="sm"
               onclick={executeRemoteSearch}
               disabled={isSearchingRemote || !remoteSearchQuery.trim()}
-              class="px-3 py-1 bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 text-white rounded font-medium flex items-center gap-1 transition"
+              loading={isSearchingRemote}
             >
-              {#if isSearchingRemote}
-                <span class="animate-spin inline-block">⏳</span> {t('sftp.searching')}
-              {:else}
-                {t('sftp.find')}
-              {/if}
-            </button>
-            <button
+              {t('sftp.find')}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
               onclick={() => { showRemoteSearch = false; remoteSearchResults = []; }}
-              class="px-2 py-1 text-neutral-500 hover:text-neutral-700 dark:hover:text-slate-200"
               title={t('sftp.closeSearch')}
+              aria-label={t('sftp.closeSearch')}
             >
               ✕
-            </button>
+            </Button>
           </div>
           <div class="flex items-center gap-3 text-neutral-600 dark:text-slate-400">
             <span class="text-[11px] font-semibold">{t('sftp.filters')}</span>
@@ -1584,12 +1562,14 @@
         </span>
       </div>
       <div class="flex items-center gap-2">
-        <button
+        <Button
+          variant="ghost"
+          size="sm"
           onclick={clearCompletedTransfers}
-          class="text-neutral-600 hover:text-neutral-800 dark:text-slate-400 dark:hover:text-slate-200 px-2 py-0.5 rounded hover:bg-neutral-200 dark:hover:bg-slate-800 transition"
+          class="text-neutral-600 hover:text-neutral-800 dark:text-slate-400 dark:hover:text-slate-200 px-2 py-0.5"
         >
           {t('sftp.clearFinished')}
-        </button>
+        </Button>
       </div>
     </div>
 
@@ -1641,27 +1621,25 @@
             </div>
 
             <div class="flex items-center gap-2">
-              <span
-                class={`px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase ${
-                  item.status === 'completed'
-                    ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
-                    : item.status === 'failed'
-                    ? 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300'
-                    : item.status === 'active'
-                    ? 'bg-cyan-100 text-cyan-800 dark:bg-cyan-950 dark:text-cyan-300'
-                    : 'bg-neutral-200 text-neutral-700 dark:bg-slate-800 dark:text-slate-400'
-                }`}
+              <Badge
+                variant={item.status === 'completed' ? 'success'
+                  : item.status === 'failed' ? 'danger'
+                  : item.status === 'active' ? 'info'
+                  : 'neutral'}
+                size="xs"
               >
                 {t(`sftp.status.${item.status}`)}
-              </span>
+              </Badge>
               {#if item.status === 'active'}
-                <button
+                <Button
+                  variant="danger"
+                  size="sm"
                   onclick={() => cancelQueueItem(item.id)}
-                  class="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-200 text-xs px-1.5 py-0.5 rounded bg-red-100 hover:bg-red-200 dark:bg-red-950/40 dark:hover:bg-red-900/60"
                   title={t('sftp.cancelTransfer')}
+                  aria-label={t('sftp.cancelTransfer')}
                 >
                   ✕
-                </button>
+                </Button>
               {/if}
             </div>
           </div>
@@ -1671,250 +1649,237 @@
   </div>
 </div>
 
-<!-- MODAL: NEW FOLDER -->
-{#if showNewFileModal}
-  <div class="fixed inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-    <div class="bg-white dark:bg-[#1e232a] border border-neutral-200 dark:border-slate-700 rounded-lg max-w-sm w-full p-4 space-y-3 shadow-xl">
-      <h3 class="text-sm font-bold text-neutral-900 dark:text-slate-200">
-        {t('sftp.newFileTitle', { pane: newFileTargetPane === 'local' ? t('sftp.paneLocal') : t('sftp.paneRemote') })}
-      </h3>
-      <input
-        type="text"
-        bind:value={newFileName}
-        placeholder="filename.txt"
-        onkeydown={(e) => e.key === 'Enter' && confirmNewFile()}
-        class="w-full bg-neutral-50 dark:bg-slate-900 border border-neutral-300 dark:border-slate-700 rounded px-3 py-1.5 text-xs text-neutral-800 dark:text-slate-200 focus:outline-none focus:border-cyan-500"
-      />
-      <div class="flex justify-end gap-2 pt-2">
-        <button
-          onclick={() => (showNewFileModal = false)}
-          class="px-3 py-1 bg-neutral-100 hover:bg-neutral-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-neutral-700 dark:text-slate-300 rounded text-xs"
+<Modal
+  bind:open={showNewFileModal}
+  title={t('sftp.newFileTitle', { pane: newFileTargetPane === 'local' ? t('sftp.paneLocal') : t('sftp.paneRemote') })}
+  size="sm"
+>
+  <Input
+    bind:value={newFileName}
+    placeholder="filename.txt"
+    onkeydown={(e) => e.key === 'Enter' && confirmNewFile()}
+    class="text-xs"
+  />
+  {#snippet footer()}
+    <Button
+      variant="secondary"
+      size="sm"
+      onclick={() => (showNewFileModal = false)}
+    >
+      {t('common.cancel')}
+    </Button>
+    <Button
+      variant="primary"
+      size="sm"
+      onclick={confirmNewFile}
+    >
+      {t('common.create')}
+    </Button>
+  {/snippet}
+</Modal>
+
+<Modal
+  bind:open={showNewFolderModal}
+  title={t('sftp.newFolderTitle', { pane: newFolderTargetPane === 'local' ? t('sftp.paneLocal') : t('sftp.paneRemote') })}
+  size="sm"
+>
+  <Input
+    bind:value={newFolderName}
+    placeholder={t('sftp.folderNamePlaceholder')}
+    onkeydown={(e) => e.key === 'Enter' && confirmNewFolder()}
+    class="text-xs"
+  />
+  {#snippet footer()}
+    <Button
+      variant="secondary"
+      size="sm"
+      onclick={() => (showNewFolderModal = false)}
+    >
+      {t('common.cancel')}
+    </Button>
+    <Button
+      variant="primary"
+      size="sm"
+      onclick={confirmNewFolder}
+    >
+      {t('common.create')}
+    </Button>
+  {/snippet}
+</Modal>
+
+<Modal
+  bind:open={showRenameModal}
+  title={t('sftp.renameTitle')}
+  size="sm"
+>
+  <Input
+    bind:value={renameNewName}
+    onkeydown={(e) => e.key === 'Enter' && confirmRename()}
+    class="text-xs"
+  />
+  {#snippet footer()}
+    <Button
+      variant="secondary"
+      size="sm"
+      onclick={() => (showRenameModal = false)}
+    >
+      {t('common.cancel')}
+    </Button>
+    <Button
+      variant="primary"
+      size="sm"
+      onclick={confirmRename}
+      disabled={!renameItem}
+    >
+      {t('common.rename')}
+    </Button>
+  {/snippet}
+</Modal>
+
+<Modal
+  bind:open={showDeleteModal}
+  title={t('sftp.deleteTitle')}
+  description={deleteTarget ? t('sftp.deleteBody', { count: deleteTarget.paths.length, where: deleteTarget.pane === 'local' ? t('sftp.localFsShort') : t('sftp.remoteSftpShort') }) : ''}
+  size="sm"
+>
+  {#snippet footer()}
+    <Button
+      variant="secondary"
+      size="sm"
+      onclick={() => (showDeleteModal = false)}
+    >
+      {t('common.cancel')}
+    </Button>
+    <Button
+      variant="danger"
+      size="sm"
+      onclick={confirmDelete}
+      disabled={!deleteTarget}
+    >
+      {t('common.delete')}
+    </Button>
+  {/snippet}
+</Modal>
+
+<Modal
+  bind:open={showEditorModal}
+  title={editorItem ? `${t('sftp.editor')} ${editorItem.name} (${editorItem.pane === 'local' ? t('sftp.paneLocal') : t('sftp.paneRemote')})` : ''}
+  size="xl"
+  closeOnBackdrop={false}
+>
+  {#if RemoteFileEditor && editorItem}
+    <RemoteFileEditor
+      bind:content={editorContent}
+      filename={editorItem.name}
+      pane={editorItem.pane}
+      onSave={saveEditorFile}
+      saving={isEditorSaving}
+      loading={isEditorLoading}
+    />
+  {:else}
+    <div class="flex-1 flex items-center justify-center text-xs text-neutral-500">{t('editor.loading')}</div>
+  {/if}
+  {#snippet footer()}
+    <Button
+      variant="secondary"
+      size="sm"
+      onclick={() => (showEditorModal = false)}
+    >
+      {t('common.close')}
+    </Button>
+    <Button
+      variant="primary"
+      size="sm"
+      onclick={saveEditorFile}
+      disabled={isEditorSaving || isEditorLoading || !editorItem}
+      loading={isEditorSaving}
+    >
+      {isEditorSaving ? t('sftp.saving') : t('common.save')}
+    </Button>
+  {/snippet}
+</Modal>
+
+<Modal
+  bind:open={showChmodModal}
+  title={chmodTarget ? `${t('sftp.permissionsFor')} ${chmodTarget.name}` : ''}
+  size="md"
+>
+  <div class="text-xs space-y-4">
+    <div class="grid grid-cols-3 gap-3 bg-neutral-50 dark:bg-slate-900 p-3 rounded border border-neutral-200 dark:border-slate-800">
+      <!-- User -->
+      <div class="space-y-1.5">
+        <span class="font-bold text-neutral-700 dark:text-slate-400">{t('sftp.owner')}</span>
+        <label class="flex items-center gap-1.5 text-neutral-700 dark:text-slate-300 cursor-pointer">
+          <input type="checkbox" bind:checked={chmodUserR} onchange={updateChmodOctalFromCheckboxes} /> {t('sftp.read')}
+        </label>
+        <label class="flex items-center gap-1.5 text-neutral-700 dark:text-slate-300 cursor-pointer">
+          <input type="checkbox" bind:checked={chmodUserW} onchange={updateChmodOctalFromCheckboxes} /> {t('sftp.write')}
+        </label>
+        <label class="flex items-center gap-1.5 text-neutral-700 dark:text-slate-300 cursor-pointer">
+          <input type="checkbox" bind:checked={chmodUserX} onchange={updateChmodOctalFromCheckboxes} /> {t('sftp.execute')}
+        </label>
+      </div>
+
+      <!-- Group -->
+      <div class="space-y-1.5">
+        <span class="font-bold text-neutral-700 dark:text-slate-400">{t('sftp.group')}</span>
+        <label class="flex items-center gap-1.5 text-neutral-700 dark:text-slate-300 cursor-pointer">
+          <input type="checkbox" bind:checked={chmodGroupR} onchange={updateChmodOctalFromCheckboxes} /> {t('sftp.read')}
+        </label>
+        <label class="flex items-center gap-1.5 text-neutral-700 dark:text-slate-300 cursor-pointer">
+          <input type="checkbox" bind:checked={chmodGroupW} onchange={updateChmodOctalFromCheckboxes} /> {t('sftp.write')}
+        </label>
+        <label class="flex items-center gap-1.5 text-neutral-700 dark:text-slate-300 cursor-pointer">
+          <input type="checkbox" bind:checked={chmodGroupX} onchange={updateChmodOctalFromCheckboxes} /> {t('sftp.execute')}
+        </label>
+      </div>
+
+      <!-- Others -->
+      <div class="space-y-1.5">
+        <span class="font-bold text-neutral-700 dark:text-slate-400">{t('sftp.others')}</span>
+        <label class="flex items-center gap-1.5 text-neutral-700 dark:text-slate-300 cursor-pointer">
+          <input type="checkbox" bind:checked={chmodOtherR} onchange={updateChmodOctalFromCheckboxes} /> {t('sftp.read')}
+        </label>
+        <label class="flex items-center gap-1.5 text-neutral-700 dark:text-slate-300 cursor-pointer">
+          <input type="checkbox" bind:checked={chmodOtherW} onchange={updateChmodOctalFromCheckboxes} /> {t('sftp.write')}
+        </label>
+        <label class="flex items-center gap-1.5 text-neutral-700 dark:text-slate-300 cursor-pointer">
+          <input type="checkbox" bind:checked={chmodOtherX} onchange={updateChmodOctalFromCheckboxes} /> {t('sftp.execute')}
+        </label>
+      </div>
+    </div>
+
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <span class="font-bold text-neutral-700 dark:text-slate-400">{t('sftp.octal')}</span>
+        <input
+          type="text"
+          bind:value={chmodOctal}
+          oninput={() => updateChmodCheckboxesFromOctal(chmodOctal)}
+          maxlength="4"
+          class="w-20 bg-neutral-100 dark:bg-slate-900 border border-neutral-300 dark:border-slate-700 rounded px-2 py-1 text-center font-mono text-cyan-600 dark:text-cyan-400 focus:outline-none"
+        />
+      </div>
+      <div class="flex gap-2">
+        <Button
+          variant="secondary"
+          size="sm"
+          onclick={() => (showChmodModal = false)}
         >
           {t('common.cancel')}
-        </button>
-        <button
-          onclick={confirmNewFile}
-          class="px-3 py-1 bg-cyan-600 hover:bg-cyan-500 text-white rounded text-xs font-medium"
+        </Button>
+        <Button
+          variant="primary"
+          size="sm"
+          onclick={confirmChmod}
+          disabled={!chmodTarget}
         >
-          {t('common.create')}
-        </button>
+          {t('sftp.apply')}
+        </Button>
       </div>
     </div>
   </div>
-{/if}
-
-{#if showNewFolderModal}
-  <div class="fixed inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-    <div class="bg-white dark:bg-[#1e232a] border border-neutral-200 dark:border-slate-700 rounded-lg max-w-sm w-full p-4 space-y-3 shadow-xl">
-      <h3 class="text-sm font-bold text-neutral-900 dark:text-slate-200">
-        {t('sftp.newFolderTitle', { pane: newFolderTargetPane === 'local' ? t('sftp.paneLocal') : t('sftp.paneRemote') })}
-      </h3>
-      <input
-        type="text"
-        bind:value={newFolderName}
-        placeholder={t('sftp.folderNamePlaceholder')}
-        onkeydown={(e) => e.key === 'Enter' && confirmNewFolder()}
-        class="w-full bg-neutral-50 dark:bg-slate-900 border border-neutral-300 dark:border-slate-700 rounded px-3 py-1.5 text-xs text-neutral-800 dark:text-slate-200 focus:outline-none focus:border-cyan-500"
-      />
-      <div class="flex justify-end gap-2 pt-2">
-        <button
-          onclick={() => (showNewFolderModal = false)}
-          class="px-3 py-1 bg-neutral-100 hover:bg-neutral-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-neutral-700 dark:text-slate-300 rounded text-xs"
-        >
-          {t('common.cancel')}
-        </button>
-        <button
-          onclick={confirmNewFolder}
-          class="px-3 py-1 bg-cyan-600 hover:bg-cyan-500 text-white rounded text-xs font-medium"
-        >
-          {t('common.create')}
-        </button>
-      </div>
-    </div>
-  </div>
-{/if}
-
-<!-- MODAL: RENAME -->
-{#if showRenameModal && renameItem}
-  <div class="fixed inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-    <div class="bg-white dark:bg-[#1e232a] border border-neutral-200 dark:border-slate-700 rounded-lg max-w-sm w-full p-4 space-y-3 shadow-xl">
-      <h3 class="text-sm font-bold text-neutral-900 dark:text-slate-200">{t('sftp.renameTitle')}</h3>
-      <input
-        type="text"
-        bind:value={renameNewName}
-        onkeydown={(e) => e.key === 'Enter' && confirmRename()}
-        class="w-full bg-neutral-50 dark:bg-slate-900 border border-neutral-300 dark:border-slate-700 rounded px-3 py-1.5 text-xs text-neutral-800 dark:text-slate-200 focus:outline-none focus:border-cyan-500"
-      />
-      <div class="flex justify-end gap-2 pt-2">
-        <button
-          onclick={() => (showRenameModal = false)}
-          class="px-3 py-1 bg-neutral-100 hover:bg-neutral-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-neutral-700 dark:text-slate-300 rounded text-xs"
-        >
-          {t('common.cancel')}
-        </button>
-        <button
-          onclick={confirmRename}
-          class="px-3 py-1 bg-cyan-600 hover:bg-cyan-500 text-white rounded text-xs font-medium"
-        >
-          {t('common.rename')}
-        </button>
-      </div>
-    </div>
-  </div>
-{/if}
-
-<!-- MODAL: DELETE CONFIRMATION -->
-{#if showDeleteModal && deleteTarget}
-  <div class="fixed inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-    <div class="bg-white dark:bg-[#1e232a] border border-red-200 dark:border-red-900/60 rounded-lg max-w-sm w-full p-4 space-y-3 shadow-xl">
-      <h3 class="text-sm font-bold text-red-600 dark:text-red-400">{t('sftp.deleteTitle')}</h3>
-      <p class="text-xs text-neutral-600 dark:text-slate-300">
-        {t('sftp.deleteBody', { count: deleteTarget.paths.length, where: deleteTarget.pane === 'local' ? t('sftp.localFsShort') : t('sftp.remoteSftpShort') })}
-      </p>
-      <div class="flex justify-end gap-2 pt-2">
-        <button
-          onclick={() => (showDeleteModal = false)}
-          class="px-3 py-1 bg-neutral-100 hover:bg-neutral-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-neutral-700 dark:text-slate-300 rounded text-xs"
-        >
-          {t('common.cancel')}
-        </button>
-        <button
-          onclick={confirmDelete}
-          class="px-3 py-1 bg-red-600 hover:bg-red-500 text-white rounded text-xs font-medium"
-        >
-          {t('common.delete')}
-        </button>
-      </div>
-    </div>
-  </div>
-{/if}
-
-<!-- MODAL: TEXT EDITOR -->
-{#if showEditorModal && editorItem}
-  <div class="fixed inset-0 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-    <div class="bg-white dark:bg-[#1e232a] border border-neutral-200 dark:border-slate-700 rounded-lg w-full max-w-4xl h-[80vh] flex flex-col shadow-2xl overflow-hidden">
-      <div class="bg-neutral-100 dark:bg-slate-900 px-4 py-2.5 border-b border-neutral-200 dark:border-slate-800 flex items-center justify-between">
-        <div class="flex items-center gap-2">
-          <span class="text-xs font-bold text-cyan-600 dark:text-cyan-400">{t('sftp.editor')}</span>
-          <span class="text-xs text-neutral-800 dark:text-slate-200 font-mono">{editorItem.name}</span>
-          <span class="text-xs text-neutral-500 dark:text-slate-500">({editorItem.pane === 'local' ? t('sftp.paneLocal') : t('sftp.paneRemote')})</span>
-        </div>
-        <div class="flex items-center gap-2">
-          <button
-            onclick={saveEditorFile}
-            disabled={isEditorSaving || isEditorLoading}
-            class="px-3 py-1 bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 text-white rounded text-xs font-medium flex items-center gap-1"
-          >
-            {isEditorSaving ? t('sftp.saving') : t('common.save')}
-          </button>
-          <button
-            onclick={() => (showEditorModal = false)}
-            class="px-3 py-1 bg-neutral-200 hover:bg-neutral-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-neutral-700 dark:text-slate-300 rounded text-xs"
-          >
-            {t('common.close')}
-          </button>
-        </div>
-      </div>
-
-      <div class="flex-1 bg-neutral-50 dark:bg-[#12161b] relative overflow-hidden flex flex-col">
-        {#if RemoteFileEditor}
-          <RemoteFileEditor
-            bind:content={editorContent}
-            filename={editorItem.name}
-            pane={editorItem.pane}
-            onSave={saveEditorFile}
-            saving={isEditorSaving}
-            loading={isEditorLoading}
-          />
-        {:else}
-          <div class="flex-1 flex items-center justify-center text-xs text-neutral-500">{t('editor.loading')}</div>
-        {/if}
-      </div>
-    </div>
-  </div>
-{/if}
-
-<!-- MODAL: CHMOD PERMISSIONS -->
-{#if showChmodModal && chmodTarget}
-  <div class="fixed inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-    <div class="bg-white dark:bg-[#1e232a] border border-neutral-200 dark:border-slate-700 rounded-lg max-w-md w-full p-4 space-y-4 shadow-xl text-xs">
-      <h3 class="text-sm font-bold text-neutral-900 dark:text-slate-200">
-        {t('sftp.permissionsFor')} <span class="text-cyan-600 dark:text-cyan-400">{chmodTarget.name}</span>
-      </h3>
-
-      <div class="grid grid-cols-3 gap-3 bg-neutral-50 dark:bg-slate-900 p-3 rounded border border-neutral-200 dark:border-slate-800">
-        <!-- User -->
-        <div class="space-y-1.5">
-          <span class="font-bold text-neutral-700 dark:text-slate-400">{t('sftp.owner')}</span>
-          <label class="flex items-center gap-1.5 text-neutral-700 dark:text-slate-300 cursor-pointer">
-            <input type="checkbox" bind:checked={chmodUserR} onchange={updateChmodOctalFromCheckboxes} /> {t('sftp.read')}
-          </label>
-          <label class="flex items-center gap-1.5 text-neutral-700 dark:text-slate-300 cursor-pointer">
-            <input type="checkbox" bind:checked={chmodUserW} onchange={updateChmodOctalFromCheckboxes} /> {t('sftp.write')}
-          </label>
-          <label class="flex items-center gap-1.5 text-neutral-700 dark:text-slate-300 cursor-pointer">
-            <input type="checkbox" bind:checked={chmodUserX} onchange={updateChmodOctalFromCheckboxes} /> {t('sftp.execute')}
-          </label>
-        </div>
-
-        <!-- Group -->
-        <div class="space-y-1.5">
-          <span class="font-bold text-neutral-700 dark:text-slate-400">{t('sftp.group')}</span>
-          <label class="flex items-center gap-1.5 text-neutral-700 dark:text-slate-300 cursor-pointer">
-            <input type="checkbox" bind:checked={chmodGroupR} onchange={updateChmodOctalFromCheckboxes} /> {t('sftp.read')}
-          </label>
-          <label class="flex items-center gap-1.5 text-neutral-700 dark:text-slate-300 cursor-pointer">
-            <input type="checkbox" bind:checked={chmodGroupW} onchange={updateChmodOctalFromCheckboxes} /> {t('sftp.write')}
-          </label>
-          <label class="flex items-center gap-1.5 text-neutral-700 dark:text-slate-300 cursor-pointer">
-            <input type="checkbox" bind:checked={chmodGroupX} onchange={updateChmodOctalFromCheckboxes} /> {t('sftp.execute')}
-          </label>
-        </div>
-
-        <!-- Others -->
-        <div class="space-y-1.5">
-          <span class="font-bold text-neutral-700 dark:text-slate-400">{t('sftp.others')}</span>
-          <label class="flex items-center gap-1.5 text-neutral-700 dark:text-slate-300 cursor-pointer">
-            <input type="checkbox" bind:checked={chmodOtherR} onchange={updateChmodOctalFromCheckboxes} /> {t('sftp.read')}
-          </label>
-          <label class="flex items-center gap-1.5 text-neutral-700 dark:text-slate-300 cursor-pointer">
-            <input type="checkbox" bind:checked={chmodOtherW} onchange={updateChmodOctalFromCheckboxes} /> {t('sftp.write')}
-          </label>
-          <label class="flex items-center gap-1.5 text-neutral-700 dark:text-slate-300 cursor-pointer">
-            <input type="checkbox" bind:checked={chmodOtherX} onchange={updateChmodOctalFromCheckboxes} /> {t('sftp.execute')}
-          </label>
-        </div>
-      </div>
-
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-2">
-          <span class="font-bold text-neutral-700 dark:text-slate-400">{t('sftp.octal')}</span>
-          <input
-            type="text"
-            bind:value={chmodOctal}
-            oninput={() => updateChmodCheckboxesFromOctal(chmodOctal)}
-            maxlength="4"
-            class="w-20 bg-neutral-100 dark:bg-slate-900 border border-neutral-300 dark:border-slate-700 rounded px-2 py-1 text-center font-mono text-cyan-600 dark:text-cyan-400 focus:outline-none"
-          />
-        </div>
-        <div class="flex gap-2">
-          <button
-            onclick={() => (showChmodModal = false)}
-            class="px-3 py-1 bg-neutral-100 hover:bg-neutral-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-neutral-700 dark:text-slate-300 rounded"
-          >
-            {t('common.cancel')}
-          </button>
-          <button
-            onclick={confirmChmod}
-            class="px-3 py-1 bg-cyan-600 hover:bg-cyan-500 text-white rounded font-medium"
-          >
-            {t('sftp.apply')}
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-{/if}
+</Modal>
 
 <!-- CONTEXT MENU -->
 {#if ctxMenu}
@@ -1934,66 +1899,82 @@
     >
       {#if ctxMenu.pane === 'remote'}
         <!-- Remote Actions -->
-        <button
-          class="w-full text-left px-3 py-1.5 hover:bg-cyan-500/10 hover:text-cyan-400 flex items-center justify-between text-neutral-800 dark:text-neutral-200"
+        <Button
+          variant="ghost"
+          size="sm"
+          class="w-full !justify-between text-left px-3 py-1.5 font-normal rounded-none"
           onclick={() => { closeCtxMenu(); handleCopyTransfer(); }}
         >
           <span class="flex items-center gap-2"><span>📥</span> {t('sftp.ctxDownload')}</span>
           <span class="text-[10px] text-neutral-400 font-mono">F5</span>
-        </button>
+        </Button>
 
         {#if !ctxMenu.item.is_dir}
-          <button
-            class="w-full text-left px-3 py-1.5 hover:bg-cyan-500/10 hover:text-cyan-400 flex items-center justify-between text-neutral-800 dark:text-neutral-200"
+          <Button
+            variant="ghost"
+            size="sm"
+            class="w-full !justify-between text-left px-3 py-1.5 font-normal rounded-none"
             onclick={() => { closeCtxMenu(); openEditorModal(); }}
           >
             <span class="flex items-center gap-2"><span>✏️</span> {t('sftp.ctxEditView')}</span>
             <span class="text-[10px] text-neutral-400 font-mono">F4</span>
-          </button>
+          </Button>
         {/if}
 
-        <button
-          class="w-full text-left px-3 py-1.5 hover:bg-cyan-500/10 hover:text-cyan-400 flex items-center justify-between text-neutral-800 dark:text-neutral-200"
+        <Button
+          variant="ghost"
+          size="sm"
+          class="w-full !justify-between text-left px-3 py-1.5 font-normal rounded-none"
           onclick={() => { closeCtxMenu(); openRenameModal(); }}
         >
           <span class="flex items-center gap-2"><span>🏷️</span> {t('sftp.ctxRename')}</span>
           <span class="text-[10px] text-neutral-400 font-mono">F2</span>
-        </button>
+        </Button>
 
-        <button
-          class="w-full text-left px-3 py-1.5 hover:bg-rose-500/10 hover:text-rose-400 flex items-center justify-between text-rose-600 dark:text-rose-400"
+        <Button
+          variant="danger"
+          size="sm"
+          class="w-full !justify-between text-left px-3 py-1.5 font-normal rounded-none border-0"
           onclick={() => { closeCtxMenu(); openDeleteModal(); }}
         >
           <span class="flex items-center gap-2"><span>🗑️</span> {t('sftp.ctxDelete')}</span>
           <span class="text-[10px] opacity-70 font-mono">Del</span>
-        </button>
+        </Button>
 
-        <button
-          class="w-full text-left px-3 py-1.5 hover:bg-cyan-500/10 hover:text-cyan-400 flex items-center justify-between text-neutral-800 dark:text-neutral-200"
+        <Button
+          variant="ghost"
+          size="sm"
+          class="w-full !justify-between text-left px-3 py-1.5 font-normal rounded-none"
           onclick={() => { const item = ctxMenu!.item as SftpFileEntry; closeCtxMenu(); openChmodModal(item); }}
         >
           <span class="flex items-center gap-2"><span>🔒</span> {t('sftp.ctxPermissions')}</span>
-        </button>
+        </Button>
 
         <div class="my-1 border-t border-neutral-200 dark:border-white/10"></div>
 
-        <button
-          class="w-full text-left px-3 py-1.5 hover:bg-cyan-500/10 hover:text-cyan-400 flex items-center justify-between text-neutral-800 dark:text-neutral-200"
+        <Button
+          variant="ghost"
+          size="sm"
+          class="w-full !justify-between text-left px-3 py-1.5 font-normal rounded-none"
           onclick={() => { closeCtxMenu(); openNewFileModal('remote'); }}
         >
           <span class="flex items-center gap-2"><span>📄</span> {t('sftp.ctxNewFile')}</span>
-        </button>
+        </Button>
 
-        <button
-          class="w-full text-left px-3 py-1.5 hover:bg-cyan-500/10 hover:text-cyan-400 flex items-center justify-between text-neutral-800 dark:text-neutral-200"
+        <Button
+          variant="ghost"
+          size="sm"
+          class="w-full !justify-between text-left px-3 py-1.5 font-normal rounded-none"
           onclick={() => { closeCtxMenu(); openNewFolderModal('remote'); }}
         >
           <span class="flex items-center gap-2"><span>📁</span> {t('sftp.ctxNewFolder')}</span>
           <span class="text-[10px] text-neutral-400 font-mono">F7</span>
-        </button>
+        </Button>
 
-        <button
-          class="w-full text-left px-3 py-1.5 hover:bg-cyan-500/10 hover:text-cyan-400 flex items-center justify-between text-neutral-800 dark:text-neutral-200"
+        <Button
+          variant="ghost"
+          size="sm"
+          class="w-full !justify-between text-left px-3 py-1.5 font-normal rounded-none"
           onclick={() => {
             const item = ctxMenu!.item;
             closeCtxMenu();
@@ -2002,87 +1983,107 @@
           }}
         >
           <span class="flex items-center gap-2"><span>📋</span> {t('sftp.ctxCopyPath')}</span>
-        </button>
+        </Button>
 
         <div class="my-1 border-t border-neutral-200 dark:border-white/10"></div>
 
-        <button
-          class="w-full text-left px-3 py-1.5 hover:bg-cyan-500/10 hover:text-cyan-400 flex items-center gap-2 text-neutral-800 dark:text-neutral-200"
+        <Button
+          variant="ghost"
+          size="sm"
+          class="w-full !justify-start text-left px-3 py-1.5 font-normal rounded-none gap-2"
           onclick={() => { closeCtxMenu(); openCompressModal(); }}
         >
           <span>🗜️</span> {t('sftp.ctxCompress')}
-        </button>
+        </Button>
 
         {#if isArchive(ctxMenu.item.name)}
-          <button
-            class="w-full text-left px-3 py-1.5 hover:bg-cyan-500/10 hover:text-cyan-400 flex items-center gap-2 text-neutral-800 dark:text-neutral-200"
+          <Button
+            variant="ghost"
+            size="sm"
+            class="w-full !justify-start text-left px-3 py-1.5 font-normal rounded-none gap-2"
             onclick={() => { const item = ctxMenu!.item as SftpFileEntry; closeCtxMenu(); openExtractHere(item); }}
           >
             <span>📦</span> {t('sftp.ctxExtractHere')}
-          </button>
-          <button
-            class="w-full text-left px-3 py-1.5 hover:bg-cyan-500/10 hover:text-cyan-400 flex items-center gap-2 text-neutral-800 dark:text-neutral-200"
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            class="w-full !justify-start text-left px-3 py-1.5 font-normal rounded-none gap-2"
             onclick={() => { const item = ctxMenu!.item as SftpFileEntry; closeCtxMenu(); openExtractTo(item); }}
           >
             <span>📂</span> {t('sftp.ctxExtractTo')}
-          </button>
+          </Button>
         {/if}
 
       {:else}
         <!-- Local Actions -->
-        <button
-          class="w-full text-left px-3 py-1.5 hover:bg-cyan-500/10 hover:text-cyan-400 flex items-center justify-between text-neutral-800 dark:text-neutral-200"
+        <Button
+          variant="ghost"
+          size="sm"
+          class="w-full !justify-between text-left px-3 py-1.5 font-normal rounded-none"
           onclick={() => { closeCtxMenu(); handleCopyTransfer(); }}
         >
           <span class="flex items-center gap-2"><span>📤</span> {t('sftp.ctxUpload')}</span>
           <span class="text-[10px] text-neutral-400 font-mono">F5</span>
-        </button>
+        </Button>
 
         {#if !ctxMenu.item.is_dir}
-          <button
-            class="w-full text-left px-3 py-1.5 hover:bg-cyan-500/10 hover:text-cyan-400 flex items-center justify-between text-neutral-800 dark:text-neutral-200"
+          <Button
+            variant="ghost"
+            size="sm"
+            class="w-full !justify-between text-left px-3 py-1.5 font-normal rounded-none"
             onclick={() => { closeCtxMenu(); openEditorModal(); }}
           >
             <span class="flex items-center gap-2"><span>✏️</span> {t('sftp.ctxEditView')}</span>
             <span class="text-[10px] text-neutral-400 font-mono">F4</span>
-          </button>
+          </Button>
         {/if}
 
-        <button
-          class="w-full text-left px-3 py-1.5 hover:bg-cyan-500/10 hover:text-cyan-400 flex items-center justify-between text-neutral-800 dark:text-neutral-200"
+        <Button
+          variant="ghost"
+          size="sm"
+          class="w-full !justify-between text-left px-3 py-1.5 font-normal rounded-none"
           onclick={() => { closeCtxMenu(); openRenameModal(); }}
         >
           <span class="flex items-center gap-2"><span>🏷️</span> {t('sftp.ctxRename')}</span>
           <span class="text-[10px] text-neutral-400 font-mono">F2</span>
-        </button>
+        </Button>
 
-        <button
-          class="w-full text-left px-3 py-1.5 hover:bg-rose-500/10 hover:text-rose-400 flex items-center justify-between text-rose-600 dark:text-rose-400"
+        <Button
+          variant="danger"
+          size="sm"
+          class="w-full !justify-between text-left px-3 py-1.5 font-normal rounded-none border-0"
           onclick={() => { closeCtxMenu(); openDeleteModal(); }}
         >
           <span class="flex items-center gap-2"><span>🗑️</span> {t('sftp.ctxDelete')}</span>
           <span class="text-[10px] opacity-70 font-mono">Del</span>
-        </button>
+        </Button>
 
         <div class="my-1 border-t border-neutral-200 dark:border-white/10"></div>
 
-        <button
-          class="w-full text-left px-3 py-1.5 hover:bg-cyan-500/10 hover:text-cyan-400 flex items-center justify-between text-neutral-800 dark:text-neutral-200"
+        <Button
+          variant="ghost"
+          size="sm"
+          class="w-full !justify-between text-left px-3 py-1.5 font-normal rounded-none"
           onclick={() => { closeCtxMenu(); openNewFileModal('local'); }}
         >
           <span class="flex items-center gap-2"><span>📄</span> {t('sftp.ctxNewFile')}</span>
-        </button>
+        </Button>
 
-        <button
-          class="w-full text-left px-3 py-1.5 hover:bg-cyan-500/10 hover:text-cyan-400 flex items-center justify-between text-neutral-800 dark:text-neutral-200"
+        <Button
+          variant="ghost"
+          size="sm"
+          class="w-full !justify-between text-left px-3 py-1.5 font-normal rounded-none"
           onclick={() => { closeCtxMenu(); openNewFolderModal('local'); }}
         >
           <span class="flex items-center gap-2"><span>📁</span> {t('sftp.ctxNewFolder')}</span>
           <span class="text-[10px] text-neutral-400 font-mono">F7</span>
-        </button>
+        </Button>
 
-        <button
-          class="w-full text-left px-3 py-1.5 hover:bg-cyan-500/10 hover:text-cyan-400 flex items-center justify-between text-neutral-800 dark:text-neutral-200"
+        <Button
+          variant="ghost"
+          size="sm"
+          class="w-full !justify-between text-left px-3 py-1.5 font-normal rounded-none"
           onclick={() => {
             const item = ctxMenu!.item;
             closeCtxMenu();
@@ -2091,106 +2092,104 @@
           }}
         >
           <span class="flex items-center gap-2"><span>📋</span> {t('sftp.ctxCopyPath')}</span>
-        </button>
+        </Button>
       {/if}
     </div>
   </div>
 {/if}
 
 <!-- MODAL: COMPRESS -->
-{#if showCompressModal}
-  <div class="fixed inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-    <div class="bg-white dark:bg-[#1e232a] border border-neutral-200 dark:border-slate-700 rounded-lg max-w-sm w-full p-4 space-y-3 shadow-xl">
-      <h3 class="text-sm font-bold text-neutral-900 dark:text-slate-200">
-        {t('sftp.compressTitle', { count: compressItems.length })}
-      </h3>
-      <p class="text-xs text-neutral-500 dark:text-slate-400">
-        {t('sftp.items', { list: compressItems.slice(0, 3).join(', ') + (compressItems.length > 3 ? '...' : '') })}
-      </p>
-      <div class="space-y-1">
-        <label for="archive-name-input" class="text-xs text-neutral-600 dark:text-slate-400">{t('sftp.archiveName')}</label>
-        <input
-          id="archive-name-input"
-          type="text"
-          bind:value={compressArchiveName}
-          placeholder="archive.tar.gz"
-          onkeydown={(e) => e.key === 'Enter' && confirmCompress()}
-          class="w-full bg-neutral-50 dark:bg-slate-900 border border-neutral-300 dark:border-slate-700 rounded px-3 py-1.5 text-xs text-neutral-800 dark:text-slate-200 focus:outline-none focus:border-cyan-500 font-mono"
-        />
-      </div>
-      <div class="flex justify-end gap-2 pt-2">
-        <button
-          onclick={() => (showCompressModal = false)}
-          disabled={isCompressing}
-          class="px-3 py-1 bg-neutral-100 hover:bg-neutral-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-neutral-700 dark:text-slate-300 rounded text-xs"
-        >
-          {t('common.cancel')}
-        </button>
-        <button
-          onclick={confirmCompress}
-          disabled={isCompressing || !compressArchiveName.trim()}
-          class="px-3 py-1 bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 text-white rounded text-xs font-medium"
-        >
-          {isCompressing ? t('sftp.compressing') : t('sftp.compress')}
-        </button>
-      </div>
-    </div>
+<Modal
+  bind:open={showCompressModal}
+  title={t('sftp.compressTitle', { count: compressItems.length })}
+  description={t('sftp.items', { list: compressItems.slice(0, 3).join(', ') + (compressItems.length > 3 ? '...' : '') })}
+  size="sm"
+>
+  <div class="space-y-1">
+    <Input
+      id="archive-name-input"
+      label={t('sftp.archiveName')}
+      bind:value={compressArchiveName}
+      placeholder="archive.tar.gz"
+      onkeydown={(e) => e.key === 'Enter' && confirmCompress()}
+      class="font-mono text-xs"
+    />
   </div>
-{/if}
+  {#snippet footer()}
+    <Button
+      variant="secondary"
+      size="sm"
+      onclick={() => (showCompressModal = false)}
+      disabled={isCompressing}
+    >
+      {t('common.cancel')}
+    </Button>
+    <Button
+      variant="primary"
+      size="sm"
+      onclick={confirmCompress}
+      disabled={isCompressing || !compressArchiveName.trim()}
+      loading={isCompressing}
+    >
+      {isCompressing ? t('sftp.compressing') : t('sftp.compress')}
+    </Button>
+  {/snippet}
+</Modal>
 
 <!-- MODAL: EXTRACT -->
-{#if showExtractModal}
-  <div class="fixed inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-    <div class="bg-white dark:bg-[#1e232a] border border-neutral-200 dark:border-slate-700 rounded-lg max-w-md w-full p-4 space-y-3 shadow-xl">
-      <h3 class="text-sm font-bold text-neutral-900 dark:text-slate-200">{t('sftp.extractTitle')}</h3>
-      <p class="text-xs text-neutral-500 dark:text-slate-400 truncate">
-        {t('sftp.source')} <span class="font-mono text-cyan-600 dark:text-cyan-400">{extractArchivePath.split('/').pop()}</span>
-      </p>
-      <div class="space-y-1">
-        <label for="extract-dest-input" class="text-xs text-neutral-600 dark:text-slate-400">{t('sftp.destination')}</label>
-        <input
-          id="extract-dest-input"
-          type="text"
-          bind:value={extractDestDir}
-          onkeydown={(e) => e.key === 'Enter' && confirmExtract()}
-          class="w-full bg-neutral-50 dark:bg-slate-900 border border-neutral-300 dark:border-slate-700 rounded px-3 py-1.5 text-xs text-neutral-800 dark:text-slate-200 focus:outline-none focus:border-cyan-500 font-mono"
-        />
-      </div>
-      <div class="flex justify-end gap-2 pt-2">
-        <button
-          onclick={() => (showExtractModal = false)}
-          disabled={isExtracting}
-          class="px-3 py-1 bg-neutral-100 hover:bg-neutral-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-neutral-700 dark:text-slate-300 rounded text-xs"
-        >
-          {t('common.cancel')}
-        </button>
-        <button
-          onclick={confirmExtract}
-          disabled={isExtracting || !extractDestDir.trim()}
-          class="px-3 py-1 bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 text-white rounded text-xs font-medium"
-        >
-          {isExtracting ? t('sftp.extracting') : t('sftp.extract')}
-        </button>
-      </div>
-    </div>
+<Modal
+  bind:open={showExtractModal}
+  title={t('sftp.extractTitle')}
+  size="md"
+>
+  <div class="space-y-3">
+    <p class="text-xs text-neutral-500 dark:text-slate-400 truncate">
+      {t('sftp.source')} <span class="font-mono text-cyan-600 dark:text-cyan-400">{extractArchivePath.split('/').pop()}</span>
+    </p>
+    <Input
+      id="extract-dest-input"
+      label={t('sftp.destination')}
+      bind:value={extractDestDir}
+      onkeydown={(e) => e.key === 'Enter' && confirmExtract()}
+      class="font-mono text-xs"
+    />
   </div>
-{/if}
+  {#snippet footer()}
+    <Button
+      variant="secondary"
+      size="sm"
+      onclick={() => (showExtractModal = false)}
+      disabled={isExtracting}
+    >
+      {t('common.cancel')}
+    </Button>
+    <Button
+      variant="primary"
+      size="sm"
+      onclick={confirmExtract}
+      disabled={isExtracting || !extractDestDir.trim()}
+      loading={isExtracting}
+    >
+      {isExtracting ? t('sftp.extracting') : t('sftp.extract')}
+    </Button>
+  {/snippet}
+</Modal>
 
 <!-- MODAL: DIRECTORY SYNC & LIVE WATCH -->
-{#if showSyncModal}
-  <div class="fixed inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-    <div class="bg-white dark:bg-[#151921] rounded-lg shadow-2xl border border-neutral-200 dark:border-slate-800 w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden">
-      <ProGate title="Directory & Broadcast Sync Pro" description="Sinkronisasi direktori otomatis dan live watcher bidirectional memerlukan lisensi CATerm Pro.">
-        <DirectorySync
-          hostId={currentHostId}
-          initialLocalPath={localPath}
-          initialRemotePath={remotePath}
-          onClose={() => (showSyncModal = false)}
-        />
-      </ProGate>
-    </div>
-  </div>
-{/if}
+<Modal
+  bind:open={showSyncModal}
+  size="xl"
+  class="max-w-3xl"
+>
+  <ProGate title="Directory & Broadcast Sync Pro" description="Sinkronisasi direktori otomatis dan live watcher bidirectional memerlukan lisensi CATerm Pro.">
+    <DirectorySync
+      hostId={currentHostId}
+      initialLocalPath={localPath}
+      initialRemotePath={remotePath}
+      onClose={() => (showSyncModal = false)}
+    />
+  </ProGate>
+</Modal>
 </PageContainer>
 </div>
 

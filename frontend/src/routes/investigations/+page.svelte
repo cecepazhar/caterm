@@ -4,7 +4,7 @@
   import { listHosts, type HostRecord } from '$lib/api/hosts';
   import { showToast } from '$lib/stores/uiNotifications.svelte';
   import { t, intlLocale } from '$lib/i18n/index.svelte';
-  import PageHeader from '$lib/components/PageHeader.svelte';
+  import { PageHeader, Button } from '@cecepazhar/caui';
   import NetworkAuditModal from '$lib/components/NetworkAuditModal.svelte';
 
   let isAddModalOpen = $state(false);
@@ -116,18 +116,20 @@
     subtitle={t('investigations.subtitle')}
   >
     {#snippet actions()}
-      <button
+      <Button
+        variant="success"
         onclick={() => { selectedAuditHostId = undefined; isAuditModalOpen = true; }}
-        class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-sm rounded-lg transition-colors flex items-center gap-2 shadow shadow-emerald-600/20">
+      >
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
         Audit Keamanan Jaringan
-      </button>
-      <button
+      </Button>
+      <Button
+        variant="primary"
         onclick={openAddModal}
-        class="px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white font-medium text-sm rounded-lg transition-colors flex items-center gap-2 shadow shadow-sky-600/20">
+      >
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
         {t('investigations.newInvestigation')}
-      </button>
+      </Button>
     {/snippet}
   </PageHeader>
   {#if !backendAvailable}
@@ -154,8 +156,8 @@
           </div>
         </div>
         <div class="mt-4 pt-3 border-t border-neutral-100 dark:border-neutral-800/80 flex justify-end gap-2">
-          <button onclick={() => openEditModal(inv)} class="px-3 py-1 bg-neutral-100 dark:bg-neutral-800 hover:bg-sky-600 hover:text-white rounded text-xs text-neutral-700 dark:text-neutral-300 transition-colors">{t('common.edit')}</button>
-          <button onclick={() => removeInvestigation(inv.id)} class="px-3 py-1 bg-neutral-100 dark:bg-neutral-800 hover:bg-red-600 hover:text-white rounded text-xs text-neutral-700 dark:text-neutral-300 transition-colors">{t('common.delete')}</button>
+          <Button variant="secondary" size="sm" onclick={() => openEditModal(inv)}>{t('common.edit')}</Button>
+          <Button variant="danger" size="sm" onclick={() => removeInvestigation(inv.id)}>{t('common.delete')}</Button>
         </div>
       </div>
     {/each}
@@ -215,17 +217,21 @@
         </div>
 
         <div class="flex justify-end gap-2 pt-2 border-t border-neutral-200 dark:border-neutral-800 mt-4">
-          <button 
+          <Button 
             type="button"
+            variant="secondary"
             onclick={() => isAddModalOpen = false} 
-            class="px-4 py-2 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-300 rounded text-sm font-medium mt-2">
+            class="mt-2"
+          >
             {t('common.cancel')}
-          </button>
-          <button 
+          </Button>
+          <Button 
             type="submit"
-            class="px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded text-sm font-medium mt-2">
+            variant="primary"
+            class="mt-2"
+          >
             {t('common.save')}
-          </button>
+          </Button>
         </div>
       </form>
     </div>

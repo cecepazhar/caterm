@@ -12,6 +12,7 @@
   import { toggleTheme } from '$lib/stores/theme.svelte';
   import { toggleAiChat } from '$lib/stores/aiChat.svelte';
   import { t } from '$lib/i18n/index.svelte';
+  import { Button, Input, Kbd, Icon, focusTrap } from '@cecepazhar/caui';
 
   let { onLock }: { onLock: () => void } = $props();
 
@@ -28,7 +29,7 @@
   let query = $state('');
   let active = $state(0);
   let hosts = $state<HostRecord[]>([]);
-  let input: HTMLInputElement | undefined = $state();
+  let inputRef = $state<HTMLInputElement | undefined>(undefined);
   let list: HTMLUListElement | undefined = $state();
 
   // Fresh host list and a clean query every time it opens.
@@ -39,7 +40,7 @@
     listHosts()
       .then((all) => (hosts = all))
       .catch(() => (hosts = []));
-    requestAnimationFrame(() => input?.focus());
+    requestAnimationFrame(() => inputRef?.focus());
   });
 
   function hostRank(host: HostRecord): number {
@@ -145,60 +146,77 @@
 
 {#if palette.open}
   <div
-    class="fixed inset-0 z-[300] bg-black/30 dark:bg-black/60 backdrop-blur-[2px] flex items-start justify-center px-4 pt-[12vh]"
+    class="fixed inset-0 z-[300] bg-black/40 dark:bg-black/70 backdrop-blur-xs flex items-start justify-center px-4 pt-[12vh]"
     role="presentation"
     onpointerdown={(e) => {
       if (e.target === e.currentTarget) closePalette();
     }}
   >
     <div
-      class="w-full max-w-xl rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#141414] shadow-2xl overflow-hidden"
+      class="w-full max-w-xl rounded-xl border border-[var(--ca-border)] bg-[var(--ca-surface-elevated)] shadow-2xl overflow-hidden font-sans"
       role="dialog"
       aria-modal="true"
       aria-label={t('palette.title')}
+      use:focusTrap={{ onEscape: closePalette, returnFocus: true }}
     >
-      <div class="flex items-center gap-2 px-3 border-b border-neutral-200 dark:border-neutral-800">
-        <svg class="w-4 h-4 text-neutral-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-        </svg>
-        <input
-          bind:this={input}
+      <div class="p-2 border-b border-[var(--ca-border)]">
+        <Input
+          variant="ghost"
+          size="md"
           bind:value={query}
           onkeydown={onKeydown}
           oninput={() => (active = 0)}
           placeholder={palette.mode === 'hosts' ? t('palette.placeholderHosts') : t('palette.placeholder')}
-          aria-label={t('palette.title')}
-          aria-controls="palette-list"
-          aria-activedescendant={filtered[active] ? `palette-item-${active}` : undefined}
-          class="flex-1 min-w-0 py-3 bg-transparent text-sm text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none"
-        />
-        <kbd class="px-1.5 py-0.5 rounded border border-neutral-200 dark:border-neutral-700 text-[10px] font-mono text-neutral-500">Esc</kbd>
+          ariaLabel={t('palette.title')}
+          bind:ref={inputRef}
+          class="w-full"
+        >
+          {#snippet leadingIcon()}
+            <Icon name="search" size={16} class="text-[var(--ca-text-muted)] shrink-0" />
+          {/snippet}
+          {#snippet trailingAction()}
+            <Button
+              variant="ghost"
+              size="icon"
+              onclick={closePalette}
+              tabindex={-1}
+              aria-label="Close"
+              class="text-[var(--ca-text-muted)] hover:text-[var(--ca-text-primary)]"
+            >
+              <Kbd size="sm">Esc</Kbd>
+            </Button>
+          {/snippet}
+        </Input>
       </div>
 
-      <ul bind:this={list} id="palette-list" role="listbox" class="max-h-[50vh] overflow-y-auto py-1">
+      <ul bind:this={list} id="palette-list" role="listbox" class="max-h-[50vh] overflow-y-auto py-1.5 px-1.5 space-y-0.5">
         {#each filtered as item, i (item.id)}
           {#if i === 0 || filtered[i - 1].group !== item.group}
-            <li role="presentation" class="px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-neutral-500">{t(GROUP_LABEL[item.group])}</li>
+            <li role="presentation" class="px-2.5 pt-2.5 pb-1 text-[10px] font-semibold uppercase tracking-wider text-[var(--ca-text-muted)]">
+              {t(GROUP_LABEL[item.group])}
+            </li>
           {/if}
-          <li
-            id="palette-item-{i}"
-            data-index={i}
-            role="option"
-            aria-selected={i === active}
-            onpointermove={() => (active = i)}
-            onclick={() => choose(item)}
-            onkeydown={() => {}}
-            class="mx-1 px-2.5 py-1.5 rounded-md flex items-center justify-between gap-3 cursor-pointer text-sm {i === active
-              ? 'bg-sky-600 text-white'
-              : 'text-neutral-800 dark:text-neutral-200'}"
-          >
-            <span class="truncate">{item.label}</span>
-            {#if item.hint}
-              <span class="truncate text-xs font-mono {i === active ? 'text-sky-100' : 'text-neutral-500'}">{item.hint}</span>
-            {/if}
+          <li role="presentation">
+            <Button
+              variant="ghost"
+              id="palette-item-{i}"
+              data-index={i}
+              role="option"
+              aria-selected={i === active}
+              onpointermove={() => (active = i)}
+              onclick={() => choose(item)}
+              class="w-full !justify-between gap-3 text-left text-xs !font-normal px-2.5 py-1.5 {i === active
+                ? '!bg-sky-600 !text-white dark:!bg-sky-600'
+                : 'text-[var(--ca-text-primary)] hover:bg-[var(--ca-surface-subtle)]'}"
+            >
+              <span class="truncate font-medium">{item.label}</span>
+              {#if item.hint}
+                <span class="truncate text-[11px] font-mono {i === active ? 'text-sky-100' : 'text-[var(--ca-text-muted)]'}">{item.hint}</span>
+              {/if}
+            </Button>
           </li>
         {:else}
-          <li class="px-4 py-6 text-center text-sm text-neutral-500">{t('palette.empty')}</li>
+          <li class="px-4 py-8 text-center text-xs text-[var(--ca-text-muted)] font-sans">{t('palette.empty')}</li>
         {/each}
       </ul>
     </div>

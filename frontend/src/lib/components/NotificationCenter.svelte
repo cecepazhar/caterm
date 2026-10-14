@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Button } from '@cecepazhar/caui';
   import { t } from '$lib/i18n/index.svelte';
   import { getToasts, removeToast, getConfirmDialog, resolveConfirm } from '$lib/stores/uiNotifications.svelte';
   import UpdateToast from './UpdateToast.svelte';
@@ -30,13 +31,16 @@
       <div class="flex-1 text-xs leading-relaxed text-neutral-700 dark:text-neutral-200">
         {toast.message}
       </div>
-      <button
+      <Button
+        variant="ghost"
+        size="icon"
         onclick={() => removeToast(toast.id)}
-        class="shrink-0 text-neutral-400 hover:text-neutral-700 dark:text-neutral-500 dark:hover:text-neutral-300 p-0.5 rounded transition-colors"
         aria-label={t('notify.closeNotification')}
+        title={t('notify.closeNotification')}
+        class="shrink-0 h-6 w-6 text-neutral-400 hover:text-neutral-700 dark:text-neutral-500 dark:hover:text-neutral-300"
       >
         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-      </button>
+      </Button>
     </div>
   {/each}
   <!-- Last in the column so transient toasts stack above it instead of covering it. -->
@@ -65,18 +69,20 @@
       </p>
 
       <div class="flex justify-end gap-2 pt-3 border-t border-neutral-200 dark:border-neutral-800">
-        <button
+        <Button
+          variant="secondary"
+          size="sm"
           onclick={() => resolveConfirm(false)}
-          class="px-4 py-2 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 dark:bg-neutral-800 dark:hover:bg-neutral-700 dark:text-neutral-300 rounded-lg text-xs font-medium transition-colors"
         >
           {confirm.cancelText}
-        </button>
-        <button
+        </Button>
+        <Button
+          variant={confirm.danger ? 'danger' : 'primary'}
+          size="sm"
           onclick={() => resolveConfirm(true)}
-          class="px-4 py-2 rounded-lg text-xs font-medium transition-colors {confirm.danger ? 'bg-rose-600 hover:bg-rose-500 text-white shadow-lg shadow-rose-600/20' : 'bg-sky-600 hover:bg-sky-500 text-white shadow-lg shadow-sky-600/20'}"
         >
           {confirm.confirmText}
-        </button>
+        </Button>
       </div>
     </div>
   </div>

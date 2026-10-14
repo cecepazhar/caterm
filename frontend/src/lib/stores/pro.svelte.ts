@@ -62,7 +62,10 @@ export async function refreshProStatus(): Promise<void> {
       setProfilePlan('pro');
     }
   } catch {
-    // Browser preview or vault locked mid-call: keep what we had.
+    // Browser preview or vault locked mid-call: keep last in-memory status.
+    // The backend pro_status() already falls back to pro_cache.json when the vault is
+    // locked, so a successful read there persists the valid entitlement; only a
+    // truly failed invoke leaves `status` as-is (possibly null).
   }
 }
 
@@ -120,9 +123,17 @@ export async function onVaultUnlocked(): Promise<void> {
   }, SYNC_INTERVAL_MS);
 }
 
-/** Vault locked or app signed out: forget in-memory Pro state until the next unlock. */
+/** Vault locked or app signed out.
+ * Keep the current status if a cached Pro entitlement is still valid (server-confirmed
+ * license, signed token, or founder/lifetime override). Only clear when the user is
+ * unsigned-out or the cache/entitlement is actually gone.
+ */
 export function onVaultLocked(): void {
   if (syncTimer) clearInterval(syncTimer);
   syncTimer = null;
-  status = null;
+  const ent = status?.entitlement;
+  const cachedValid = ent?.state === 'valid' || (status?.license != null && status?.signedIn);
+  if (!cachedValid) {
+    status = null;
+  }
 }

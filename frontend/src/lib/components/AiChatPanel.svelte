@@ -1,5 +1,6 @@
 <script lang="ts">
   // Conversational AI assistant (Floating Smart Card layout).
+  import { Button } from '@cecepazhar/caui';
   import { onMount } from 'svelte';
   import {
     aiChat,
@@ -416,16 +417,17 @@
 {#if isMinimized}
   <!-- Floating collapsed bubble pill in bottom right corner -->
   <div class="fixed bottom-5 right-5 z-50 animate-in fade-in duration-150">
-    <button
+    <Button
+      variant="danger"
       onclick={() => (isMinimized = false)}
-      class="flex items-center gap-2 px-3.5 py-2 rounded-full bg-rose-600 hover:bg-rose-500 text-white shadow-xl shadow-rose-600/30 font-medium text-xs border border-rose-400/30 transition-transform hover:scale-105 cursor-pointer"
+      class="flex items-center gap-2 !px-3.5 !py-2 !rounded-full !bg-rose-600 hover:!bg-rose-500 text-white shadow-xl shadow-rose-600/30 font-medium text-xs border border-rose-400/30 transition-transform hover:scale-105 cursor-pointer"
     >
       <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
       <span>Hana AI Aktif</span>
       <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
       </svg>
-    </button>
+    </Button>
   </div>
 {:else}
   <!-- Floating Smart Card Overlay (Non-Destructive) in bottom right corner -->
@@ -446,36 +448,42 @@
 
       <div class="flex items-center gap-1 shrink-0">
         <!-- Clear Chat button -->
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="icon"
           onclick={() => (showConfirmClear = true)}
-          class="p-1 text-neutral-400 hover:text-amber-400 rounded-lg hover:bg-neutral-800 transition-colors"
+          class="!p-1 text-neutral-400 hover:text-amber-400 rounded-lg hover:bg-neutral-800 transition-colors"
           title="Bersihkan riwayat percakapan"
           aria-label="Bersihkan Chat"
         >
           <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
           </svg>
-        </button>
+        </Button>
 
         <!-- Minimize button -->
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="icon"
           onclick={() => (isMinimized = true)}
-          class="p-1 text-neutral-400 hover:text-white rounded-lg hover:bg-neutral-800 transition-colors"
+          class="!p-1 text-neutral-400 hover:text-white rounded-lg hover:bg-neutral-800 transition-colors"
           title="Kecilkan ke pojok"
           aria-label="Kecilkan"
         >
           <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7" />
           </svg>
-        </button>
+        </Button>
 
         <!-- Expand / Restore button -->
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="icon"
           onclick={() => (isFullHeight = !isFullHeight)}
-          class="p-1 text-neutral-400 hover:text-white rounded-lg hover:bg-neutral-800 transition-colors"
+          class="!p-1 text-neutral-400 hover:text-white rounded-lg hover:bg-neutral-800 transition-colors"
           title={isFullHeight ? "Mode Kartu Mengambang" : "Mode Layar Penuh"}
           aria-label="Ubah Ukuran"
         >
@@ -486,20 +494,22 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3" />
             {/if}
           </svg>
-        </button>
+        </Button>
 
         <!-- Close button -->
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="icon"
           onclick={onClose}
-          class="p-1 text-neutral-400 hover:text-rose-400 rounded-lg hover:bg-neutral-800 transition-colors"
+          class="!p-1 text-neutral-400 hover:text-rose-400 rounded-lg hover:bg-neutral-800 transition-colors"
           title="Tutup Hana AI"
           aria-label="Tutup"
         >
           <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
           </svg>
-        </button>
+        </Button>
       </div>
     </header>
 
@@ -509,20 +519,24 @@
         <p class="font-semibold text-amber-300 mb-1">Bersihkan riwayat percakapan?</p>
         <p class="text-neutral-400 mb-3 text-[11px]">Tindakan ini akan mengosongkan seluruh log pesan terminal AI.</p>
         <div class="flex justify-end gap-2">
-          <button
+          <Button
             type="button"
+            variant="secondary"
+            size="sm"
             onclick={() => (showConfirmClear = false)}
             class="px-2.5 py-1 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300 text-xs transition-colors"
           >
             Batal
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            variant="warning"
+            size="sm"
             onclick={confirmClearChat}
             class="px-2.5 py-1 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold transition-colors"
           >
             Ya, Bersihkan
-          </button>
+          </Button>
         </div>
       </div>
     {/if}
@@ -545,24 +559,28 @@
       <div class="flex items-center gap-1.5 shrink-0">
         <span class="text-[10px] font-semibold text-neutral-400">Via:</span>
         <div class="inline-flex rounded-lg bg-neutral-900 p-0.5 border border-neutral-800">
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="sm"
             onclick={() => (execMode = 'ssh')}
             class="px-2 py-0.5 rounded text-[10px] font-medium transition-colors {execMode === 'ssh'
               ? 'bg-rose-600 text-white shadow-sm'
               : 'text-neutral-400 hover:text-white'}"
           >
             SSH
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            variant="ghost"
+            size="sm"
             onclick={() => (execMode = 'terminal')}
             class="px-2 py-0.5 rounded text-[10px] font-medium transition-colors {execMode === 'terminal'
               ? 'bg-rose-600 text-white shadow-sm'
               : 'text-neutral-400 hover:text-white'}"
           >
             Terminal
-          </button>
+          </Button>
         </div>
       </div>
     </div>
@@ -586,13 +604,17 @@
         <div class="p-3 bg-neutral-950/80 border border-neutral-700/80 rounded-xl space-y-2 mt-2">
           <div class="flex items-center justify-between text-[11px] font-semibold text-neutral-300">
             <span>Rencana Eksekusi ({proposedSteps.length} langkah)</span>
-            <button
+            <Button
+              type="button"
+              variant="danger"
+              size="sm"
               onclick={runPlan}
               disabled={isExecuting || acceptedCount === 0}
-              class="px-2.5 py-1 rounded-lg bg-rose-600 hover:bg-rose-500 disabled:opacity-50 text-white text-xs font-bold transition-all shadow-sm"
+              loading={isExecuting}
+              class="px-2.5 py-1 rounded-lg !bg-rose-600 hover:!bg-rose-500 disabled:opacity-50 text-white text-xs font-bold transition-all shadow-sm"
             >
               {isExecuting ? 'Mengeksekusi...' : `Eksekusi (${acceptedCount})`}
-            </button>
+            </Button>
           </div>
 
           <div class="space-y-1.5">
@@ -634,16 +656,18 @@
             <span>Konfigurasi AI Provider</span>
           </div>
           <p class="text-[11px] text-neutral-400">Pilih mode "BYO" dan masukkan API Key / URL endpoint AI Anda.</p>
-          <button
+          <Button
             type="button"
+            variant="danger"
+            size="sm"
             onclick={() => {
               onClose();
               goto('/settings?tab=ai');
             }}
-            class="w-full py-2 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-semibold text-xs shadow-md shadow-rose-600/20 transition-all text-center"
+            class="w-full py-2 rounded-lg !bg-rose-600 hover:!bg-rose-500 text-white font-semibold text-xs shadow-md shadow-rose-600/20 transition-all text-center"
           >
             Buka Pengaturan AI
-          </button>
+          </Button>
         </div>
       {/if}
 
@@ -673,13 +697,15 @@
           placeholder="Tanyakan perintah Linux, troubleshoot, atau script..."
           class="flex-1 px-3.5 py-2 bg-neutral-900 border border-neutral-700/70 rounded-xl text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-rose-500 transition-colors"
         />
-        <button
+        <Button
           type="submit"
+          variant="primary"
           disabled={isSending || !draft.trim()}
-          class="px-3.5 py-2 bg-rose-600 hover:bg-rose-500 disabled:opacity-40 text-white text-xs font-semibold rounded-xl transition-all shadow-md shadow-rose-600/20 shrink-0"
+          loading={isSending}
+          class="!px-3.5 !py-2 !bg-rose-600 hover:!bg-rose-500 disabled:opacity-40 text-white text-xs font-semibold !rounded-xl transition-all shadow-md shadow-rose-600/20 shrink-0"
         >
           Kirim
-        </button>
+        </Button>
       </form>
     </div>
   </aside>

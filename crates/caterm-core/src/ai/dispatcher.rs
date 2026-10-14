@@ -376,7 +376,8 @@ impl<'a> Dispatcher<'a> {
                     {
                         if let Some(text) = delta.get("content").and_then(Value::as_str) {
                             accumulated_text.push_str(text);
-                        } else if let Some(thought) = delta.get("reasoning").and_then(Value::as_str) {
+                        } else if let Some(thought) = delta.get("reasoning").and_then(Value::as_str)
+                        {
                             if accumulated_text.is_empty() {
                                 accumulated_text.push_str(thought);
                             }

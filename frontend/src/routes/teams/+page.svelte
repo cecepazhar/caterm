@@ -5,7 +5,7 @@
   import { listGroups, type GroupRecord } from '$lib/api/groups';
   import { showToast } from '$lib/stores/uiNotifications.svelte';
   import { t } from '$lib/i18n/index.svelte';
-  import PageHeader from '$lib/components/PageHeader.svelte';
+  import { PageHeader, Button, Input, Badge, Card, Modal, ColorPicker } from '@cecepazhar/caui';
 
   let isAddModalOpen = $state(false);
   const isTauri = typeof window !== 'undefined' && ('__TAURI_INTERNALS__' in window || '__TAURI__' in window);
@@ -145,12 +145,14 @@
     subtitle={t('teams.subtitle')}
   >
     {#snippet actions()}
-      <button
+      <Button
         onclick={openAddModal}
-        class="px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white font-medium text-sm rounded-lg transition-colors flex items-center gap-2 shadow shadow-sky-600/20">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+        variant="primary"
+        size="md"
+      >
+        <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
         {t('teams.createTeam')}
-      </button>
+      </Button>
     {/snippet}
   </PageHeader>
   {#if !backendAvailable}
@@ -159,7 +161,7 @@
 
   <!-- Teams Grid / Empty State -->
   {#if teams.length === 0}
-    <div class="text-center py-16 px-4 bg-white dark:bg-neutral-900/40 rounded-2xl border border-neutral-200 dark:border-neutral-800 space-y-4">
+    <Card class="text-center py-16 px-4 space-y-4" variant="primary" size="lg">
       <div class="w-12 h-12 rounded-full bg-teal-500/10 text-teal-600 dark:text-teal-400 flex items-center justify-center mx-auto border border-teal-500/20">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -172,21 +174,22 @@
         </p>
       </div>
       <div>
-        <button
+        <Button
           onclick={openAddModal}
-          class="px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white font-medium text-xs rounded-xl transition-colors inline-flex items-center gap-1.5 shadow-md shadow-sky-600/20"
+          variant="primary"
+          size="sm"
         >
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
           </svg>
           {t('teams.createTeam')}
-        </button>
+        </Button>
       </div>
-    </div>
+    </Card>
   {:else}
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {#each teams as team}
-        <div class="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg p-5 flex flex-col justify-between hover:border-neutral-300 dark:hover:border-neutral-700 transition-colors shadow-sm dark:shadow-none">
+        <Card class="flex flex-col justify-between hover:border-neutral-300 dark:hover:border-neutral-700 transition-colors" variant="secondary" size="md">
           <div>
             <div class="flex items-center gap-3">
               {#if team.avatar}
@@ -212,7 +215,7 @@
                 <p class="text-neutral-500 dark:text-neutral-400 text-xs mt-2 uppercase font-medium">{t('teams.hostsLabel')}</p>
                 <div class="flex gap-1 flex-wrap mt-1">
                   {#each team.hostIds as hostId}
-                    <span class="px-2 py-0.5 bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 rounded text-xs">{hostLabel(hostId)}</span>
+                    <Badge variant="neutral" size="xs">{hostLabel(hostId)}</Badge>
                   {/each}
                 </div>
               {/if}
@@ -220,135 +223,120 @@
                 <p class="text-neutral-500 dark:text-neutral-400 text-xs mt-2 uppercase font-medium">{t('teams.groupsLabel')}</p>
                 <div class="flex gap-1 flex-wrap mt-1">
                   {#each team.groupIds as groupId}
-                    <span class="px-2 py-0.5 bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 rounded text-xs">{groupLabel(groupId)}</span>
+                    <Badge variant="neutral" size="xs">{groupLabel(groupId)}</Badge>
                   {/each}
                 </div>
               {/if}
             </div>
           </div>
           <div class="mt-4 pt-3 border-t border-neutral-100 dark:border-neutral-800/80 flex justify-end gap-2">
-            <button onclick={() => openEditModal(team)} class="px-3 py-1 bg-neutral-100 dark:bg-neutral-800 hover:bg-sky-600 hover:text-white rounded text-xs text-neutral-700 dark:text-neutral-300 transition-colors">{t('common.edit')}</button>
-            <button onclick={() => removeTeam(team.id)} class="px-3 py-1 bg-neutral-100 dark:bg-neutral-800 hover:bg-red-600 hover:text-white rounded text-xs text-neutral-700 dark:text-neutral-300 transition-colors">{t('common.delete')}</button>
+            <Button onclick={() => openEditModal(team)} variant="neutral" size="sm">{t('common.edit')}</Button>
+            <Button onclick={() => removeTeam(team.id)} variant="danger" size="sm">{t('common.delete')}</Button>
           </div>
-        </div>
+        </Card>
       {/each}
     </div>
   {/if}
 </div>
 
 <!-- Create Team Modal -->
-{#if isAddModalOpen}
-  <div class="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center p-4 z-50">
-    <div class="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6 max-w-lg w-full space-y-4 max-h-[90vh] overflow-y-auto shadow-2xl">
-      <h3 class="text-xl font-bold text-neutral-900 dark:text-white">{editingId ? t('teams.editTeam') : t('teams.createTeam')}</h3>
+<Modal
+  bind:open={isAddModalOpen}
+  title={editingId ? t('teams.editTeam') : t('teams.createTeam')}
+  size="lg"
+>
+  <form id="team-form" onsubmit={createTeam} class="space-y-4">
+    <Input
+      id="team-name"
+      label={t('teams.teamName')}
+      bind:value={newTeam.name}
+      required
+      placeholder={t('teams.teamNamePlaceholder')}
+    />
 
-      <form onsubmit={createTeam} class="space-y-4">
-        <div>
-          <label for="team-name" class="block text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase mb-1">{t('teams.teamName')}</label>
-          <input id="team-name" bind:value={newTeam.name} required placeholder={t('teams.teamNamePlaceholder')} class="w-full px-3 py-2 bg-neutral-50 dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-800 rounded text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-sky-500" />
-        </div>
+    <Input
+      id="team-avatar"
+      label={t('teams.avatar')}
+      bind:value={newTeam.avatar}
+      placeholder={t('teams.avatarPlaceholder')}
+    />
 
-        <div>
-          <label for="team-avatar" class="block text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase mb-1">{t('teams.avatar')}</label>
-          <input id="team-avatar" bind:value={newTeam.avatar} placeholder={t('teams.avatarPlaceholder')} class="w-full px-3 py-2 bg-neutral-50 dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-800 rounded text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-sky-500" />
-        </div>
+    <Input
+      id="team-members"
+      label={t('teams.members')}
+      bind:value={newTeam.membersStr}
+      placeholder={t('teams.membersPlaceholder')}
+    />
 
-        <div>
-          <label for="team-members" class="block text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase mb-1">{t('teams.members')}</label>
-          <input id="team-members" bind:value={newTeam.membersStr} placeholder={t('teams.membersPlaceholder')} class="w-full px-3 py-2 bg-neutral-50 dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-800 rounded text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-sky-500" />
-        </div>
+    <Input
+      id="team-cloud-account"
+      label={t('teams.accountUsername')}
+      disabled
+      placeholder={t('teams.accountUsernamePlaceholder')}
+    />
 
-        <div>
-          <div class="flex items-center justify-between mb-1">
-            <label for="team-cloud-account" class="block text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">{t('teams.accountUsername')}</label>
-            <span class="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 font-medium hidden items-center gap-1">
-              <svg class="w-3 h-3 text-amber-500 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
-              {t('teams.proAvailable')}
-            </span>
-          </div>
-          <div class="relative">
+    <ColorPicker
+      label={t('teams.colorSwatch')}
+      bind:value={newTeam.color}
+    />
+
+    <div>
+      <span class="block text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase mb-2">{t('teams.assignHosts')}</span>
+      <div class="space-y-1 max-h-32 overflow-y-auto p-2 bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg">
+        {#each availableHosts as h}
+          <label class="flex items-center gap-2 p-1.5 hover:bg-neutral-100 dark:hover:bg-neutral-900 rounded cursor-pointer text-sm text-neutral-700 dark:text-neutral-300">
             <input
-              id="team-cloud-account"
-              disabled
-              placeholder={t('teams.accountUsernamePlaceholder')}
-              class="w-full px-3 py-2 bg-neutral-100 dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800/80 rounded text-sm text-neutral-500 dark:text-neutral-500 cursor-not-allowed select-none"
+              type="checkbox"
+              checked={newTeam.selectedHosts.includes(h.id)}
+              onchange={() => toggleHost(h.id)}
+              class="rounded bg-white dark:bg-neutral-900 border-neutral-300 dark:border-neutral-700 text-sky-600 focus:ring-sky-500"
             />
-          </div>
-          <p class="text-[11px] text-neutral-500 dark:text-neutral-500 mt-1 hidden items-center gap-1.5">
-            <svg class="w-3.5 h-3.5 text-amber-500/80 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-            {t('teams.proNote')}
-          </p>
-        </div>
-
-        <div>
-          <span class="block text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase mb-2">{t('teams.colorSwatch')}</span>
-          <div class="flex gap-2">
-            {#each colors as c}
-              <button
-                type="button"
-                onclick={() => newTeam.color = c}
-                class="w-7 h-7 rounded-full transition-transform border-2 {newTeam.color === c ? 'border-neutral-900 dark:border-white scale-110' : 'border-transparent'}"
-                style="background-color: {c}"
-                aria-label={t('common.selectColor', { color: c })}>
-              </button>
-            {/each}
-          </div>
-        </div>
-
-        <div>
-          <span class="block text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase mb-2">{t('teams.assignHosts')}</span>
-          <div class="space-y-1 max-h-32 overflow-y-auto p-2 bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded">
-            {#each availableHosts as h}
-              <label class="flex items-center gap-2 p-1.5 hover:bg-neutral-100 dark:hover:bg-neutral-900 rounded cursor-pointer text-sm text-neutral-700 dark:text-neutral-300">
-                <input
-                  type="checkbox"
-                  checked={newTeam.selectedHosts.includes(h.id)}
-                  onchange={() => toggleHost(h.id)}
-                  class="rounded bg-white dark:bg-neutral-900 border-neutral-300 dark:border-neutral-700 text-sky-600 focus:ring-sky-500"
-                />
-                <span>{h.label}</span>
-              </label>
-            {/each}
-            {#if availableHosts.length === 0}
-              <span class="text-xs text-neutral-500">{t('teams.noHostsAvailable')}</span>
-            {/if}
-          </div>
-        </div>
-
-        <div>
-          <span class="block text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase mb-2">{t('teams.assignGroups')}</span>
-          <div class="space-y-1 max-h-32 overflow-y-auto p-2 bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded">
-            {#each availableGroups as g}
-              <label class="flex items-center gap-2 p-1.5 hover:bg-neutral-100 dark:hover:bg-neutral-900 rounded cursor-pointer text-sm text-neutral-700 dark:text-neutral-300">
-                <input
-                  type="checkbox"
-                  checked={newTeam.selectedGroups.includes(g.id)}
-                  onchange={() => toggleGroup(g.id)}
-                  class="rounded bg-white dark:bg-neutral-900 border-neutral-300 dark:border-neutral-700 text-sky-600 focus:ring-sky-500"
-                />
-                <span>{g.name}</span>
-              </label>
-            {/each}
-            {#if availableGroups.length === 0}
-              <span class="text-xs text-neutral-500">{t('teams.noGroupsAvailable')}</span>
-            {/if}
-          </div>
-        </div>
-
-        <div class="flex justify-end gap-2 pt-2 border-t border-neutral-200 dark:border-neutral-800 mt-4">
-          <button
-            type="button"
-            onclick={() => isAddModalOpen = false}
-            class="px-4 py-2 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-300 rounded text-sm font-medium mt-2">
-            {t('common.cancel')}
-          </button>
-          <button
-            type="submit"
-            class="px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded text-sm font-medium mt-2">
-            {t('teams.saveTeam')}
-          </button>
-        </div>
-      </form>
+            <span>{h.label}</span>
+          </label>
+        {/each}
+        {#if availableHosts.length === 0}
+          <span class="text-xs text-neutral-500">{t('teams.noHostsAvailable')}</span>
+        {/if}
+      </div>
     </div>
-  </div>
-{/if}
+
+    <div>
+      <span class="block text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase mb-2">{t('teams.assignGroups')}</span>
+      <div class="space-y-1 max-h-32 overflow-y-auto p-2 bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg">
+        {#each availableGroups as g}
+          <label class="flex items-center gap-2 p-1.5 hover:bg-neutral-100 dark:hover:bg-neutral-900 rounded cursor-pointer text-sm text-neutral-700 dark:text-neutral-300">
+            <input
+              type="checkbox"
+              checked={newTeam.selectedGroups.includes(g.id)}
+              onchange={() => toggleGroup(g.id)}
+              class="rounded bg-white dark:bg-neutral-900 border-neutral-300 dark:border-neutral-700 text-sky-600 focus:ring-sky-500"
+            />
+            <span>{g.name}</span>
+          </label>
+        {/each}
+        {#if availableGroups.length === 0}
+          <span class="text-xs text-neutral-500">{t('teams.noGroupsAvailable')}</span>
+        {/if}
+      </div>
+    </div>
+  </form>
+
+  {#snippet footer()}
+    <Button
+      type="button"
+      onclick={() => (isAddModalOpen = false)}
+      variant="neutral"
+      size="md"
+    >
+      {t('common.cancel')}
+    </Button>
+    <Button
+      type="button"
+      onclick={createTeam}
+      variant="primary"
+      size="md"
+    >
+      {t('teams.saveTeam')}
+    </Button>
+  {/snippet}
+</Modal>

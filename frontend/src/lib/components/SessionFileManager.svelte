@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Button } from '@cecepazhar/caui';
   import { t, intlLocale } from '$lib/i18n/index.svelte';
   import { onMount } from 'svelte';
   import { listRemoteDir, type SftpFileEntry } from '$lib/api/sftp';
@@ -168,16 +169,18 @@
 
     <div class="flex items-center gap-1.5 text-neutral-500 dark:text-neutral-400">
       <!-- Refresh -->
-      <button
+      <Button
+        variant="ghost"
+        size="icon"
         onclick={() => fetchFiles()}
-        class="p-1 hover:text-sky-600 dark:hover:text-sky-400 hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded transition-colors"
+        class="!p-1 hover:text-sky-600 dark:hover:text-sky-400 hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded transition-colors"
         title={t('fileManager.refresh')}
         aria-label={t('fileManager.refresh')}
       >
         <svg class="w-3.5 h-3.5 {isLoading ? 'animate-spin text-sky-500 dark:text-sky-400' : ''}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
         </svg>
-      </button>
+      </Button>
 
       <!-- Open Full SFTP Page -->
       <a
@@ -193,9 +196,11 @@
 
       <!-- Close Panel -->
       {#if onClose}
-        <button
+        <Button
+          variant="ghost"
+          size="icon"
           onclick={onClose}
-          class="p-1 sm:p-1 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded transition-colors flex items-center gap-1"
+          class="!p-1 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded transition-colors flex items-center gap-1"
           title={t('fileManager.closePanel')}
           aria-label={t('fileManager.closePanel')}
         >
@@ -203,7 +208,7 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
           </svg>
           <span class="md:hidden text-[11px] text-rose-600 dark:text-rose-400 font-medium">{t('common.close')}</span>
-        </button>
+        </Button>
       {/if}
     </div>
   </div>
@@ -212,17 +217,19 @@
   <div class="p-2 border-b border-neutral-200 dark:border-neutral-800/80 bg-neutral-50/60 dark:bg-neutral-950/40 space-y-1.5 shrink-0">
     <!-- Path input row -->
     <div class="flex items-center gap-1">
-      <button
+      <Button
+        variant="secondary"
+        size="icon"
         onclick={goUp}
         disabled={currentPath === '/' || !currentPath}
-        class="p-1.5 bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-800 hover:border-neutral-400 dark:hover:border-neutral-700 disabled:opacity-40 rounded text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors shrink-0"
+        class="!p-1.5 bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-800 hover:border-neutral-400 dark:hover:border-neutral-700 disabled:opacity-40 rounded text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors shrink-0"
         title={t('fileManager.goUp')}
         aria-label={t('fileManager.goUp')}
       >
         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path>
         </svg>
-      </button>
+      </Button>
 
       <input
         type="text"
@@ -232,12 +239,14 @@
         class="flex-1 min-w-0 bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-800 rounded px-2 py-1 text-xs text-neutral-900 dark:text-white font-mono focus:outline-none focus:border-sky-500 transition-colors"
       />
 
-      <button
+      <Button
+        variant="primary"
+        size="sm"
         onclick={handlePathSubmit}
-        class="px-2 py-1 bg-sky-600 hover:bg-sky-500 text-white rounded text-xs font-medium transition-colors shrink-0"
+        class="px-2 py-1 !bg-sky-600 hover:!bg-sky-500 text-white rounded text-xs font-medium transition-colors shrink-0"
       >
         {t('fileManager.go')}
-      </button>
+      </Button>
     </div>
 
     <!-- Breadcrumb trail -->
@@ -246,13 +255,15 @@
         {#if i > 0}
           <span class="text-neutral-400 dark:text-neutral-600">/</span>
         {/if}
-        <button
+        <Button
+          variant="ghost"
+          size="sm"
           onclick={() => navigateTo(crumb.path)}
-          class="hover:text-neutral-900 dark:hover:text-white hover:underline truncate max-w-[120px] transition-colors {crumb.path === currentPath ? 'text-sky-600 dark:text-sky-400 font-semibold' : ''}"
+          class="hover:text-neutral-900 dark:hover:text-white hover:underline truncate max-w-[120px] transition-colors !p-0 !h-auto {crumb.path === currentPath ? 'text-sky-600 dark:text-sky-400 font-semibold' : ''}"
           title={crumb.path}
         >
           {crumb.name}
-        </button>
+        </Button>
       {/each}
     </div>
 
@@ -268,13 +279,16 @@
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
       </svg>
       {#if searchQuery}
-        <button
+        <Button
+          variant="ghost"
+          size="icon"
           onclick={() => searchQuery = ''}
-          class="absolute right-2 top-1.5 text-neutral-400 dark:text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 text-xs"
+          class="absolute right-2 top-1.5 text-neutral-400 dark:text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 text-xs !p-0.5"
+          title={t('common.clear')}
           aria-label={t('common.clear')}
         >
           ×
-        </button>
+        </Button>
       {/if}
     </div>
   </div>
@@ -284,12 +298,14 @@
     {#if errorMsg}
       <div class="p-3 m-2 bg-amber-500/10 border border-amber-500/20 rounded text-amber-700 dark:text-amber-400 text-xs space-y-2">
         <p class="font-mono break-all">{errorMsg}</p>
-        <button
+        <Button
+          variant="secondary"
+          size="sm"
           onclick={() => fetchFiles()}
           class="px-2 py-1 bg-amber-500/15 dark:bg-amber-500/20 hover:bg-amber-500/25 dark:hover:bg-amber-500/30 text-amber-800 dark:text-amber-300 rounded text-[11px] font-medium transition-colors"
         >
           {t('fileManager.retry')}
-        </button>
+        </Button>
       </div>
     {:else if isLoading && files.length === 0}
       <div class="p-8 text-center text-xs text-neutral-500 space-y-2">

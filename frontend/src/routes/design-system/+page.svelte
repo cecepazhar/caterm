@@ -1,26 +1,25 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { 
-    Button, 
-    Badge, 
-    Input, 
-    Card, 
-    Table, 
-    Modal, 
-    Alert, 
-    Sidebar, 
-    SidebarItem, 
-    Icon, 
-    LanguageSwitcher, 
-    ThemeSwitcher 
-  } from '$lib/components/ui';
-  import { 
-    SplashScreen, 
-    LoginScreen, 
-    DashboardView, 
-    AiChatPanel 
-  } from '$lib/components/caui/templates';
-  import PageHeader from '$lib/components/PageHeader.svelte';
+  import {
+    Button,
+    Badge,
+    Input,
+    Card,
+    Table,
+    Modal,
+    Alert,
+    Sidebar,
+    SidebarItem,
+    Icon,
+    LanguageSwitcher,
+    ThemeSwitcher,
+    SplashScreen,
+    LoginScreen,
+    DashboardView,
+    AiChatPanel,
+  } from '@cecepazhar/caui';
+  import { PageHeader } from '@cecepazhar/caui';
+  import { setLocale, type Locale } from '$lib/i18n/index.svelte';
 
   // Navigation Tabs for Showcase
   type TabType = 'primitives' | 'data-overlays' | 'templates';
@@ -75,30 +74,38 @@
   <!-- Top Navigation Header -->
   <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#272732] pb-5">
     <PageHeader
+      icon={['M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2']}
+      accent="rose"
       title="CAUI v1.1 — CAFramework Design System"
-      description="Design tokens, primitives, overlays, and full-screen templates for all 17 CA applications."
+      subtitle="Design tokens, primitives, overlays, and full-screen templates for all 17 CA applications."
     />
     
     <!-- Tab Controls -->
     <div class="flex items-center gap-1 bg-[#141419] p-1 rounded-lg border border-[#272732]">
-      <button
+      <Button
+        variant={activeTab === 'primitives' ? 'secondary' : 'ghost'}
+        size="sm"
         onclick={() => (activeTab = 'primitives')}
-        class="px-3 py-1.5 rounded-md text-xs font-medium transition-all {activeTab === 'primitives' ? 'bg-[#272732] text-white shadow-xs' : 'text-neutral-400 hover:text-white'}"
+        class={activeTab === 'primitives' ? 'bg-[#272732] text-white shadow-xs' : 'text-neutral-400 hover:text-white'}
       >
         Atomic Primitives
-      </button>
-      <button
+      </Button>
+      <Button
+        variant={activeTab === 'data-overlays' ? 'secondary' : 'ghost'}
+        size="sm"
         onclick={() => (activeTab = 'data-overlays')}
-        class="px-3 py-1.5 rounded-md text-xs font-medium transition-all {activeTab === 'data-overlays' ? 'bg-[#272732] text-white shadow-xs' : 'text-neutral-400 hover:text-white'}"
+        class={activeTab === 'data-overlays' ? 'bg-[#272732] text-white shadow-xs' : 'text-neutral-400 hover:text-white'}
       >
         Data & Overlays
-      </button>
-      <button
+      </Button>
+      <Button
+        variant={activeTab === 'templates' ? 'secondary' : 'ghost'}
+        size="sm"
         onclick={() => (activeTab = 'templates')}
-        class="px-3 py-1.5 rounded-md text-xs font-medium transition-all {activeTab === 'templates' ? 'bg-[#272732] text-white shadow-xs' : 'text-neutral-400 hover:text-white'}"
+        class={activeTab === 'templates' ? 'bg-[#272732] text-white shadow-xs' : 'text-neutral-400 hover:text-white'}
       >
         Screen Templates
-      </button>
+      </Button>
     </div>
   </div>
 
@@ -107,19 +114,21 @@
     <div class="flex flex-wrap items-center justify-between gap-3 pt-1">
       <div class="flex flex-wrap items-center gap-2">
         {#each brandAccents as b}
-          <button
+          <Button
+            variant={selectedAccent === b.hex ? 'outline' : 'ghost'}
+            size="sm"
             onclick={() => setBrandAccent(b.hex)}
-            class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg border text-xs font-medium transition-all cursor-pointer {selectedAccent === b.hex ? 'border-white bg-white/10 text-white' : 'border-[#272732] bg-[#18181F]/40 text-neutral-400 hover:text-white'}"
+            class="flex items-center gap-2 border {selectedAccent === b.hex ? 'border-white bg-white/10 text-white' : 'border-[#272732] bg-[#18181F]/40 text-neutral-400 hover:text-white'}"
           >
             <span class="w-3 h-3 rounded-full border border-black/30" style="background-color: {b.hex};"></span>
             <span>{b.name}</span>
             {#if selectedAccent === b.hex}<span class="text-[10px] text-white">✓</span>{/if}
-          </button>
+          </Button>
         {/each}
       </div>
       
       <div class="flex items-center gap-3">
-        <LanguageSwitcher />
+        <LanguageSwitcher onchange={(locale) => setLocale(locale as Locale)} />
         <ThemeSwitcher />
       </div>
     </div>
@@ -214,22 +223,14 @@
     <!-- Table Data Grid -->
     <Card title="2. Data Grid & Telemetry Table" description="Sortable table with row hover, badges, and action slots.">
       <Table columns={tableColumns} data={tableData}>
-        {#snippet row(item: any)}
-          <tr class="border-b border-[#272732] hover:bg-white/[0.02] transition-colors text-xs font-mono">
-            <td class="px-4 py-3 text-white font-medium">{item.host}</td>
-            <td class="px-4 py-3">
-              {#if item.status === 'online'}
-                <Badge variant="success">ONLINE</Badge>
-              {:else if item.status === 'idle'}
-                <Badge variant="neutral">IDLE</Badge>
-              {:else}
-                <Badge variant="danger">OFFLINE</Badge>
-              {/if}
-            </td>
-            <td class="px-4 py-3 text-neutral-300">{item.cpu}</td>
-            <td class="px-4 py-3 text-neutral-300">{item.memory}</td>
-            <td class="px-4 py-3 text-neutral-400">{item.uptime}</td>
-          </tr>
+        {#snippet cell({ column, value })}
+          {#if column.key === 'status'}
+            <Badge variant={value === 'online' ? 'success' : value === 'idle' ? 'neutral' : 'danger'}>
+              {String(value).toUpperCase()}
+            </Badge>
+          {:else}
+            {String(value ?? '')}
+          {/if}
         {/snippet}
       </Table>
     </Card>
@@ -261,30 +262,38 @@
     <div class="flex items-center justify-between bg-[#111116] p-3 rounded-xl border border-[#272732]">
       <span class="text-xs font-medium text-neutral-300">Select Template to Preview:</span>
       <div class="flex items-center gap-2">
-        <button
+        <Button
+          variant={activeTemplate === 'dashboard' ? 'primary' : 'secondary'}
+          size="sm"
           onclick={() => (activeTemplate = 'dashboard')}
-          class="px-3 py-1 rounded-md text-xs font-medium transition-all {activeTemplate === 'dashboard' ? 'bg-[var(--ca-brand,#ef4444)] text-white' : 'text-neutral-400 hover:text-white bg-[#1A1A22]'}"
+          class={activeTemplate === 'dashboard' ? 'bg-[var(--ca-brand,#ef4444)] text-white' : 'text-neutral-400 hover:text-white bg-[#1A1A22]'}
         >
           Dashboard View
-        </button>
-        <button
+        </Button>
+        <Button
+          variant={activeTemplate === 'login' ? 'primary' : 'secondary'}
+          size="sm"
           onclick={() => (activeTemplate = 'login')}
-          class="px-3 py-1 rounded-md text-xs font-medium transition-all {activeTemplate === 'login' ? 'bg-[var(--ca-brand,#ef4444)] text-white' : 'text-neutral-400 hover:text-white bg-[#1A1A22]'}"
+          class={activeTemplate === 'login' ? 'bg-[var(--ca-brand,#ef4444)] text-white' : 'text-neutral-400 hover:text-white bg-[#1A1A22]'}
         >
           CAFramework Login
-        </button>
-        <button
+        </Button>
+        <Button
+          variant={activeTemplate === 'splash' ? 'primary' : 'secondary'}
+          size="sm"
           onclick={() => (activeTemplate = 'splash')}
-          class="px-3 py-1 rounded-md text-xs font-medium transition-all {activeTemplate === 'splash' ? 'bg-[var(--ca-brand,#ef4444)] text-white' : 'text-neutral-400 hover:text-white bg-[#1A1A22]'}"
+          class={activeTemplate === 'splash' ? 'bg-[var(--ca-brand,#ef4444)] text-white' : 'text-neutral-400 hover:text-white bg-[#1A1A22]'}
         >
           Splash Screen
-        </button>
-        <button
+        </Button>
+        <Button
+          variant={activeTemplate === 'aichat' ? 'primary' : 'secondary'}
+          size="sm"
           onclick={() => (activeTemplate = 'aichat')}
-          class="px-3 py-1 rounded-md text-xs font-medium transition-all {activeTemplate === 'aichat' ? 'bg-[var(--ca-brand,#ef4444)] text-white' : 'text-neutral-400 hover:text-white bg-[#1A1A22]'}"
+          class={activeTemplate === 'aichat' ? 'bg-[var(--ca-brand,#ef4444)] text-white' : 'text-neutral-400 hover:text-white bg-[#1A1A22]'}
         >
           AI Co-Pilot Chat
-        </button>
+        </Button>
       </div>
     </div>
 

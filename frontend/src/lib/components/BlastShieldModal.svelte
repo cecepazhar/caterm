@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { BlastShieldRisk } from '$lib/api/proSecurity';
+  import { Button, Modal } from '@cecepazhar/caui';
 
   let {
     isOpen = $bindable(false),
@@ -18,9 +19,15 @@
   let isBlocked = $derived(risk?.level === 'blocked');
 </script>
 
-{#if isOpen && risk}
-  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-    <div class="w-full max-w-lg rounded-xl border border-red-500/30 bg-[#121217] shadow-2xl p-6 text-white space-y-4">
+<Modal
+  bind:open={isOpen}
+  onclose={onCancel}
+  title="CATerm Blast Shield Intercept"
+  description="Potentially destructive command detected before PTY dispatch"
+  size="lg"
+>
+  {#if risk}
+    <div class="space-y-4 text-sm text-neutral-300">
       <div class="flex items-center gap-3">
         <div class="p-2.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -28,13 +35,9 @@
           </svg>
         </div>
         <div>
-          <h3 class="text-base font-bold text-red-400 flex items-center gap-2">
-            CATerm Blast Shield Intercept
-            <span class="text-xs px-2 py-0.5 rounded bg-red-500/20 text-red-300 font-mono uppercase tracking-wide">
-              {risk.level}
-            </span>
-          </h3>
-          <p class="text-xs text-neutral-400">Potentially destructive command detected before PTY dispatch</p>
+          <span class="inline-block text-xs px-2 py-0.5 rounded bg-red-500/20 text-red-300 font-mono uppercase tracking-wide">
+            {risk.level}
+          </span>
         </div>
       </div>
 
@@ -54,29 +57,33 @@
         {/if}
       </div>
 
-      <div class="pt-2 flex items-center justify-end gap-3">
-        <button
-          type="button"
-          class="px-4 py-2 text-xs font-medium text-neutral-300 hover:text-white bg-neutral-800 hover:bg-neutral-700 rounded-lg transition-colors"
-          onclick={onCancel}
-        >
-          Abort Execution
-        </button>
-
-        {#if !isBlocked}
-          <button
-            type="button"
-            class="px-4 py-2 text-xs font-semibold text-white bg-red-600 hover:bg-red-500 active:scale-95 rounded-lg transition-all shadow-lg shadow-red-600/20"
-            onclick={onConfirm}
-          >
-            I Understand, Execute Anyway
-          </button>
-        {:else}
-          <div class="text-[11px] text-red-400/90 font-mono italic">
-            Execution strictly blocked for system safety.
-          </div>
-        {/if}
-      </div>
+      {#if isBlocked}
+        <div class="text-[11px] text-red-400/90 font-mono italic">
+          Execution strictly blocked for system safety.
+        </div>
+      {/if}
     </div>
-  </div>
-{/if}
+  {/if}
+
+  {#snippet footer()}
+    <div class="flex items-center justify-end gap-3">
+      <Button
+        variant="secondary"
+        size="sm"
+        onclick={onCancel}
+      >
+        Abort Execution
+      </Button>
+
+      {#if !isBlocked}
+        <Button
+          variant="danger"
+          size="sm"
+          onclick={onConfirm}
+        >
+          I Understand, Execute Anyway
+        </Button>
+      {/if}
+    </div>
+  {/snippet}
+</Modal>

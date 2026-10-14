@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Button } from '@cecepazhar/caui';
   import { t, intlLocale } from '$lib/i18n/index.svelte';
   import { onMount } from 'svelte';
   import {
@@ -154,15 +155,17 @@
       <h2 class="text-sm font-bold tracking-wide">{t('dirSync.title')}</h2>
     </div>
     {#if onClose}
-      <button
+      <Button
         type="button"
+        variant="ghost"
+        size="icon"
         onclick={onClose}
-        class="p-1 hover:bg-neutral-200 dark:hover:bg-slate-700 rounded text-neutral-500 hover:text-neutral-800 dark:hover:text-white text-xs transition"
+        class="!p-1 hover:bg-neutral-200 dark:hover:bg-slate-700 rounded text-neutral-500 hover:text-neutral-800 dark:hover:text-white text-xs transition"
         title={t('common.close')}
         aria-label={t('common.close')}
       >
         ✕
-      </button>
+      </Button>
     {/if}
   </div>
 
@@ -226,32 +229,38 @@
         </div>
 
         <div class="flex items-center gap-2">
-          <button
+          <Button
             type="button"
+            variant="primary"
+            size="sm"
             onclick={handlePlan}
             disabled={isPlanning || isExecuting}
+            loading={isPlanning}
             class="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 text-white rounded font-medium flex items-center gap-1.5 transition cursor-pointer"
           >
             {#if isPlanning}
-              <span class="animate-spin">⏳</span> {t('dirSync.scanning')}
+              {t('dirSync.scanning')}
             {:else}
               <span>🔍</span> {t('dirSync.previewDiff')}
             {/if}
-          </button>
+          </Button>
 
           {#if plan && (plan.to_upload.length > 0 || plan.to_download.length > 0)}
-            <button
+            <Button
               type="button"
+              variant="success"
+              size="sm"
               onclick={handleExecute}
               disabled={isExecuting}
+              loading={isExecuting}
               class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded font-medium flex items-center gap-1.5 transition cursor-pointer shadow-sm"
             >
               {#if isExecuting}
-                <span class="animate-spin">⏳</span> {t('dirSync.synchronizing')}
+                {t('dirSync.synchronizing')}
               {:else}
                 <span>🚀</span> {t('dirSync.executeSync', { count: plan.to_upload.length + plan.to_download.length })}
               {/if}
-            </button>
+            </Button>
           {/if}
         </div>
       </div>
@@ -282,10 +291,12 @@
       <div class="border border-neutral-200 dark:border-slate-800 rounded-lg overflow-hidden bg-neutral-50 dark:bg-[#181c24]">
         <!-- Plan Tabs -->
         <div class="flex items-center border-b border-neutral-200 dark:border-slate-800 bg-neutral-100 dark:bg-[#1c212c]">
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="sm"
             onclick={() => (activeTab = 'upload')}
-            class={`px-3 py-2 font-semibold border-b-2 flex items-center gap-1.5 transition cursor-pointer ${
+            class={`px-3 py-2 font-semibold border-b-2 flex items-center gap-1.5 transition cursor-pointer rounded-none ${
               activeTab === 'upload'
                 ? 'border-cyan-500 text-cyan-600 dark:text-cyan-400 bg-white dark:bg-[#181c24]'
                 : 'border-transparent text-neutral-600 dark:text-slate-400 hover:text-neutral-900 dark:hover:text-white'
@@ -295,11 +306,13 @@
             <span class="px-1.5 py-0.2 rounded-full text-[10px] bg-cyan-100 dark:bg-cyan-900/60 text-cyan-700 dark:text-cyan-300">
               {plan.to_upload.length}
             </span>
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            variant="ghost"
+            size="sm"
             onclick={() => (activeTab = 'download')}
-            class={`px-3 py-2 font-semibold border-b-2 flex items-center gap-1.5 transition cursor-pointer ${
+            class={`px-3 py-2 font-semibold border-b-2 flex items-center gap-1.5 transition cursor-pointer rounded-none ${
               activeTab === 'download'
                 ? 'border-cyan-500 text-cyan-600 dark:text-cyan-400 bg-white dark:bg-[#181c24]'
                 : 'border-transparent text-neutral-600 dark:text-slate-400 hover:text-neutral-900 dark:hover:text-white'
@@ -309,11 +322,13 @@
             <span class="px-1.5 py-0.2 rounded-full text-[10px] bg-cyan-100 dark:bg-cyan-900/60 text-cyan-700 dark:text-cyan-300">
               {plan.to_download.length}
             </span>
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            variant="ghost"
+            size="sm"
             onclick={() => (activeTab = 'conflicts')}
-            class={`px-3 py-2 font-semibold border-b-2 flex items-center gap-1.5 transition cursor-pointer ${
+            class={`px-3 py-2 font-semibold border-b-2 flex items-center gap-1.5 transition cursor-pointer rounded-none ${
               activeTab === 'conflicts'
                 ? 'border-amber-500 text-amber-600 dark:text-amber-400 bg-white dark:bg-[#181c24]'
                 : 'border-transparent text-neutral-600 dark:text-slate-400 hover:text-neutral-900 dark:hover:text-white'
@@ -323,7 +338,7 @@
             <span class="px-1.5 py-0.2 rounded-full text-[10px] bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-300">
               {plan.conflicts.length}
             </span>
-          </button>
+          </Button>
         </div>
 
         <!-- Plan Table -->
@@ -417,18 +432,21 @@
             {t('dirSync.watchBody')}
           </p>
         </div>
-        <button
+        <Button
           type="button"
+          variant="primary"
+          size="sm"
           onclick={handleStartWatch}
           disabled={isStartingWatch}
+          loading={isStartingWatch}
           class="px-3 py-1.5 bg-sky-600 hover:bg-sky-500 disabled:opacity-50 text-white rounded font-medium flex items-center gap-1.5 transition cursor-pointer"
         >
           {#if isStartingWatch}
-            <span class="animate-spin">⏳</span> {t('dirSync.starting')}
+            {t('dirSync.starting')}
           {:else}
             <span>▶</span> {t('dirSync.startWatch')}
           {/if}
-        </button>
+        </Button>
       </div>
 
       {#if watchError}
@@ -465,13 +483,15 @@
                 </div>
 
                 {#if w.is_active}
-                  <button
+                  <Button
                     type="button"
+                    variant="danger"
+                    size="sm"
                     onclick={() => handleStopWatch(w.id)}
-                    class="px-2.5 py-1 bg-rose-600/90 hover:bg-rose-500 text-white rounded text-[11px] font-sans font-medium transition cursor-pointer shrink-0"
+                    class="px-2.5 py-1 !bg-rose-600/90 hover:!bg-rose-500 text-white rounded text-[11px] font-sans font-medium transition cursor-pointer shrink-0"
                   >
                     {t('dirSync.stop')}
-                  </button>
+                  </Button>
                 {/if}
               </div>
             {/each}

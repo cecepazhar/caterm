@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Button } from '@cecepazhar/caui';
   import { t } from '$lib/i18n/index.svelte';
   import { onMount, onDestroy } from 'svelte';
   import { EditorState, type Extension } from '@codemirror/state';
@@ -198,12 +199,14 @@
         {t('editor.tooLarge', { size: formatBytes(byteSize) })}
       </p>
       <p class="text-neutral-500 dark:text-slate-500">{t('editor.tooLargeBody')}</p>
-      <button
+      <Button
+        variant="warning"
+        size="sm"
         onclick={dismissWarningAndLoad}
         class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-white rounded text-xs font-semibold"
       >
         {t('editor.loadAnyway')}
-      </button>
+      </Button>
     </div>
   {:else}
     <!-- CodeMirror host -->

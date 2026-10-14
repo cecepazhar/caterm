@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import PageHeader from '$lib/components/PageHeader.svelte';
+  import { PageHeader, Button, Input, Badge, Card, Modal, Textarea, Checkbox } from '@cecepazhar/caui';
   import AiNavTabs from '$lib/components/AiNavTabs.svelte';
   import { showToast, confirmModal } from '$lib/stores/uiNotifications.svelte';
   import {
@@ -153,15 +153,15 @@
   <AiNavTabs active="personas" />
 
   {#if loading}
-    <div class="{CARD} flex items-center justify-center py-12 text-sm {MUTED}">
+    <Card class="flex items-center justify-center py-12 text-sm text-neutral-500 dark:text-neutral-400" variant="primary" size="lg">
       <svg class="w-5 h-5 animate-spin mr-3 text-sky-500" fill="none" viewBox="0 0 24 24">
         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
       </svg>
       Loading Personas...
-    </div>
+    </Card>
   {:else}
-    <div class="{CARD} space-y-4">
+    <Card class="space-y-4" variant="primary" size="lg">
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 class="text-base font-semibold text-neutral-900 dark:text-white">Active System Personas</h2>
@@ -169,29 +169,29 @@
             Stage 1 of Prompt Assembly. Personas define LLM tone, safety guardrails, and role expectations.
           </p>
         </div>
-        <button
+        <Button
           onclick={openAddPersona}
-          class="px-3.5 py-1.5 text-xs font-semibold rounded-md bg-indigo-600 hover:bg-indigo-500 text-white shadow-sm transition-colors flex items-center gap-1.5 self-start sm:self-auto"
+          variant="primary"
+          size="sm"
+          class="self-start sm:self-auto"
         >
-          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
           </svg>
           New Persona
-        </button>
+        </Button>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         {#each personas as p (p.id)}
-          <div class="{SUBCARD} flex flex-col justify-between space-y-4">
+          <Card class="flex flex-col justify-between space-y-4" variant="secondary" size="md">
             <div class="space-y-3">
               <div class="flex items-start justify-between gap-2">
                 <div>
                   <h3 class="text-sm font-semibold text-neutral-900 dark:text-white flex items-center gap-2">
                     {p.title}
                     {#if p.is_global_default}
-                      <span class="px-2 py-0.5 text-[10px] font-bold rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                        GLOBAL DEFAULT
-                      </span>
+                      <Badge variant="success" size="xs">GLOBAL DEFAULT</Badge>
                     {/if}
                   </h3>
                   {#if p.description}
@@ -230,136 +230,132 @@
 
             <div class="flex items-center justify-between pt-3 border-t border-neutral-200 dark:border-neutral-800 text-xs">
               <div class="flex gap-2">
-                <button
+                <Button
                   onclick={() => openEditPersona(p)}
-                  class="text-indigo-600 dark:text-indigo-400 hover:underline font-medium"
+                  variant="ghost"
+                  size="sm"
                 >
                   Edit
-                </button>
+                </Button>
                 {#if !p.is_global_default}
-                  <button
+                  <Button
                     onclick={() => handleSetDefault(p)}
-                    class="text-emerald-600 dark:text-emerald-400 hover:underline font-medium"
+                    variant="ghost"
+                    size="sm"
                   >
                     Set as Default
-                  </button>
+                  </Button>
                 {/if}
               </div>
               {#if !p.is_global_default}
-                <button
+                <Button
                   onclick={() => handleDeletePersona(p)}
-                  class="text-rose-600 dark:text-rose-400 hover:underline font-medium"
+                  variant="danger"
+                  size="sm"
                 >
                   Delete
-                </button>
+                </Button>
               {/if}
             </div>
-          </div>
+          </Card>
         {/each}
       </div>
-    </div>
+    </Card>
   {/if}
 </div>
 
 <!-- Modal: Add / Edit Persona -->
-{#if showModal}
-  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-    <div class="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6 max-w-xl w-full max-h-[90vh] overflow-y-auto shadow-xl space-y-4 text-neutral-900 dark:text-white">
-      <div class="flex items-center justify-between">
-        <h3 class="text-base font-semibold">
-          {editingId ? 'Edit Persona' : 'Create New System Persona'}
-        </h3>
-        <button
-          onclick={() => (showModal = false)}
-          class="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 text-lg font-bold"
-        >
-          &times;
-        </button>
-      </div>
+<Modal
+  bind:open={showModal}
+  title={editingId ? 'Edit Persona' : 'Create New System Persona'}
+  size="lg"
+>
+  <div class="space-y-4 text-xs">
+    <Input
+      label="Persona Title"
+      bind:value={formTitle}
+      placeholder="e.g. SRE Incident Commander"
+    />
 
-      <div class="space-y-4 text-xs">
-        <div>
-          <label class={LABEL}>Persona Title</label>
-          <input type="text" bind:value={formTitle} placeholder="e.g. SRE Incident Commander" class={INPUT} />
-        </div>
+    <Input
+      label="Description (Optional)"
+      bind:value={formDesc}
+      placeholder="Short summary of this persona"
+    />
 
-        <div>
-          <label class={LABEL}>Description (Optional)</label>
-          <input type="text" bind:value={formDesc} placeholder="Short summary of this persona" class={INPUT} />
-        </div>
+    <Textarea
+      label="System Instruction Prompt"
+      rows={4}
+      bind:value={formPrompt}
+      placeholder="Instruction given to the model..."
+    />
 
-        <div>
-          <label class={LABEL}>System Instruction Prompt</label>
-          <textarea rows="4" bind:value={formPrompt} class={TEXTAREA} placeholder="Instruction given to the model..."></textarea>
-        </div>
-
-        <div>
-          <label class={LABEL}>Custom Guardrail Rules</label>
-          <div class="space-y-2 mb-2">
-            {#each formRules as rule, i}
-              <div class="flex items-center gap-2 bg-neutral-100 dark:bg-neutral-800 px-2 py-1.5 rounded">
-                <span class="flex-1 text-neutral-800 dark:text-neutral-200">{rule}</span>
-                <button
-                  type="button"
-                  onclick={() => removeRule(i)}
-                  class="text-rose-500 hover:text-rose-700 font-bold"
-                >
-                  &times;
-                </button>
-              </div>
-            {/each}
-          </div>
-          <div class="flex gap-2">
-            <input
-              type="text"
-              bind:value={newRuleInput}
-              placeholder="e.g. Always include curl verbose flag (-v)"
-              class={INPUT}
-              onkeydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addRule(); } }}
-            />
-            <button
-              type="button"
-              onclick={addRule}
-              class="px-3 py-1 bg-neutral-200 dark:bg-neutral-800 hover:bg-neutral-300 dark:hover:bg-neutral-700 font-semibold rounded"
+    <div>
+      <span class="block text-xs font-semibold uppercase tracking-wider text-neutral-700 dark:text-neutral-300 mb-1">Custom Guardrail Rules</span>
+      <div class="space-y-2 mb-2">
+        {#each formRules as rule, i}
+          <div class="flex items-center gap-2 bg-neutral-100 dark:bg-neutral-800 px-2.5 py-1.5 rounded-lg">
+            <span class="flex-1 text-neutral-800 dark:text-neutral-200">{rule}</span>
+            <Button
+              size="sm"
+              variant="ghost"
+              onclick={() => removeRule(i)}
+              class="text-rose-500 hover:text-rose-700 font-bold p-1 h-auto"
             >
-              Add
-            </button>
+              ✕
+            </Button>
           </div>
-        </div>
-
-        <div>
-          <label class={LABEL}>Default Environment Constraints</label>
-          <textarea rows="2" bind:value={formEnvConstraints} class={TEXTAREA} placeholder="Host OS, Shell syntax constraints..."></textarea>
-        </div>
-
-        <div class="flex items-center gap-2 pt-1">
-          <input
-            type="checkbox"
-            id="persona-default"
-            bind:checked={formIsDefault}
-            class="rounded border-neutral-300 dark:border-neutral-700 text-indigo-600 focus:ring-indigo-500"
-          />
-          <label for="persona-default" class="text-xs text-neutral-700 dark:text-neutral-300 font-medium">
-            Make this persona the Global Default
-          </label>
-        </div>
+        {/each}
       </div>
-
-      <div class="flex justify-end gap-3 pt-3 border-t border-neutral-200 dark:border-neutral-800">
-        <button
-          onclick={() => (showModal = false)}
-          class="px-4 py-2 text-xs font-medium rounded-md border border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+      <div class="flex gap-2">
+        <Input
+          bind:value={newRuleInput}
+          placeholder="e.g. Always include curl verbose flag (-v)"
+          class="flex-1"
+          onkeydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addRule(); } }}
+        />
+        <Button
+          type="button"
+          onclick={addRule}
+          variant="secondary"
+          size="md"
         >
-          Cancel
-        </button>
-        <button
-          onclick={handleSavePersona}
-          disabled={saving}
-          class="px-4 py-2 text-xs font-semibold rounded-md bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white transition-colors"
-        >
-          {saving ? 'Saving...' : 'Save Persona'}
-        </button>
+          Add
+        </Button>
       </div>
     </div>
+
+    <Textarea
+      label="Default Environment Constraints"
+      rows={2}
+      bind:value={formEnvConstraints}
+      placeholder="Host OS, Shell syntax constraints..."
+    />
+
+    <div class="pt-1">
+      <Checkbox
+        bind:checked={formIsDefault}
+        label="Make this persona the Global Default"
+      />
+    </div>
   </div>
-{/if}
+
+  {#snippet footer()}
+    <Button
+      onclick={() => (showModal = false)}
+      variant="neutral"
+      size="md"
+    >
+      Cancel
+    </Button>
+    <Button
+      onclick={handleSavePersona}
+      disabled={saving}
+      loading={saving}
+      variant="primary"
+      size="md"
+    >
+      Save Persona
+    </Button>
+  {/snippet}
+</Modal>

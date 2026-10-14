@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Button } from '@cecepazhar/caui';
   import { onMount } from 'svelte';
   import {
     aiGetSkills,
@@ -157,10 +158,11 @@
 <div class="fixed bottom-4 right-4 z-50 select-none">
   {#if !isOpen}
     <!-- Collapsed Trigger Pill -->
-    <button
+    <Button
       type="button"
+      variant="secondary"
       onclick={() => (isOpen = true)}
-      class="flex items-center gap-2.5 px-4 py-2.5 rounded-full bg-neutral-900/95 hover:bg-neutral-800 text-neutral-100 border border-neutral-700/80 shadow-2xl shadow-black/60 hover:scale-105 active:scale-95 transition-all text-xs font-semibold cursor-pointer group"
+      class="flex items-center gap-2.5 !px-4 !py-2.5 !rounded-full bg-neutral-900/95 hover:bg-neutral-800 text-neutral-100 border border-neutral-700/80 shadow-2xl shadow-black/60 hover:scale-105 active:scale-95 transition-all text-xs font-semibold cursor-pointer group"
       title="Hana AI Master Router & Skills Assistant"
     >
       <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
@@ -173,7 +175,7 @@
           {activeModelDisplay}
         </span>
       {/if}
-    </button>
+    </Button>
   {:else}
     <!-- Expanded Floating Smart Card -->
     <div class="w-[380px] sm:w-[440px] h-[520px] flex flex-col rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-2xl shadow-black/40 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
@@ -189,22 +191,27 @@
           {/if}
         </div>
         <div class="flex items-center gap-1">
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="sm"
             onclick={() => (messages = [])}
-            class="text-[11px] px-2 py-1 text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 transition-colors"
+            class="text-[11px] !px-2 !py-1 text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 transition-colors"
             title="Clear Chat"
           >
             Clear
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            variant="ghost"
+            size="icon"
             onclick={() => (isOpen = false)}
-            class="w-6 h-6 flex items-center justify-center rounded-lg text-neutral-400 hover:text-neutral-700 dark:hover:text-white hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-colors"
+            class="!w-6 !h-6 flex items-center justify-center rounded-lg text-neutral-400 hover:text-neutral-700 dark:hover:text-white hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-colors !p-0"
             title="Minimize"
+            aria-label="Minimize"
           >
             ✕
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -212,13 +219,15 @@
       <div class="px-3 py-1.5 bg-neutral-100/50 dark:bg-neutral-950/40 border-b border-neutral-200/50 dark:border-neutral-800/50 flex items-center gap-1.5 overflow-x-auto text-[11px]">
         <span class="text-neutral-400 shrink-0 text-[10px] uppercase font-bold">Skills:</span>
         {#each skills.slice(0, 4) as s}
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="sm"
             onclick={() => pickSkill(s)}
-            class="px-2 py-0.5 rounded-full bg-neutral-200/60 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-sky-500/20 hover:text-sky-400 transition-colors whitespace-nowrap font-mono text-[10px]"
+            class="!px-2 !py-0.5 rounded-full bg-neutral-200/60 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-sky-500/20 hover:text-sky-400 transition-colors whitespace-nowrap font-mono text-[10px]"
           >
             @{s.name}
-          </button>
+          </Button>
         {/each}
       </div>
 
@@ -261,14 +270,16 @@
         <div class="mx-3 mb-1 p-1 bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl shadow-xl max-h-40 overflow-y-auto text-xs z-30">
           <div class="px-2 py-1 text-[10px] uppercase font-bold text-neutral-400">Pilih Custom Skill:</div>
           {#each filteredSkills as s, idx}
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="sm"
               onclick={() => pickSkill(s)}
-              class="w-full text-left px-2.5 py-1.5 rounded-lg flex items-center justify-between gap-2 {idx === selectedSkillIndex ? 'bg-sky-500/20 text-sky-400' : 'hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-200'}"
+              class="w-full text-left px-2.5 py-1.5 rounded-lg flex items-center justify-between gap-2 justify-start {idx === selectedSkillIndex ? 'bg-sky-500/20 text-sky-400' : 'hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-200'}"
             >
               <span class="font-mono font-bold text-xs">@{s.name}</span>
               <span class="text-[11px] text-neutral-400 truncate">{s.title}</span>
-            </button>
+            </Button>
           {/each}
         </div>
       {/if}
@@ -284,15 +295,19 @@
             placeholder="Tanya Hana AI (ketik @ untuk skill)..."
             class="flex-1 bg-transparent text-xs text-neutral-900 dark:text-white placeholder-neutral-400 resize-none focus:outline-none"
           ></textarea>
-          <button
+          <Button
             type="button"
+            variant="primary"
+            size="icon"
             onclick={handleSend}
             disabled={isSending || !promptInput.trim()}
-            class="p-1.5 bg-sky-600 hover:bg-sky-500 disabled:opacity-40 text-white rounded-lg transition-colors shrink-0"
+            loading={isSending}
+            class="!p-1.5 !bg-sky-600 hover:!bg-sky-500 disabled:opacity-40 text-white rounded-lg transition-colors shrink-0"
             title="Kirim (Enter)"
+            aria-label="Kirim"
           >
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
-          </button>
+          </Button>
         </div>
       </div>
     </div>

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import PageHeader from '$lib/components/PageHeader.svelte';
+  import { PageHeader, Button, Input, Badge, Card, Modal, Checkbox } from '@cecepazhar/caui';
   import AiNavTabs from '$lib/components/AiNavTabs.svelte';
   import { showToast, confirmModal } from '$lib/stores/uiNotifications.svelte';
   import {
@@ -191,16 +191,16 @@
   <AiNavTabs active="routing" />
 
   {#if loading}
-    <div class="{CARD} flex items-center justify-center py-12 text-sm {MUTED}">
+    <Card class="flex items-center justify-center py-12 text-sm text-neutral-500 dark:text-neutral-400" variant="primary" size="lg">
       <svg class="w-5 h-5 animate-spin mr-3 text-sky-500" fill="none" viewBox="0 0 24 24">
         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
       </svg>
       Loading AI Provider & Routing matrix...
-    </div>
+    </Card>
   {:else}
     <!-- AI Providers Section -->
-    <div class="{CARD} space-y-4">
+    <Card class="space-y-4" variant="primary" size="lg">
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 class="text-base font-semibold text-neutral-900 dark:text-white">Registered AI Providers</h2>
@@ -208,15 +208,17 @@
             BYO API keys (Anthropic, OpenAI, DeepSeek, Ollama) and CATerm Pro Hosted AI. All keys are encrypted at rest with SQLCipher Argon2id.
           </p>
         </div>
-        <button
+        <Button
           onclick={openAddProvider}
-          class="px-3.5 py-1.5 text-xs font-semibold rounded-md bg-sky-600 hover:bg-sky-500 text-white shadow-sm transition-colors flex items-center gap-1.5 self-start sm:self-auto"
+          variant="primary"
+          size="sm"
+          class="self-start sm:self-auto"
         >
-          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
           </svg>
           Add Provider
-        </button>
+        </Button>
       </div>
 
       <div class="overflow-x-auto border border-neutral-200 dark:border-neutral-800 rounded-lg">
@@ -238,15 +240,13 @@
                 <td class="px-4 py-3 font-medium text-neutral-900 dark:text-white">
                   {p.name}
                   {#if p.id === 'caterm-hosted'}
-                    <span class="ml-1.5 px-1.5 py-0.5 text-[10px] font-bold rounded bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20">
-                      DEFAULT
-                    </span>
+                    <Badge variant="info" size="xs" class="ml-1.5">DEFAULT</Badge>
                   {/if}
                 </td>
                 <td class="px-4 py-3 font-mono text-neutral-600 dark:text-neutral-300">
-                  <span class="px-2 py-0.5 rounded text-[11px] font-medium {p.provider_type === 'caterm_hosted' ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400' : p.provider_type === 'anthropic' ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400' : p.provider_type === 'ollama' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-blue-500/10 text-blue-600 dark:text-blue-400'}">
+                  <Badge variant={p.provider_type === 'caterm_hosted' ? 'brand' : p.provider_type === 'anthropic' ? 'warning' : p.provider_type === 'ollama' ? 'success' : 'info'} size="xs">
                     {p.provider_type}
-                  </span>
+                  </Badge>
                 </td>
                 <td class="px-4 py-3 font-mono text-neutral-500 dark:text-neutral-400 truncate max-w-xs">{p.base_url}</td>
                 <td class="px-4 py-3 font-mono text-neutral-800 dark:text-neutral-200">{p.default_model}</td>
@@ -256,34 +256,32 @@
                   {:else if p.provider_type === 'ollama'}
                     <span class="text-emerald-600 dark:text-emerald-400">No Key Needed (Local)</span>
                   {:else if p.has_api_key}
-                    <span class="text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
-                      <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
-                      Encrypted in Vault
-                    </span>
+                    <Badge variant="success" size="xs">Encrypted in Vault</Badge>
                   {:else}
-                    <span class="text-amber-600 dark:text-amber-400 font-medium">Missing Key</span>
+                    <Badge variant="warning" size="xs">Missing Key</Badge>
                   {/if}
                 </td>
                 <td class="px-4 py-3">
-                  <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold {p.is_active ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-neutral-500/10 text-neutral-500'}">
-                    <span class="w-1.5 h-1.5 rounded-full {p.is_active ? 'bg-emerald-500' : 'bg-neutral-400'}"></span>
+                  <Badge variant={p.is_active ? 'success' : 'neutral'} size="xs">
                     {p.is_active ? 'ACTIVE' : 'INACTIVE'}
-                  </span>
+                  </Badge>
                 </td>
-                <td class="px-4 py-3 text-right space-x-2">
-                  <button
+                <td class="px-4 py-3 text-right space-x-1">
+                  <Button
                     onclick={() => openEditProvider(p)}
-                    class="text-sky-600 dark:text-sky-400 hover:underline font-medium"
+                    variant="ghost"
+                    size="sm"
                   >
                     Edit
-                  </button>
+                  </Button>
                   {#if p.id !== 'caterm-hosted'}
-                    <button
+                    <Button
                       onclick={() => handleDeleteProvider(p)}
-                      class="text-rose-600 dark:text-rose-400 hover:underline font-medium"
+                      variant="danger"
+                      size="sm"
                     >
                       Delete
-                    </button>
+                    </Button>
                   {/if}
                 </td>
               </tr>
@@ -291,10 +289,10 @@
           </tbody>
         </table>
       </div>
-    </div>
+    </Card>
 
     <!-- Task Routing Matrix Section -->
-    <div class="{CARD} space-y-5">
+    <Card class="space-y-5" variant="primary" size="lg">
       <div>
         <h2 class="text-base font-semibold text-neutral-900 dark:text-white">Deterministic Task Routing Matrix</h2>
         <p class="{MUTED} text-xs mt-0.5">
@@ -304,23 +302,23 @@
 
       <div class="space-y-4">
         {#each routingRules as rule (rule.task_type)}
-          <div class="{SUBCARD} space-y-3">
+          <Card class="space-y-3" variant="secondary" size="md">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-neutral-200 dark:border-neutral-800 pb-2">
               <div>
                 <h3 class="text-sm font-semibold text-neutral-900 dark:text-white flex items-center gap-2">
-                  <span class="px-2 py-0.5 rounded text-xs font-mono font-medium bg-neutral-200 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200">
-                    {rule.task_type}
-                  </span>
+                  <Badge variant="neutral" size="sm">{rule.task_type}</Badge>
                   {TASK_INFO[rule.task_type]?.title ?? rule.task_type}
                 </h3>
                 <p class="{MUTED} text-xs mt-0.5">{TASK_INFO[rule.task_type]?.desc ?? ''}</p>
               </div>
-              <button
+              <Button
                 onclick={() => handleSaveRoutingRule(rule)}
-                class="px-3 py-1 text-xs font-semibold rounded bg-sky-600 hover:bg-sky-500 text-white transition-colors self-start sm:self-auto"
+                variant="primary"
+                size="sm"
+                class="self-start sm:self-auto"
               >
                 Save Rule
-              </button>
+              </Button>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
@@ -328,43 +326,50 @@
               <div class="space-y-2 p-3 rounded-md bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800">
                 <div class="font-semibold text-sky-600 dark:text-sky-400 uppercase tracking-wide text-[10px]">Primary Execution</div>
                 <div>
-                  <label class={LABEL}>Provider</label>
-                  <select bind:value={rule.primary_provider_id} class={INPUT}>
+                  <label for="primary-prov-{rule.task_type}" class={LABEL}>Provider</label>
+                  <select id="primary-prov-{rule.task_type}" bind:value={rule.primary_provider_id} class={INPUT}>
                     {#each providers as prov}
                       <option value={prov.id}>{prov.name} ({prov.provider_type})</option>
                     {/each}
                   </select>
                 </div>
-                <div>
-                  <label class={LABEL}>Model</label>
-                  <input type="text" bind:value={rule.primary_model} class={INPUT} placeholder="e.g. claude-3-7-sonnet" />
-                </div>
+                <Input
+                  id="primary-model-{rule.task_type}"
+                  label="Model"
+                  bind:value={rule.primary_model}
+                  placeholder="e.g. claude-3-7-sonnet"
+                  size="sm"
+                />
               </div>
 
               <!-- Fallback Provider & Model -->
               <div class="space-y-2 p-3 rounded-md bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800">
                 <div class="font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wide text-[10px]">Fallback Failover (15s Timeout)</div>
                 <div>
-                  <label class={LABEL}>Provider</label>
-                  <select bind:value={rule.fallback_provider_id} class={INPUT}>
+                  <label for="fallback-prov-{rule.task_type}" class={LABEL}>Provider</label>
+                  <select id="fallback-prov-{rule.task_type}" bind:value={rule.fallback_provider_id} class={INPUT}>
                     <option value={null}>None (Fail Fast)</option>
                     {#each providers as prov}
                       <option value={prov.id}>{prov.name} ({prov.provider_type})</option>
                     {/each}
                   </select>
                 </div>
-                <div>
-                  <label class={LABEL}>Model</label>
-                  <input type="text" bind:value={rule.fallback_model} class={INPUT} placeholder="e.g. llama3.2 or gpt-4o" />
-                </div>
+                <Input
+                  id="fallback-model-{rule.task_type}"
+                  label="Model"
+                  value={rule.fallback_model || ''}
+                  oninput={(e) => { rule.fallback_model = (e.target as HTMLInputElement).value; }}
+                  placeholder="e.g. llama3.2 or gpt-4o"
+                  size="sm"
+                />
               </div>
 
               <!-- Persona & System Prompt -->
               <div class="space-y-2 p-3 rounded-md bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800">
                 <div class="font-semibold text-purple-600 dark:text-purple-400 uppercase tracking-wide text-[10px]">System Persona Context</div>
                 <div>
-                  <label class={LABEL}>Active Persona</label>
-                  <select bind:value={rule.system_persona_id} class={INPUT}>
+                  <label for="persona-{rule.task_type}" class={LABEL}>Active Persona</label>
+                  <select id="persona-{rule.task_type}" bind:value={rule.system_persona_id} class={INPUT}>
                     <option value={null}>Global Default Persona</option>
                     {#each personas as pers}
                       <option value={pers.id}>{pers.title} {pers.is_global_default ? '(Default)' : ''}</option>
@@ -377,8 +382,9 @@
               <div class="space-y-2 p-3 rounded-md bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800">
                 <div class="font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wide text-[10px]">Generation Parameters</div>
                 <div class="flex items-center justify-between gap-2">
-                  <label class={LABEL}>Temp ({rule.temperature.toFixed(2)})</label>
+                  <label for="temp-{rule.task_type}" class={LABEL}>Temp ({rule.temperature.toFixed(2)})</label>
                   <input
+                    id="temp-{rule.task_type}"
                     type="range"
                     min="0"
                     max="1"
@@ -388,8 +394,9 @@
                   />
                 </div>
                 <div>
-                  <label class={LABEL}>Max Tokens</label>
+                  <label for="tokens-{rule.task_type}" class={LABEL}>Max Tokens</label>
                   <input
+                    id="tokens-{rule.task_type}"
                     type="number"
                     min="100"
                     max="8192"
@@ -400,97 +407,79 @@
                 </div>
               </div>
             </div>
-          </div>
+          </Card>
         {/each}
       </div>
-    </div>
+    </Card>
   {/if}
 </div>
 
 <!-- Modal: Add / Edit Provider -->
-{#if showProviderModal}
-  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-    <div class="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6 max-w-md w-full shadow-xl space-y-4 text-neutral-900 dark:text-white">
-      <div class="flex items-center justify-between">
-        <h3 class="text-base font-semibold">
-          {editingProviderId ? 'Edit AI Provider' : 'Add New AI Provider'}
-        </h3>
-        <button
-          onclick={() => (showProviderModal = false)}
-          class="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 text-lg font-bold"
-        >
-          &times;
-        </button>
-      </div>
+<Modal
+  bind:open={showProviderModal}
+  title={editingProviderId ? 'Edit AI Provider' : 'Add New AI Provider'}
+  size="md"
+>
+  <div class="space-y-4 text-xs">
+    <Input
+      label="Provider Name"
+      bind:value={formName}
+      placeholder="e.g. Personal Anthropic"
+    />
 
-      <div class="space-y-3 text-xs">
-        <div>
-          <label class={LABEL}>Provider Name</label>
-          <input type="text" bind:value={formName} placeholder="e.g. Personal Anthropic" class={INPUT} />
-        </div>
+    <div>
+      <label for="provider-type-select" class={LABEL}>Provider Protocol / Type</label>
+      <select id="provider-type-select" bind:value={formType} onchange={handleTypeChange} class={INPUT}>
+        <option value="caterm_hosted">CATerm Hosted AI (OmniRoute Pro)</option>
+        <option value="anthropic">Anthropic Messages API (/v1/messages)</option>
+        <option value="openai_compatible">OpenAI Compatible (OpenAI, DeepSeek, Groq)</option>
+        <option value="ollama">Local Ollama (/api/chat)</option>
+      </select>
+    </div>
 
-        <div>
-          <label class={LABEL}>Provider Protocol / Type</label>
-          <select bind:value={formType} onchange={handleTypeChange} class={INPUT}>
-            <option value="caterm_hosted">CATerm Hosted AI (OmniRoute Pro)</option>
-            <option value="anthropic">Anthropic Messages API (/v1/messages)</option>
-            <option value="openai_compatible">OpenAI Compatible (OpenAI, DeepSeek, Groq)</option>
-            <option value="ollama">Local Ollama (/api/chat)</option>
-          </select>
-        </div>
+    <Input
+      label="Base URL"
+      bind:value={formBaseUrl}
+    />
 
-        <div>
-          <label class={LABEL}>Base URL</label>
-          <input type="text" bind:value={formBaseUrl} class={INPUT} />
-        </div>
+    <Input
+      label="Default Model"
+      bind:value={formModel}
+    />
 
-        <div>
-          <label class={LABEL}>Default Model</label>
-          <input type="text" bind:value={formModel} class={INPUT} />
-        </div>
+    {#if formType !== 'ollama' && formType !== 'caterm_hosted'}
+      <Input
+        type="password"
+        label="API Key {editingProviderId ? '(Leave blank to keep current key)' : ''}"
+        bind:value={formApiKey}
+        placeholder="sk-..."
+      />
+    {/if}
 
-        {#if formType !== 'ollama' && formType !== 'caterm_hosted'}
-          <div>
-            <label class={LABEL}>
-              API Key {editingProviderId ? '(Leave blank to keep current key)' : ''}
-            </label>
-            <input
-              type="password"
-              bind:value={formApiKey}
-              placeholder="sk-..."
-              class={INPUT}
-            />
-          </div>
-        {/if}
-
-        <div class="flex items-center gap-2 pt-2">
-          <input
-            type="checkbox"
-            id="provider-active"
-            bind:checked={formActive}
-            class="rounded border-neutral-300 dark:border-neutral-700 text-sky-600 focus:ring-sky-500"
-          />
-          <label for="provider-active" class="text-xs text-neutral-700 dark:text-neutral-300 font-medium">
-            Enable this provider in Routing Matrix
-          </label>
-        </div>
-      </div>
-
-      <div class="flex justify-end gap-3 pt-3 border-t border-neutral-200 dark:border-neutral-800">
-        <button
-          onclick={() => (showProviderModal = false)}
-          class="px-4 py-2 text-xs font-medium rounded-md border border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
-        >
-          Cancel
-        </button>
-        <button
-          onclick={handleSaveProvider}
-          disabled={savingProvider}
-          class="px-4 py-2 text-xs font-semibold rounded-md bg-sky-600 hover:bg-sky-500 disabled:opacity-50 text-white transition-colors"
-        >
-          {savingProvider ? 'Saving...' : 'Save Provider'}
-        </button>
-      </div>
+    <div class="pt-2">
+      <Checkbox
+        bind:checked={formActive}
+        label="Enable this provider in Routing Matrix"
+      />
     </div>
   </div>
-{/if}
+
+  {#snippet footer()}
+    <Button
+      onclick={() => (showProviderModal = false)}
+      variant="neutral"
+      size="md"
+    >
+      Cancel
+    </Button>
+    <Button
+      onclick={handleSaveProvider}
+      disabled={savingProvider}
+      loading={savingProvider}
+      variant="primary"
+      size="md"
+    >
+      Save Provider
+    </Button>
+  {/snippet}
+</Modal>

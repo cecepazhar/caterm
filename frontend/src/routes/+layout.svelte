@@ -1,5 +1,6 @@
 <script lang="ts">
   import "../app.css";
+  import { Button } from '@cecepazhar/caui';
   import LockScreen from '$lib/components/LockScreen.svelte';
   import { onVaultUnlocked, onVaultLocked } from '$lib/stores/pro.svelte';
   import HeaderQuickControls from '$lib/components/HeaderQuickControls.svelte';
@@ -41,7 +42,6 @@
   import { invoke } from '@tauri-apps/api/core';
   import { openExternalUrl } from '$lib/utils/url';
   import { t } from '$lib/i18n/index.svelte';
-  import LanguageSwitcher from '$lib/components/LanguageSwitcher.svelte';
   import { navItems as getNavItems, settingsNavItem } from '$lib/navItems';
   import CommandPalette from '$lib/components/CommandPalette.svelte';
   import { getPalette, openPalette, closePalette } from '$lib/stores/commandPalette.svelte';
@@ -559,17 +559,18 @@
   >
     <!-- Left: current section + session tabs -->
     <div class="flex items-center gap-1 min-w-0 flex-1" data-tauri-drag-region>
-      <button
-        type="button"
+      <Button
+        variant="ghost"
+        size="icon"
         onclick={() => mobileDrawerOpen = true}
-        class="md:hidden p-1 rounded text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-200/70 dark:hover:bg-neutral-800 transition-colors shrink-0"
+        class="md:hidden text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white shrink-0"
         title={t('shell.openNav')}
         aria-label={t('shell.openNav')}
       >
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
         </svg>
-      </button>
+      </Button>
 
       <div class="flex gap-1 text-xs items-center overflow-x-auto scrollbar-none min-w-0 flex-1" data-tauri-drag-region>
         <!-- Where you are, like a breadcrumb. Hidden while a terminal is showing: there the
@@ -627,14 +628,16 @@
                 {/if}
               </a>
             {/if}
-            <button
+            <Button
+              variant="ghost"
+              size="icon"
               onclick={() => closeSessionTab(tab.id)}
-              class="p-0.5 mr-1 rounded hover:bg-neutral-300 dark:hover:bg-neutral-700 hover:text-rose-600 dark:hover:text-rose-400"
+              class="!p-0.5 mr-1 rounded hover:!bg-neutral-300 dark:hover:!bg-neutral-700 hover:!text-rose-600 dark:hover:!text-rose-400"
               title={t('shell.closeSessionNamed', { label: tabLabel(tab) })}
               aria-label={t('shell.closeSessionNamed', { label: tabLabel(tab) })}
             >
               <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" stroke-linecap="round" d="M6 18L18 6M6 6l12 12"></path></svg>
-            </button>
+            </Button>
           </div>
         {/each}
 
@@ -689,24 +692,52 @@
       />
 
       <!-- 4. Notification Bell -->
-      <button onclick={() => showToast(t('shell.noNotifications'), 'info')} class="p-1.5 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-200/70 dark:hover:bg-neutral-800 rounded-md transition-colors relative" title={t('shell.notifications')} aria-label={t('shell.notifications')}>
+      <Button
+        variant="ghost"
+        size="icon"
+        onclick={() => showToast(t('shell.noNotifications'), 'info')}
+        class="hover:text-neutral-900 dark:hover:text-white relative"
+        title={t('shell.notifications')}
+        aria-label={t('shell.notifications')}
+      >
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
         {#if unreadCount > 0}
           <span class="absolute top-0.5 right-0.5 w-2 h-2 bg-rose-500 rounded-full border border-white dark:border-[#0e0e0e] animate-pulse"></span>
         {/if}
-      </button>
+      </Button>
 
       <!-- 5. Custom Window Controls -->
       <div class="hidden sm:flex items-center no-drag">
-        <button onclick={() => minimizeWindow()} class="p-2 rounded-md hover:bg-neutral-200/70 dark:hover:bg-neutral-800 text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors" title={t('shell.minimize')} aria-label={t('shell.minimize')}>
+        <Button
+          variant="ghost"
+          size="icon"
+          onclick={() => minimizeWindow()}
+          class="text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white"
+          title={t('shell.minimize')}
+          aria-label={t('shell.minimize')}
+        >
           <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path></svg>
-        </button>
-        <button onclick={() => maximizeWindow()} class="p-2 rounded-md hover:bg-neutral-200/70 dark:hover:bg-neutral-800 text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors" title={t('shell.maximize')} aria-label={t('shell.maximize')}>
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          onclick={() => maximizeWindow()}
+          class="text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white"
+          title={t('shell.maximize')}
+          aria-label={t('shell.maximize')}
+        >
           <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2" stroke-width="2"></rect></svg>
-        </button>
-        <button onclick={() => closeWindow()} class="p-2 rounded-md hover:bg-rose-500 hover:text-white text-neutral-500 dark:text-neutral-400 transition-colors" title={t('shell.close')} aria-label={t('shell.close')}>
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          onclick={() => closeWindow()}
+          class="text-neutral-500 dark:text-neutral-400 hover:!bg-rose-500 hover:!text-white"
+          title={t('shell.close')}
+          aria-label={t('shell.close')}
+        >
           <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-        </button>
+        </Button>
       </div>
     </div>
   </header>
@@ -714,12 +745,12 @@
   <div class="flex flex-1 min-h-0">
     <!-- Mobile Slide-out Drawer Backdrop -->
     {#if mobileDrawerOpen}
-      <button
-        type="button"
+      <Button
+        variant="ghost"
         onclick={() => mobileDrawerOpen = false}
-        class="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden transition-opacity border-0 p-0 cursor-default"
+        class="fixed inset-0 z-40 !bg-black/60 backdrop-blur-sm md:hidden transition-opacity !border-0 !p-0 !rounded-none !active:scale-100 cursor-default"
         aria-label={t('shell.closeMenuBackdrop')}
-      ></button>
+      ></Button>
     {/if}
 
     <!-- Mobile Slide-out Drawer Navigation -->
@@ -734,15 +765,17 @@
             <span class="font-bold text-neutral-900 dark:text-white text-base tracking-tight">CATerm</span>
             <span class="text-[10px] px-1.5 py-0.5 rounded border border-neutral-300 dark:border-neutral-700 text-neutral-500 dark:text-neutral-400 font-mono">v{APP_VERSION}</span>
           </div>
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
             onclick={() => mobileDrawerOpen = false}
-            class="p-1.5 rounded-lg hover:bg-neutral-200/70 dark:hover:bg-neutral-800 text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white transition-colors"
+            class="text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white"
             aria-label={t('shell.closeNav')}
           >
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
             </svg>
-          </button>
+          </Button>
         </div>
 
         <p class="px-5 pt-2 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-neutral-500">{t('shell.workspace')}</p>
@@ -777,32 +810,34 @@
       <!-- Brand + collapse (Fixed h-14 container height to prevent any vertical shift) -->
       <div class="h-14 flex items-center shrink-0 {isCollapsed ? 'justify-center px-2' : 'justify-between pl-4 pr-3'}">
         {#if isCollapsed}
-          <button
-            type="button"
+          <Button
+            variant="ghost"
+            size="icon"
             onclick={toggleSidebar}
             title={t('shell.expandSidebar')}
             aria-label={t('shell.expandSidebar')}
-            class="p-1.5 rounded-lg hover:bg-neutral-200/70 dark:hover:bg-neutral-800 transition-colors"
+            class="hover:bg-neutral-200/70 dark:hover:bg-neutral-800"
           >
             <Logo size={22} mode="brand" />
-          </button>
+          </Button>
         {:else}
           <div class="flex items-center gap-2 min-w-0">
             <Logo size={22} mode="brand" />
             <span class="font-bold text-neutral-900 dark:text-white text-lg tracking-tight truncate">CATerm</span>
             <span class="text-[10px] px-1.5 py-0.5 rounded border border-neutral-300 dark:border-neutral-700 text-neutral-500 dark:text-neutral-400 font-mono shrink-0">v{APP_VERSION}</span>
           </div>
-          <button
-            type="button"
+          <Button
+            variant="ghost"
+            size="icon"
             onclick={toggleSidebar}
             title={t('shell.collapseSidebar')}
             aria-label={t('shell.collapseSidebar')}
-            class="p-1 rounded-md hover:bg-neutral-200/70 dark:hover:bg-neutral-800 text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 transition-colors shrink-0"
+            class="text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 shrink-0"
           >
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
             </svg>
-          </button>
+          </Button>
         {/if}
       </div>
 
@@ -899,56 +934,61 @@
       class="fixed z-[200] w-48 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#141414] shadow-2xl py-1 text-sm"
       style="left: {tabMenu.x}px; top: {tabMenu.y}px;"
     >
-      <button
+      <Button
+        variant="ghost"
         role="menuitem"
         onclick={() => startRename(menuTab.id)}
-        class="w-full flex items-center gap-2.5 px-3 py-1.5 text-left text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800/60 transition-colors cursor-pointer"
+        class="w-full !justify-start gap-2.5 px-3 py-1.5 text-left text-neutral-700 dark:text-neutral-200 !font-normal"
       >
         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M16.9 4.1a2.1 2.1 0 013 3L8.5 18.5 4 20l1.5-4.5z" /></svg>
         {t('shell.rename')}
-      </button>
+      </Button>
 
-      <button
+      <Button
+        variant="ghost"
         role="menuitem"
         onclick={() => openGroupModal(menuTab.id)}
-        class="w-full flex items-center gap-2.5 px-3 py-1.5 text-left text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800/60 transition-colors cursor-pointer"
+        class="w-full !justify-start gap-2.5 px-3 py-1.5 text-left text-neutral-700 dark:text-neutral-200 !font-normal"
       >
         <svg class="w-3.5 h-3.5 text-sky-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
         </svg>
         {t('shell.setGroup')}
-      </button>
+      </Button>
 
       {#if menuTab.group}
-        <button
+        <Button
+          variant="ghost"
           role="menuitem"
           onclick={() => removeGroup(menuTab.id)}
-          class="w-full flex items-center gap-2.5 px-3 py-1.5 text-left text-neutral-500 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800/60 transition-colors cursor-pointer text-xs"
+          class="w-full !justify-start gap-2.5 px-3 py-1.5 text-left text-neutral-500 dark:text-neutral-400 !font-normal text-xs"
         >
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M6 18L18 6M6 6l12 12" /></svg>
           {t('shell.removeGroup')}
-        </button>
+        </Button>
 
-        <button
+        <Button
+          variant="ghost"
           role="menuitem"
           onclick={() => { const grp = menuTab.group; tabMenu = null; if (grp) closeTabsInGroup(grp); }}
-          class="w-full flex items-center gap-2.5 px-3 py-1.5 text-left text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30 transition-colors cursor-pointer text-xs"
+          class="w-full !justify-start gap-2.5 px-3 py-1.5 text-left !text-amber-600 dark:!text-amber-400 hover:!bg-amber-50 dark:hover:!bg-amber-950/30 !font-normal text-xs"
         >
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
           {t('shell.closeGroup', { group: menuTab.group })}
-        </button>
+        </Button>
       {/if}
 
       <div class="my-1 border-t border-neutral-200 dark:border-neutral-800"></div>
 
-      <button
+      <Button
+        variant="ghost"
         role="menuitem"
         onclick={() => { const id = menuTab.id; tabMenu = null; closeSessionTab(id); }}
-        class="w-full flex items-center gap-2.5 px-3 py-1.5 text-left text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors cursor-pointer"
+        class="w-full !justify-start gap-2.5 px-3 py-1.5 text-left !text-rose-600 dark:!text-rose-400 hover:!bg-rose-50 dark:hover:!bg-rose-950/30 !font-normal"
       >
         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="1.8" d="M6 18L18 6M6 6l12 12" /></svg>
         {t('shell.closeSession')}
-      </button>
+      </Button>
     </div>
   {/if}
 {/if}
@@ -972,14 +1012,15 @@
           </div>
           <h3 class="font-bold text-neutral-900 dark:text-white text-sm">{t('shell.setGroup')}</h3>
         </div>
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          size="icon"
           onclick={() => isGroupModalOpen = false}
           aria-label={t('common.cancel')}
-          class="p-1 rounded-lg text-neutral-400 hover:text-neutral-600 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+          class="text-neutral-400 hover:text-neutral-600 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
-        </button>
+        </Button>
       </div>
 
       <div class="space-y-3">
@@ -1004,17 +1045,18 @@
           </span>
           <div class="flex items-center gap-2">
             {#each GROUP_COLORS as color}
-              <button
-                type="button"
+              <Button
+                variant="ghost"
+                size="icon"
                 onclick={() => groupColorDraft = color}
-                class="w-6 h-6 rounded-full transition-transform flex items-center justify-center {groupColorDraft === color ? 'scale-115 ring-2 ring-offset-2 ring-neutral-400 dark:ring-neutral-500' : 'hover:scale-105'}"
+                class="!w-6 !h-6 !p-0 !min-h-0 rounded-full transition-transform {groupColorDraft === color ? 'scale-115 ring-2 ring-offset-2 ring-neutral-400 dark:ring-neutral-500' : 'hover:scale-105'}"
                 style="background-color: {color};"
                 aria-label={color}
               >
                 {#if groupColorDraft === color}
                   <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>
                 {/if}
-              </button>
+              </Button>
             {/each}
           </div>
         </div>
@@ -1022,28 +1064,30 @@
 
       <div class="flex justify-end gap-2 pt-2 border-t border-neutral-100 dark:border-neutral-800">
         {#if groupingTabId && sessionTabs.find(t => t.id === groupingTabId)?.group}
-          <button
-            type="button"
+          <Button
+            variant="ghost"
+            size="sm"
             onclick={() => { if (groupingTabId) removeGroup(groupingTabId); isGroupModalOpen = false; }}
-            class="mr-auto px-2.5 py-1 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-lg text-xs font-medium transition-colors"
+            class="mr-auto text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30"
           >
             {t('common.remove')}
-          </button>
+          </Button>
         {/if}
-        <button
-          type="button"
+        <Button
+          variant="secondary"
+          size="sm"
           onclick={() => isGroupModalOpen = false}
-          class="px-3 py-1.5 bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-300 rounded-lg text-xs font-medium transition-colors cursor-pointer"
         >
           {t('common.cancel')}
-        </button>
-        <button
-          type="button"
+        </Button>
+        <Button
+          variant="primary"
+          size="sm"
           onclick={commitGroup}
-          class="px-4 py-1.5 bg-sky-600 hover:bg-sky-500 text-white rounded-lg text-xs font-medium transition-colors shadow-md shadow-sky-600/20 cursor-pointer"
+          class="!bg-sky-600 hover:!bg-sky-500 !border-transparent shadow-md shadow-sky-600/20"
         >
           {t('common.save')}
-        </button>
+        </Button>
       </div>
     </div>
   </div>

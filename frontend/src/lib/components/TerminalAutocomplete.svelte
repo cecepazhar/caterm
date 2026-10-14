@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Button } from '@cecepazhar/caui';
   import { t } from '$lib/i18n/index.svelte';
   import type { AutocompleteItem } from '$lib/data/terminalCommands';
 
@@ -74,23 +75,26 @@
       </div>
       <div class="flex items-center gap-2">
         <span class="text-[9px] px-1.5 py-0.5 rounded bg-neutral-200 dark:bg-neutral-700/50 text-neutral-700 dark:text-neutral-300">{t('terminal.tabToComplete')}</span>
-        <button
+        <Button
+          variant="ghost"
+          size="icon"
           onclick={onClose}
-          class="hover:text-neutral-900 dark:hover:text-neutral-200 transition-colors p-0.5 rounded"
+          class="hover:text-neutral-900 dark:hover:text-neutral-200 transition-colors !p-0.5 rounded"
           title={t('terminal.dismiss')}
           aria-label={t('terminal.dismiss')}
         >
           ✕
-        </button>
+        </Button>
       </div>
     </div>
 
     <!-- Suggestion items list -->
     <div class="max-h-56 overflow-y-auto divide-y divide-neutral-100 dark:divide-neutral-800/40 py-1">
       {#each suggestions as item, idx}
-        <button
+        <Button
           type="button"
-          class="w-full px-3 py-1.5 flex items-center justify-between gap-3 text-left transition-colors {idx === selectedIndex ? 'bg-sky-500/15 dark:bg-sky-600/30 text-sky-900 dark:text-white border-l-2 border-sky-500 dark:border-sky-400' : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800/50'}"
+          variant="ghost"
+          class="w-full !px-3 !py-1.5 flex items-center justify-between gap-3 text-left transition-colors !h-auto !rounded-none justify-between {idx === selectedIndex ? 'bg-sky-500/15 dark:bg-sky-600/30 text-sky-900 dark:text-white border-l-2 border-sky-500 dark:border-sky-400' : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800/50'}"
           onclick={() => onSelect(item)}
         >
           <div class="flex items-center gap-2 min-w-0 flex-1">
@@ -119,7 +123,7 @@
               {item.sourceLabel ? `[${item.sourceLabel}] ` : ''}{item.desc || ''}
             </span>
           {/if}
-        </button>
+        </Button>
       {/each}
     </div>
   </div>

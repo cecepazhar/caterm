@@ -18,12 +18,25 @@
   import { listHosts, type HostRecord } from '$lib/api/hosts';
   import { showToast } from '$lib/stores/uiNotifications.svelte';
   import { errorText } from '$lib/errors';
-  import PageHeader from '$lib/components/PageHeader.svelte';
+  import { PageHeader, Button, Input, Badge, Tabs } from '@cecepazhar/caui';
   import ProGate from '$lib/components/ProGate.svelte';
 
   let hosts = $state<HostRecord[]>([]);
   let selectedHostId = $state<string>('');
   let activeTab = $state<'speed_qos' | 'benchmark' | 'mesh' | 'network_tools'>('speed_qos');
+
+  interface DevOpsTabItem {
+    id: string;
+    label: string;
+    badge?: string | number;
+  }
+
+  let devopsTabs: DevOpsTabItem[] = [
+    { id: 'speed_qos', label: '⚡ Throughput & QoS' },
+    { id: 'benchmark', label: '🚀 Hardware Benchmark' },
+    { id: 'mesh', label: '🕸️ Mesh Matrix', badge: 'PRO' },
+    { id: 'network_tools', label: '🔍 PMTUD & Subnet' }
+  ];
 
   // Loading States
   let isRunningSpeed = $state(false);
@@ -92,7 +105,7 @@
     isRunningBench = true;
     try {
       benchResult = await runServerBenchmark(selectedHostId);
-      showToast(`Benchmark selesai! RAM: ${benchResult.ramBandwidthMbps} MB/s, Disk: ${benchResult.diskWriteMbps} MB/s`, 'success');
+      showToast(`Benchmark selesai! RAM: ${benchResult.ramBandwidthMbps} MB/s, Disk: ${benchResult.diskWriteMbps1m} MB/s`, 'success');
     } catch (e) {
       showToast(`Benchmark gagal: ${errorText(e)}`, 'error');
     } finally {
@@ -107,8 +120,8 @@
     }
     isRunningMesh = true;
     try {
-      const hostIds = hosts.map((h) => h.id);
-      meshResult = await runMeshLatencyMatrix(hostIds);
+      const targetHosts: [string, string][] = hosts.map((h) => [h.id, h.label]);
+      meshResult = await runMeshLatencyMatrix(selectedHostId || 'local', targetHosts);
       showToast('Mesh Latency Matrix selesai dihitung!', 'success');
     } catch (e) {
       showToast(`Mesh Matrix gagal: ${errorText(e)}`, 'error');
@@ -175,32 +188,8 @@
   </div>
 
   <!-- NAVIGATION TABS -->
-  <div class="flex items-center gap-2 border-b border-neutral-200 dark:border-neutral-800 pb-2 overflow-x-auto text-xs font-semibold">
-    <button
-      onclick={() => (activeTab = 'speed_qos')}
-      class="px-4 py-2 rounded-xl transition flex items-center gap-2 whitespace-nowrap {activeTab === 'speed_qos' ? 'bg-white dark:bg-neutral-800 text-sky-600 dark:text-sky-400 shadow-sm border border-neutral-200/50 dark:border-neutral-700' : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'}"
-    >
-      <span>⚡ Throughput & QoS Bufferbloat</span>
-    </button>
-    <button
-      onclick={() => (activeTab = 'benchmark')}
-      class="px-4 py-2 rounded-xl transition flex items-center gap-2 whitespace-nowrap {activeTab === 'benchmark' ? 'bg-white dark:bg-neutral-800 text-amber-600 dark:text-amber-400 shadow-sm border border-neutral-200/50 dark:border-neutral-700' : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'}"
-    >
-      <span>🚀 Server Hardware Benchmark</span>
-    </button>
-    <button
-      onclick={() => (activeTab = 'mesh')}
-      class="px-4 py-2 rounded-xl transition flex items-center gap-2 whitespace-nowrap {activeTab === 'mesh' ? 'bg-white dark:bg-neutral-800 text-indigo-600 dark:text-indigo-400 shadow-sm border border-neutral-200/50 dark:border-neutral-700' : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'}"
-    >
-      <span>🕸️ Fleet Mesh Latency Matrix (Pro)</span>
-      <span class="text-[9px] px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-500 uppercase font-black">PRO</span>
-    </button>
-    <button
-      onclick={() => (activeTab = 'network_tools')}
-      class="px-4 py-2 rounded-xl transition flex items-center gap-2 whitespace-nowrap {activeTab === 'network_tools' ? 'bg-white dark:bg-neutral-800 text-emerald-600 dark:text-emerald-400 shadow-sm border border-neutral-200/50 dark:border-neutral-700' : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'}"
-    >
-      <span>🔍 PMTUD & Subnet Tools</span>
-    </button>
+  <div class="border-b border-neutral-200 dark:border-neutral-800 pb-2">
+    <Tabs items={devopsTabs} bind:value={activeTab} variant="pills" size="sm" />
   </div>
 
   <!-- TAB 1: SPEED TEST & QOS -->
@@ -212,20 +201,24 @@
           <p class="text-xs text-neutral-500">Mengukur bandwidth download/upload real-time dan degradasi latensi di bawah beban (Bufferbloat Grade A+ hingga F).</p>
         </div>
         <div class="flex items-center gap-2">
-          <button
+          <Button
+            variant="primary"
+            size="sm"
             onclick={startSpeedTest}
             disabled={isRunningSpeed || !selectedHostId}
-            class="px-4 py-2 bg-sky-600 hover:bg-sky-500 disabled:opacity-50 text-white text-xs font-semibold rounded-xl shadow-md shadow-sky-600/20 flex items-center gap-2 transition"
+            loading={isRunningSpeed}
           >
-            {isRunningSpeed ? 'Testing...' : '⚡ Jalankan Speed Test'}
-          </button>
-          <button
+            ⚡ Jalankan Speed Test
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
             onclick={startQosAudit}
             disabled={isRunningQos || !selectedHostId}
-            class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-semibold rounded-xl shadow-md shadow-indigo-600/20 flex items-center gap-2 transition"
+            loading={isRunningQos}
           >
-            {isRunningQos ? 'Auditing...' : '📊 Audit Bufferbloat QoS'}
-          </button>
+            📊 Audit Bufferbloat QoS
+          </Button>
         </div>
       </div>
 
@@ -245,8 +238,8 @@
               </div>
             </div>
             <div class="text-xs text-neutral-500 font-mono space-y-1">
-              <div>Latency: <strong>{speedResult.latencyMs} ms</strong> (Jitter: {speedResult.jitterMs} ms)</div>
-              <div>Server: {speedResult.serverName} ({speedResult.serverLocation})</div>
+              <div>Latency: <strong>{speedResult.pingMs} ms</strong> (Jitter: {speedResult.jitterMs} ms)</div>
+              <div>Target: {speedResult.serverTarget} ({speedResult.status})</div>
             </div>
           {:else}
             <div class="py-12 text-center text-neutral-400 text-xs">Tekan "Jalankan Speed Test" untuk menguji bandwidth target.</div>
@@ -263,13 +256,13 @@
               </div>
               <div>
                 <span class="text-xs text-neutral-400">Degradasi Latensi Saat Beban Penuh:</span>
-                <div class="text-sm font-bold text-neutral-900 dark:text-white mt-0.5">+{qosResult.bloatLatencyDeltaMs} ms delay</div>
+                <div class="text-sm font-bold text-neutral-900 dark:text-white mt-0.5">+{qosResult.deltaLoadMs} ms delay</div>
                 <p class="text-xs text-neutral-500 mt-1">{qosResult.recommendation}</p>
               </div>
             </div>
             <div class="grid grid-cols-2 gap-2 text-xs font-mono">
               <div class="p-2.5 rounded-lg bg-neutral-100 dark:bg-neutral-800/40">Idle Ping: <strong>{qosResult.idleLatencyMs} ms</strong></div>
-              <div class="p-2.5 rounded-lg bg-neutral-100 dark:bg-neutral-800/40">Loaded Ping: <strong>{qosResult.loadedLatencyMs} ms</strong></div>
+              <div class="p-2.5 rounded-lg bg-neutral-100 dark:bg-neutral-800/40">Loaded Ping: <strong>{qosResult.downloadLoadLatencyMs} ms</strong></div>
             </div>
           {:else}
             <div class="py-12 text-center text-neutral-400 text-xs">Tekan "Audit Bufferbloat QoS" untuk mendiagnosis bufferbloat antrian router.</div>
@@ -287,13 +280,15 @@
           <h3 class="text-sm font-bold text-neutral-900 dark:text-white">Server Hardware Benchmark Suite</h3>
           <p class="text-xs text-neutral-500">Benchmark komputasi multi-core CPU, throughput baca/tulis RAM, dan sequential & random I/O write speed.</p>
         </div>
-        <button
+        <Button
+          variant="primary"
+          size="sm"
           onclick={startServerBenchmark}
           disabled={isRunningBench || !selectedHostId}
-          class="px-4 py-2 bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white text-xs font-semibold rounded-xl shadow-md shadow-amber-600/20 flex items-center gap-2 transition"
+          loading={isRunningBench}
         >
-          {isRunningBench ? 'Running Benchmark...' : '🚀 Jalankan Server Benchmark'}
-        </button>
+          🚀 Jalankan Server Benchmark
+        </Button>
       </div>
 
       {#if benchResult}
@@ -312,16 +307,16 @@
           </div>
           <div class="p-5 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900/60 shadow-xs">
             <span class="text-xs font-semibold text-neutral-500 uppercase">Disk I/O Write</span>
-            <div class="text-2xl font-black text-emerald-500 mt-1">{benchResult.diskWriteMbps} <span class="text-xs font-normal text-neutral-400">MB/s</span></div>
+            <div class="text-2xl font-black text-emerald-500 mt-1">{benchResult.diskWriteMbps1m} <span class="text-xs font-normal text-neutral-400">MB/s</span></div>
           </div>
         </div>
 
         <div class="p-5 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900/60 space-y-3">
           <h4 class="text-xs font-bold uppercase tracking-wider text-neutral-500">Hardware Profile Target</h4>
           <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs font-mono">
-            <div class="p-3 rounded-xl bg-neutral-50 dark:bg-neutral-800/50">CPU Model: <strong>{benchResult.cpuModel}</strong></div>
+            <div class="p-3 rounded-xl bg-neutral-50 dark:bg-neutral-800/50">Details: <strong>{benchResult.details || 'Standard'}</strong></div>
             <div class="p-3 rounded-xl bg-neutral-50 dark:bg-neutral-800/50">Core Count: <strong>{benchResult.cpuCores} Cores</strong></div>
-            <div class="p-3 rounded-xl bg-neutral-50 dark:bg-neutral-800/50">Disk IOPS Random: <strong>{benchResult.diskIops} IOPS</strong></div>
+            <div class="p-3 rounded-xl bg-neutral-50 dark:bg-neutral-800/50">Disk IOPS 4K: <strong>{benchResult.diskWriteIops4k} IOPS</strong></div>
           </div>
         </div>
       {:else}
@@ -342,13 +337,15 @@
               <h4 class="text-xs font-bold uppercase tracking-wider text-neutral-900 dark:text-white">Multi-Host Mesh Latency Grid</h4>
               <p class="text-xs text-neutral-500">Matriks latensi antar node armada (ThinkPad X1, DELL YPC, Hostinger VPS, Lenovo XPC).</p>
             </div>
-            <button
+            <Button
+              variant="secondary"
+              size="sm"
               onclick={startMeshMatrix}
               disabled={isRunningMesh}
-              class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-semibold rounded-xl transition"
+              loading={isRunningMesh}
             >
-              {isRunningMesh ? 'Computing Matrix...' : 'Compute Mesh Matrix'}
-            </button>
+              Compute Mesh Matrix
+            </Button>
           </div>
 
           {#if meshResult}
@@ -356,28 +353,25 @@
               <table class="w-full text-xs text-left border-collapse font-mono">
                 <thead>
                   <tr class="border-b border-neutral-200 dark:border-neutral-800 text-neutral-500">
-                    <th class="p-2">From \ To</th>
-                    {#each meshResult.nodes as node}
-                      <th class="p-2">{node.name}</th>
-                    {/each}
+                    <th class="p-2">Target Host</th>
+                    <th class="p-2">Status</th>
+                    <th class="p-2">RTT (ms)</th>
+                    <th class="p-2">Packet Loss</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {#each meshResult.nodes as srcNode, i}
+                  {#each meshResult.nodes as node}
                     <tr class="border-b border-neutral-100 dark:border-neutral-800/60">
-                      <td class="p-2 font-bold text-neutral-900 dark:text-white">{srcNode.name}</td>
-                      {#each meshResult.nodes as dstNode, j}
-                        <td class="p-2">
-                          {#if i === j}
-                            <span class="text-neutral-400">-</span>
-                          {:else}
-                            {@const latency = meshResult.matrix[i]?.[j]}
-                            <span class="font-bold {latency < 30 ? 'text-emerald-500' : latency < 100 ? 'text-amber-500' : 'text-rose-500'}">
-                              {latency ? `${latency.toFixed(1)} ms` : 'Timeout'}
-                            </span>
-                          {/if}
-                        </td>
-                      {/each}
+                      <td class="p-2 font-bold text-neutral-900 dark:text-white">{node.targetLabel || node.targetHost}</td>
+                      <td class="p-2">
+                        <Badge variant={node.reachable ? 'success' : 'danger'} size="xs">
+                          {node.reachable ? 'Reachable' : 'Unreachable'}
+                        </Badge>
+                      </td>
+                      <td class="p-2 font-bold {node.rttMs < 30 ? 'text-emerald-500' : node.rttMs < 100 ? 'text-amber-500' : 'text-rose-500'}">
+                        {node.reachable ? `${node.rttMs.toFixed(1)} ms` : 'Timeout'}
+                      </td>
+                      <td class="p-2">{node.packetLossPct}%</td>
                     </tr>
                   {/each}
                 </tbody>
@@ -402,19 +396,22 @@
             <p class="text-xs text-neutral-500 mt-0.5">Pemindaian host aktif dan port umum dalam blok CIDR jaringan lokal.</p>
           </div>
           <div class="flex gap-2">
-            <input
-              type="text"
-              bind:value={subnetCidr}
-              placeholder="192.168.1.0/24"
-              class="flex-1 px-3 py-2 text-xs bg-neutral-50 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded-lg text-neutral-900 dark:text-white font-mono"
-            />
-            <button
+            <div class="flex-1">
+              <Input
+                bind:value={subnetCidr}
+                placeholder="192.168.1.0/24"
+                size="sm"
+              />
+            </div>
+            <Button
+              variant="primary"
+              size="sm"
               onclick={startSubnetSweep}
               disabled={isRunningSubnet || !selectedHostId}
-              class="px-4 py-2 bg-sky-600 text-white rounded-lg text-xs font-semibold hover:bg-sky-500 disabled:opacity-50 transition"
+              loading={isRunningSubnet}
             >
-              {isRunningSubnet ? 'Scanning...' : 'Sweep CIDR'}
-            </button>
+              Sweep CIDR
+            </Button>
           </div>
           {#if subnetResult}
             <div class="text-xs text-neutral-500">Ditemukan <strong>{subnetResult.activeHosts}</strong> host aktif:</div>
@@ -436,19 +433,22 @@
             <p class="text-xs text-neutral-500 mt-0.5">Uji batas ukuran paket maksimal tanpa fragmentasi untuk mencegah paket drop.</p>
           </div>
           <div class="flex gap-2">
-            <input
-              type="text"
-              bind:value={pmtudTarget}
-              placeholder="1.1.1.1"
-              class="flex-1 px-3 py-2 text-xs bg-neutral-50 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded-lg text-neutral-900 dark:text-white font-mono"
-            />
-            <button
+            <div class="flex-1">
+              <Input
+                bind:value={pmtudTarget}
+                placeholder="1.1.1.1"
+                size="sm"
+              />
+            </div>
+            <Button
+              variant="primary"
+              size="sm"
               onclick={startPmtudProbe}
               disabled={isRunningPmtud || !selectedHostId}
-              class="px-4 py-2 bg-sky-600 text-white rounded-lg text-xs font-semibold hover:bg-sky-500 disabled:opacity-50 transition"
+              loading={isRunningPmtud}
             >
-              {isRunningPmtud ? 'Probing...' : 'Probe MTU'}
-            </button>
+              Probe MTU
+            </Button>
           </div>
           {#if pmtudResult}
             <div class="p-4 rounded-xl bg-sky-500/10 border border-sky-500/20 text-center space-y-1">

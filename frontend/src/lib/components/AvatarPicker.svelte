@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Button } from '@cecepazhar/caui';
   import { t } from '$lib/i18n/index.svelte';
   import ProfileAvatar, { AVATARS } from './ProfileAvatar.svelte';
   import { getPro } from '$lib/stores/pro.svelte';
@@ -55,14 +56,15 @@
   class="relative inline-flex flex-col {centered ? 'items-center justify-center' : 'items-start'} no-drag"
 >
   <!-- Main Centered Avatar Button -->
-  <button
-    type="button"
+  <Button
+    variant="ghost"
+    size="icon"
     onclick={togglePicker}
     aria-haspopup="dialog"
     aria-expanded={isOpen}
     aria-label={t('avatars.pickerLabel')}
     title={t('avatars.pickerLabel')}
-    class="relative group rounded-full p-1 ring-2 ring-transparent hover:ring-sky-500/50 dark:hover:ring-sky-400/50 focus:outline-none focus:ring-sky-500 transition-all duration-200 cursor-pointer"
+    class="relative group rounded-full p-1 ring-2 ring-transparent hover:ring-sky-500/50 dark:hover:ring-sky-400/50 focus:outline-none focus:ring-sky-500 transition-all duration-200"
   >
     <div class="relative flex items-center justify-center">
       <ProfileAvatar avatar={value} {size} />
@@ -76,7 +78,7 @@
         </svg>
       </div>
     </div>
-  </button>
+  </Button>
 
   <!-- Dropdown / Popover for selecting avatars -->
   {#if isOpen}
@@ -90,14 +92,15 @@
       </div>
       <div class="grid grid-cols-5 gap-2.5 p-1" role="radiogroup">
         {#each AVATARS as option (option.id)}
-          <button
-            type="button"
+          <Button
+            variant="ghost"
+            size="icon"
             role="radio"
             aria-checked={value === option.id}
             aria-label={option.label}
             title={option.pro ? (pro.isPro ? `${option.label} (Pro Exclusive)` : `${option.label} - Avatar ini eksklusif untuk member Pro`) : option.label}
             onclick={(e) => selectAvatar(option.id, !!option.pro, e)}
-            class="relative justify-self-center flex items-center justify-center rounded-full p-1 ring-2 ring-offset-2 ring-offset-white dark:ring-offset-neutral-900 transition-all cursor-pointer {option.pro && !pro.isPro ? 'opacity-60 hover:opacity-100' : ''} {value === option.id ? 'ring-sky-500 scale-110 shadow-sm' : 'ring-transparent hover:ring-neutral-300 dark:hover:ring-neutral-700 hover:scale-105'}"
+            class="relative justify-self-center rounded-full p-1 ring-2 ring-offset-2 ring-offset-white dark:ring-offset-neutral-900 transition-all {option.pro && !pro.isPro ? 'opacity-60 hover:opacity-100' : ''} {value === option.id ? 'ring-sky-500 scale-110 shadow-sm' : 'ring-transparent hover:ring-neutral-300 dark:hover:ring-neutral-700 hover:scale-105'}"
           >
             <ProfileAvatar avatar={option.id} size={32} />
             {#if option.pro}
@@ -109,7 +112,7 @@
                 PRO
               </span>
             {/if}
-          </button>
+          </Button>
         {/each}
       </div>
     </div>

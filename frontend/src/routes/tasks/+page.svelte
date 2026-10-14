@@ -12,14 +12,25 @@
   } from '$lib/api/tasks';
   import { listHosts, type HostRecord } from '$lib/api/hosts';
   import { t } from '$lib/i18n/index.svelte';
-  import PageHeader from '$lib/components/PageHeader.svelte';
+  import { PageHeader, Button, Input, Badge, Modal, SegmentedControl } from '@cecepazhar/caui';
   import { showToast, confirmModal } from '$lib/stores/uiNotifications.svelte';
+
+  interface TaskFilterOption {
+    value: string;
+    label: string;
+  }
 
   let tasks = $state<ScheduledTaskRecord[]>([]);
   let hosts = $state<HostRecord[]>([]);
   let isLoading = $state(false);
   let searchQuery = $state('');
   let filterType = $state<string>('all');
+
+  const filterOptions = $derived<TaskFilterOption[]>([
+    { value: 'all', label: t('tasks.allTasks', { count: tasks.length }) },
+    { value: 'sftp_backup', label: '📦 ' + t('tasks.sftpBackup') },
+    { value: 'ssh_command', label: '⚡ ' + t('tasks.sshPlaybook') }
+  ]);
 
   // Modal State: Create / Edit Task
   let isAddModalOpen = $state(false);
@@ -212,56 +223,31 @@
     subtitle={t('tasks.subtitle')}
   >
     {#snippet actions()}
-      <button
+      <Button
         type="button"
+        variant="primary"
+        size="sm"
         onclick={openAddModal}
-        class="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold bg-sky-600 hover:bg-sky-500 text-white shadow-md shadow-sky-600/20 transition-all shrink-0"
       >
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-        </svg>
-        {t('tasks.newTask')}
-      </button>
+        + {t('tasks.newTask')}
+      </Button>
     {/snippet}
   </PageHeader>
 
   <!-- Filter & Status Bar -->
   <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-neutral-200 dark:border-neutral-800 pb-3">
-    <div class="flex items-center gap-1.5 overflow-x-auto text-xs">
-      <button
-        type="button"
-        onclick={() => (filterType = 'all')}
-        class="px-3 py-1.5 rounded-lg font-medium transition-colors {filterType === 'all' ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900' : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800'}"
-      >
-        {t('tasks.allTasks', { count: tasks.length })}
-      </button>
-      <button
-        type="button"
-        onclick={() => (filterType = 'sftp_backup')}
-        class="px-3 py-1.5 rounded-lg font-medium transition-colors {filterType === 'sftp_backup' ? 'bg-indigo-600 text-white' : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800'}"
-      >
-        📦 {t('tasks.sftpBackup')}
-      </button>
-      <button
-        type="button"
-        onclick={() => (filterType = 'ssh_command')}
-        class="px-3 py-1.5 rounded-lg font-medium transition-colors {filterType === 'ssh_command' ? 'bg-sky-600 text-white' : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800'}"
-      >
-        ⚡ {t('tasks.sshPlaybook')}
-      </button>
+    <div class="overflow-x-auto">
+      <SegmentedControl options={filterOptions} bind:value={filterType} size="sm" />
     </div>
 
     <!-- Search Input -->
-    <div class="relative w-full sm:w-64">
-      <input
+    <div class="w-full sm:w-64">
+      <Input
         type="text"
         bind:value={searchQuery}
         placeholder={t('tasks.searchPlaceholder')}
-        class="w-full pl-8 pr-3 py-1.5 text-xs rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:border-sky-500"
+        size="sm"
       />
-      <svg class="w-3.5 h-3.5 text-neutral-400 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-      </svg>
     </div>
   </div>
 
@@ -277,13 +263,15 @@
       <p class="text-xs text-neutral-500 max-w-sm mx-auto">
         {t('tasks.emptyBody')}
       </p>
-      <button
+      <Button
         type="button"
+        variant="primary"
+        size="sm"
         onclick={openAddModal}
-        class="mt-2 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-sky-600 hover:bg-sky-500 text-white transition-colors"
+        class="mt-2"
       >
         {t('tasks.scheduleFirst')}
-      </button>
+      </Button>
     </div>
   {:else}
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -294,9 +282,9 @@
             <div class="flex items-start justify-between gap-2">
               <div>
                 <div class="flex items-center gap-2">
-                  <span class="text-xs px-2 py-0.5 rounded-md font-bold uppercase tracking-wider {task.taskType === 'sftp_backup' ? 'bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border border-indigo-500/30' : 'bg-sky-500/15 text-sky-700 dark:text-sky-300 border border-sky-500/30'}">
+                  <Badge variant={task.taskType === 'sftp_backup' ? 'brand' : 'info'} size="xs">
                     {task.taskType === 'sftp_backup' ? '📦 SFTP Backup' : '⚡ SSH Playbook'}
-                  </span>
+                  </Badge>
                   <span class="text-xs text-neutral-500 font-mono">
                     ⏰ {task.scheduleExpr}
                   </span>
@@ -308,9 +296,9 @@
               </div>
 
               <!-- Status Badge -->
-              <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold {task.isEnabled ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20' : 'bg-neutral-200 dark:bg-neutral-800 text-neutral-500'}">
+              <Badge variant={task.isEnabled ? 'success' : 'neutral'} size="xs">
                 {task.isEnabled ? 'Active' : 'Paused'}
-              </span>
+              </Badge>
             </div>
 
             <!-- Details Box -->
@@ -334,37 +322,42 @@
 
           <!-- Footer Actions -->
           <div class="mt-4 pt-3 border-t border-neutral-100 dark:border-neutral-800/80 flex items-center justify-between text-xs">
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="sm"
               onclick={() => openLogModal(task)}
-              class="text-neutral-500 hover:text-sky-500 transition-colors flex items-center gap-1 font-medium"
             >
               📜 Riwayat Log
-            </button>
+            </Button>
 
             <div class="flex items-center gap-1.5">
-              <button
+              <Button
                 type="button"
+                variant="secondary"
+                size="sm"
                 onclick={() => handleRunNow(task)}
                 disabled={isExecutingTaskId === task.id}
-                class="px-2.5 py-1 bg-sky-500/10 hover:bg-sky-600 hover:text-white text-sky-600 dark:text-sky-400 rounded-lg font-semibold transition-colors disabled:opacity-50"
+                loading={isExecutingTaskId === task.id}
               >
-                {isExecutingTaskId === task.id ? 'Running...' : '⚡ Run Now'}
-              </button>
-              <button
+                ⚡ Run Now
+              </Button>
+              <Button
                 type="button"
+                variant="outline"
+                size="sm"
                 onclick={() => openEditModal(task)}
-                class="px-2.5 py-1 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-300 rounded-lg transition-colors"
               >
                 Edit
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                variant="danger"
+                size="sm"
                 onclick={() => handleDeleteTask(task)}
-                class="px-2.5 py-1 bg-neutral-100 dark:bg-neutral-800 hover:bg-rose-600 hover:text-white text-neutral-700 dark:text-neutral-300 rounded-lg transition-colors"
               >
                 Hapus
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -374,188 +367,187 @@
 </div>
 
 <!-- Modal Create / Edit Task -->
-{#if isAddModalOpen}
-  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 dark:bg-black/80 backdrop-blur-xs">
-    <div
-      role="dialog"
-      aria-modal="true"
-      class="w-full max-w-lg max-h-[90vh] overflow-y-auto bg-white dark:bg-[#141414] border border-neutral-200 dark:border-neutral-800 rounded-2xl p-6 space-y-4 shadow-2xl animate-in fade-in zoom-in-95 duration-150 text-xs"
-    >
-      <div class="flex items-center justify-between border-b border-neutral-200 dark:border-neutral-800 pb-3">
-        <h3 class="text-base font-bold text-neutral-900 dark:text-white">
-          {editingId ? 'Edit Tugas Terjadwal' : 'Tambah Tugas Terjadwal Baru'}
-        </h3>
-        <button
+<Modal
+  bind:open={isAddModalOpen}
+  title={editingId ? 'Edit Tugas Terjadwal' : 'Tambah Tugas Terjadwal Baru'}
+  size="lg"
+>
+  <div class="space-y-3 text-xs">
+    <div>
+      <label for="task-name-input" class="block font-medium text-neutral-700 dark:text-neutral-300 mb-1">Nama Tugas *</label>
+      <Input
+        id="task-name-input"
+        type="text"
+        bind:value={formName}
+        placeholder="misal: Daily Backup Database VPS Hostinger"
+        size="sm"
+      />
+    </div>
+
+    <div>
+      <span class="block font-medium text-neutral-700 dark:text-neutral-300 mb-1">Tipe Tugas</span>
+      <div class="grid grid-cols-2 gap-2">
+        <Button
           type="button"
-          onclick={() => (isAddModalOpen = false)}
-          class="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 text-lg font-bold"
+          variant={formTaskType === 'sftp_backup' ? 'brand' : 'outline'}
+          size="sm"
+          onclick={() => (formTaskType = 'sftp_backup')}
+          class="justify-start"
         >
-          ×
-        </button>
-      </div>
-
-      <div class="space-y-3">
-        <div>
-          <label class="block font-medium text-neutral-700 dark:text-neutral-300 mb-1">Nama Tugas *</label>
-          <input
-            type="text"
-            bind:value={formName}
-            placeholder="misal: Daily Backup Database VPS Hostinger"
-            class="w-full px-3 py-2 rounded-lg bg-neutral-50 dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-800 text-neutral-900 dark:text-white focus:outline-none focus:border-sky-500"
-          />
-        </div>
-
-        <div>
-          <label class="block font-medium text-neutral-700 dark:text-neutral-300 mb-1">Tipe Tugas</label>
-          <div class="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onclick={() => (formTaskType = 'sftp_backup')}
-              class="p-2.5 rounded-lg border text-left font-medium transition-all {formTaskType === 'sftp_backup' ? 'bg-indigo-500/10 border-indigo-500 text-indigo-700 dark:text-indigo-300' : 'bg-neutral-50 dark:bg-neutral-900 border-neutral-300 dark:border-neutral-800 text-neutral-700 dark:text-neutral-400'}"
-            >
-              📦 SFTP Auto-Backup
-            </button>
-            <button
-              type="button"
-              onclick={() => (formTaskType = 'ssh_command')}
-              class="p-2.5 rounded-lg border text-left font-medium transition-all {formTaskType === 'ssh_command' ? 'bg-sky-500/10 border-sky-500 text-sky-700 dark:text-sky-300' : 'bg-neutral-50 dark:bg-neutral-900 border-neutral-300 dark:border-neutral-800 text-neutral-700 dark:text-neutral-400'}"
-            >
-              ⚡ SSH Script Playbook
-            </button>
-          </div>
-        </div>
-
-        <div>
-          <label class="block font-medium text-neutral-700 dark:text-neutral-300 mb-1">Target Server (Host)</label>
-          <select
-            bind:value={formHostId}
-            class="w-full px-3 py-2 rounded-lg bg-neutral-50 dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-800 text-neutral-900 dark:text-white focus:outline-none focus:border-sky-500"
-          >
-            {#each hosts as h}
-              <option value={h.id}>{h.label} ({h.address})</option>
-            {/each}
-          </select>
-        </div>
-
-        <div>
-          <label class="block font-medium text-neutral-700 dark:text-neutral-300 mb-1">Jadwal Eksekusi (Cron / Interval) *</label>
-          <input
-            type="text"
-            bind:value={formScheduleExpr}
-            placeholder="misal: 0 2 * * * (Jam 02:00 WIB) atau every 6h"
-            class="w-full px-3 py-2 font-mono rounded-lg bg-neutral-50 dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-800 text-neutral-900 dark:text-white focus:outline-none focus:border-sky-500"
-          />
-        </div>
-
-        {#if formTaskType === 'sftp_backup'}
-          <div>
-            <label class="block font-medium text-neutral-700 dark:text-neutral-300 mb-1">Remote File Path *</label>
-            <input
-              type="text"
-              bind:value={formRemoteSrcPath}
-              placeholder="/var/backups/db.sql.gz"
-              class="w-full px-3 py-2 font-mono rounded-lg bg-neutral-50 dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-800 text-neutral-900 dark:text-white focus:outline-none focus:border-sky-500"
-            />
-          </div>
-
-          <div>
-            <label class="block font-medium text-neutral-700 dark:text-neutral-300 mb-1">Folder Penyimpanan Lokal *</label>
-            <input
-              type="text"
-              bind:value={formLocalDestDir}
-              placeholder="/home/cecepazhar/Backups"
-              class="w-full px-3 py-2 font-mono rounded-lg bg-neutral-50 dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-800 text-neutral-900 dark:text-white focus:outline-none focus:border-sky-500"
-            />
-          </div>
-
-          <div>
-            <label class="block font-medium text-neutral-700 dark:text-neutral-300 mb-1">Pre-command Dump di Server (Opsional)</label>
-            <input
-              type="text"
-              bind:value={formRemotePreCmd}
-              placeholder="mysqldump -u root mydb | gzip > /var/backups/db.sql.gz"
-              class="w-full px-3 py-2 font-mono rounded-lg bg-neutral-50 dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-800 text-neutral-900 dark:text-white focus:outline-none focus:border-sky-500"
-            />
-          </div>
-        {:else}
-          <div>
-            <label class="block font-medium text-neutral-700 dark:text-neutral-300 mb-1">Bash Script Perintah *</label>
-            <textarea
-              bind:value={formCommandScript}
-              rows="5"
-              placeholder="#!/usr/bin/env bash&#10;docker system prune -f&#10;"
-              class="w-full px-3 py-2 font-mono rounded-lg bg-neutral-50 dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-800 text-neutral-900 dark:text-white focus:outline-none focus:border-sky-500"
-            ></textarea>
-          </div>
-        {/if}
-      </div>
-
-      <div class="flex justify-end gap-2.5 pt-4 border-t border-neutral-200 dark:border-neutral-800">
-        <button
+          📦 SFTP Auto-Backup
+        </Button>
+        <Button
           type="button"
-          onclick={() => (isAddModalOpen = false)}
-          class="px-4 py-2 rounded-lg bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-300 font-semibold"
+          variant={formTaskType === 'ssh_command' ? 'primary' : 'outline'}
+          size="sm"
+          onclick={() => (formTaskType = 'ssh_command')}
+          class="justify-start"
         >
-          Batal
-        </button>
-        <button
-          type="button"
-          onclick={handleSaveTask}
-          disabled={isLoading}
-          class="px-4 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-semibold shadow-md shadow-sky-600/20 disabled:opacity-50"
-        >
-          {isLoading ? 'Menyimpan...' : 'Simpan Jadwal'}
-        </button>
+          ⚡ SSH Script Playbook
+        </Button>
       </div>
     </div>
+
+    <div>
+      <label for="task-host-select" class="block font-medium text-neutral-700 dark:text-neutral-300 mb-1">Target Server (Host)</label>
+      <select
+        id="task-host-select"
+        bind:value={formHostId}
+        class="w-full px-3 py-2 rounded-lg bg-neutral-50 dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-800 text-neutral-900 dark:text-white focus:outline-none focus:border-sky-500 text-xs"
+      >
+        {#each hosts as h}
+          <option value={h.id}>{h.label} ({h.address})</option>
+        {/each}
+      </select>
+    </div>
+
+    <div>
+      <label for="task-schedule-input" class="block font-medium text-neutral-700 dark:text-neutral-300 mb-1">Jadwal Eksekusi (Cron / Interval) *</label>
+      <Input
+        id="task-schedule-input"
+        type="text"
+        bind:value={formScheduleExpr}
+        placeholder="misal: 0 2 * * * (Jam 02:00 WIB) atau every 6h"
+        size="sm"
+        class="font-mono"
+      />
+    </div>
+
+    {#if formTaskType === 'sftp_backup'}
+      <div>
+        <label for="task-remote-src-input" class="block font-medium text-neutral-700 dark:text-neutral-300 mb-1">Remote File Path *</label>
+        <Input
+          id="task-remote-src-input"
+          type="text"
+          bind:value={formRemoteSrcPath}
+          placeholder="/var/backups/db.sql.gz"
+          size="sm"
+          class="font-mono"
+        />
+      </div>
+
+      <div>
+        <label for="task-local-dest-input" class="block font-medium text-neutral-700 dark:text-neutral-300 mb-1">Folder Penyimpanan Lokal *</label>
+        <Input
+          id="task-local-dest-input"
+          type="text"
+          bind:value={formLocalDestDir}
+          placeholder="/home/cecepazhar/Backups"
+          size="sm"
+          class="font-mono"
+        />
+      </div>
+
+      <div>
+        <label for="task-remote-precmd-input" class="block font-medium text-neutral-700 dark:text-neutral-300 mb-1">Pre-command Dump di Server (Opsional)</label>
+        <Input
+          id="task-remote-precmd-input"
+          type="text"
+          bind:value={formRemotePreCmd}
+          placeholder="mysqldump -u root mydb | gzip > /var/backups/db.sql.gz"
+          size="sm"
+          class="font-mono"
+        />
+      </div>
+    {:else}
+      <div>
+        <label for="task-command-script" class="block font-medium text-neutral-700 dark:text-neutral-300 mb-1">Bash Script Perintah *</label>
+        <textarea
+          id="task-command-script"
+          bind:value={formCommandScript}
+          rows="5"
+          placeholder="#!/usr/bin/env bash&#10;docker system prune -f&#10;"
+          class="w-full px-3 py-2 font-mono rounded-lg bg-neutral-50 dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-800 text-neutral-900 dark:text-white focus:outline-none focus:border-sky-500 text-xs"
+        ></textarea>
+      </div>
+    {/if}
   </div>
-{/if}
+
+  {#snippet footer()}
+    <div class="flex justify-end gap-2.5">
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        onclick={() => (isAddModalOpen = false)}
+      >
+        Batal
+      </Button>
+      <Button
+        type="button"
+        variant="primary"
+        size="sm"
+        onclick={handleSaveTask}
+        disabled={isLoading}
+        loading={isLoading}
+      >
+        Simpan Jadwal
+      </Button>
+    </div>
+  {/snippet}
+</Modal>
 
 <!-- Modal Log Inspector -->
-{#if isLogModalOpen}
-  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 dark:bg-black/80 backdrop-blur-xs">
-    <div
-      role="dialog"
-      aria-modal="true"
-      class="w-full max-w-2xl max-h-[85vh] overflow-y-auto bg-white dark:bg-[#141414] border border-neutral-200 dark:border-neutral-800 rounded-2xl p-6 space-y-4 shadow-2xl animate-in fade-in zoom-in-95 duration-150 text-xs"
-    >
-      <div class="flex items-center justify-between border-b border-neutral-200 dark:border-neutral-800 pb-3">
-        <h3 class="text-base font-bold text-neutral-900 dark:text-white">
-          Riwayat Log: {activeTaskForLogs?.name}
-        </h3>
-        <button
-          type="button"
-          onclick={() => (isLogModalOpen = false)}
-          class="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 text-lg font-bold"
-        >
-          ×
-        </button>
-      </div>
-
-      {#if activeTaskLogs.length === 0}
-        <div class="text-center py-8 text-neutral-500">
-          Belum ada riwayat eksekusi untuk tugas ini.
-        </div>
-      {:else}
-        <div class="space-y-3">
-          {#each activeTaskLogs as log}
-            <div class="p-3 rounded-xl bg-neutral-950 border border-neutral-800 font-mono text-[11px] text-neutral-300 space-y-1">
-              <div class="flex items-center justify-between text-neutral-400">
-                <span>{log.startedAt}</span>
-                <span class="px-2 py-0.5 rounded text-[10px] font-bold {log.status === 'success' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}">
-                  {log.status.toUpperCase()} ({log.durationMs || 0}ms)
-                </span>
-              </div>
-              {#if log.stdout}
-                <div class="mt-2 text-neutral-200 whitespace-pre-wrap">{log.stdout}</div>
-              {/if}
-              {#if log.errorMessage}
-                <div class="mt-1 text-rose-400">{log.errorMessage}</div>
-              {/if}
-            </div>
-          {/each}
-        </div>
-      {/if}
+<Modal
+  bind:open={isLogModalOpen}
+  title={`Riwayat Log: ${activeTaskForLogs?.name || ''}`}
+  size="xl"
+>
+  {#if activeTaskLogs.length === 0}
+    <div class="text-center py-8 text-neutral-500 text-xs">
+      Belum ada riwayat eksekusi untuk tugas ini.
     </div>
-  </div>
-{/if}
+  {:else}
+    <div class="space-y-3 text-xs max-h-[60vh] overflow-y-auto">
+      {#each activeTaskLogs as log}
+        <div class="p-3 rounded-xl bg-neutral-950 border border-neutral-800 font-mono text-[11px] text-neutral-300 space-y-1">
+          <div class="flex items-center justify-between text-neutral-400">
+            <span>{log.startedAt}</span>
+            <Badge variant={log.status === 'success' ? 'success' : 'danger'} size="xs">
+              {log.status.toUpperCase()} ({log.durationMs || 0}ms)
+            </Badge>
+          </div>
+          {#if log.stdout}
+            <div class="mt-2 text-neutral-200 whitespace-pre-wrap">{log.stdout}</div>
+          {/if}
+          {#if log.errorMessage}
+            <div class="mt-1 text-rose-400">{log.errorMessage}</div>
+          {/if}
+        </div>
+      {/each}
+    </div>
+  {/if}
+
+  {#snippet footer()}
+    <div class="flex justify-end">
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        onclick={() => (isLogModalOpen = false)}
+      >
+        Tutup
+      </Button>
+    </div>
+  {/snippet}
+</Modal>

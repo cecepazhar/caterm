@@ -18,7 +18,7 @@
   } from '$lib/api/ai';
   import { proErrorMessage } from '$lib/pro/errors';
   import { t } from '$lib/i18n/index.svelte';
-  import PageHeader from '$lib/components/PageHeader.svelte';
+  import { PageHeader, Button, Badge, Card, Textarea, ProgressBar } from '@cecepazhar/caui';
 
   interface ExtendedStep extends AiPlanStep {
     enabled: boolean;
@@ -650,45 +650,34 @@
   </PageHeader>
 
   <!-- Goal Input Section -->
-  <section class="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl p-4 md:p-5 shadow-sm space-y-4">
-    <div>
-      <label for="ai-ops-goal-input" class="block text-sm font-semibold text-neutral-800 dark:text-neutral-200 mb-2">
-        {t('promptStudio.goalLabel')}
-      </label>
-      <textarea
-        id="ai-ops-goal-input"
-        bind:value={goal}
-        rows="3"
-        placeholder={t('promptStudio.goalPlaceholder')}
-        class="w-full bg-neutral-50 dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-800 rounded-lg p-3 text-sm text-neutral-900 dark:text-white placeholder-neutral-400 dark:placeholder-neutral-600 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-colors"
-      ></textarea>
-    </div>
+  <Card class="space-y-4" variant="primary" size="lg">
+    <Textarea
+      id="ai-ops-goal-input"
+      label={t('promptStudio.goalLabel')}
+      bind:value={goal}
+      rows={3}
+      placeholder={t('promptStudio.goalPlaceholder')}
+    />
 
     <!-- AI Mode: hosted pooled quota (CATerm Pro) vs. bring-your-own key -->
     <div class="flex flex-wrap items-center gap-3 p-3 rounded-lg bg-neutral-50 dark:bg-neutral-950/60 border border-neutral-200 dark:border-neutral-800">
-      <div class="inline-flex rounded-lg border border-neutral-200 dark:border-neutral-800 overflow-hidden shrink-0" role="tablist">
-        <button
+      <div class="inline-flex items-center gap-1.5 rounded-lg border border-neutral-200 dark:border-neutral-800 p-1" role="tablist">
+        <Button
           type="button"
-          role="tab"
-          aria-selected={aiMode === 'byo'}
+          variant={aiMode === 'byo' ? 'primary' : 'neutral'}
+          size="sm"
           onclick={() => setAiMode('byo')}
-          class="px-3 py-1.5 text-xs font-semibold transition-colors {aiMode === 'byo'
-            ? 'bg-violet-600 text-white'
-            : 'bg-white dark:bg-neutral-900 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800'}"
         >
           {t('promptStudio.byoAi')}
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
-          role="tab"
-          aria-selected={aiMode === 'hosted'}
+          variant={aiMode === 'hosted' ? 'primary' : 'neutral'}
+          size="sm"
           onclick={() => setAiMode('hosted')}
-          class="px-3 py-1.5 text-xs font-semibold transition-colors {aiMode === 'hosted'
-            ? 'bg-violet-600 text-white'
-            : 'bg-white dark:bg-neutral-900 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800'}"
         >
           {t('promptStudio.hostedAi')}
-        </button>
+        </Button>
       </div>
 
       {#if aiMode === 'byo'}
@@ -701,12 +690,13 @@
         <span class="text-xs text-amber-600 dark:text-amber-500">{t('promptStudio.hostedNotEntitled')}</span>
       {:else if hostedUsage}
         <div class="flex-1 min-w-[180px] flex items-center gap-2">
-          <div class="flex-1 h-1.5 rounded-full bg-neutral-200 dark:bg-neutral-800 overflow-hidden">
-            <div
-              class="h-full rounded-full transition-all {hostedQuotaExceeded ? 'bg-rose-500' : 'bg-violet-500'}"
-              style="width: {Math.min(100, (hostedUsage.used / Math.max(hostedUsage.limit, 1)) * 100)}%"
-            ></div>
-          </div>
+          <ProgressBar
+            value={hostedUsage.used}
+            max={Math.max(hostedUsage.limit, 1)}
+            variant={hostedQuotaExceeded ? 'danger' : 'brand'}
+            size="sm"
+            class="flex-1"
+          />
           <span class="text-xs whitespace-nowrap {hostedQuotaExceeded ? 'text-rose-600 dark:text-rose-400 font-semibold' : 'text-neutral-500 dark:text-neutral-400'}">
             {t(hostedUsage.pooled ? 'promptStudio.hostedQuotaPooled' : 'promptStudio.hostedQuota', {
               used: hostedUsage.used,
@@ -732,13 +722,14 @@
       <span class="text-xs font-medium text-neutral-500 dark:text-neutral-400">{t('promptStudio.quickSuggestions')}</span>
       <div class="flex flex-wrap gap-2">
         {#each quickPrompts as qp}
-          <button
+          <Button
             type="button"
+            variant="neutral"
+            size="sm"
             onclick={() => selectQuickPrompt(qp.goal)}
-            class="px-3 py-1.5 rounded-lg text-xs font-medium bg-neutral-100 dark:bg-neutral-800 hover:bg-violet-500/10 dark:hover:bg-violet-500/20 text-neutral-700 dark:text-neutral-300 hover:text-violet-600 dark:hover:text-violet-400 border border-neutral-200 dark:border-neutral-700 transition-colors cursor-pointer"
           >
             {qp.label}
-          </button>
+          </Button>
         {/each}
       </div>
     </div>
@@ -754,51 +745,42 @@
         {/if}
       </div>
 
-      <button
+      <Button
         type="button"
         onclick={handleGeneratePlan}
         disabled={isGenerating || !goal.trim() || (aiMode === 'hosted' && hostedQuotaExceeded)}
-        class="px-5 py-2.5 rounded-lg bg-violet-600 hover:bg-violet-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium text-sm flex items-center gap-2 shadow-md shadow-violet-600/20 transition-all cursor-pointer"
+        loading={isGenerating}
+        variant="primary"
+        size="md"
       >
-        {#if isGenerating}
-          <svg class="animate-spin w-4 h-4 text-white" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
-          <span>{t('promptStudio.analyzing')}</span>
-        {:else}
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-          </svg>
-          <span>{t('promptStudio.generate')}</span>
-        {/if}
-      </button>
+        <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+        </svg>
+        <span>{t('promptStudio.generate')}</span>
+      </Button>
     </div>
-  </section>
+  </Card>
 
   <!-- Review & Confirmation View ('Konfirmasi Seluruhnya') -->
   {#if plan && (viewMode === 'review' || viewMode === 'executing' || viewMode === 'completed')}
     <section class="space-y-4">
       <!-- Plan Summary & Requirements Card -->
-      <div class="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl p-5 shadow-sm space-y-3">
+      <Card class="space-y-3" variant="primary" size="lg">
         <div class="flex flex-col md:flex-row md:items-start justify-between gap-3">
           <div>
             <div class="flex items-center gap-2">
               <h2 class="text-lg font-bold text-neutral-900 dark:text-white">{t('promptStudio.planTitle')}</h2>
-              <span class="text-xs px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold border border-emerald-500/20">
+              <Badge variant="success" size="sm">
                 {t('promptStudio.stepsSelected', { approved: approvedCount, total: steps.length })}
-              </span>
-              <!-- Says which planner actually produced this. The LLM path silently falls back
-                   to the offline template planner when the endpoint is unreachable, and without
-                   this badge a broken connection still looked like a working assistant. -->
+              </Badge>
               {#if plan?.source === 'llm'}
-                <span class="text-xs px-2 py-0.5 rounded bg-violet-500/10 text-violet-600 dark:text-violet-400 font-semibold border border-violet-500/20" title={t('promptStudio.sourceLlmTitle')}>
+                <Badge variant="brand" size="sm">
                   {t('promptStudio.sourceLlm')}
-                </span>
+                </Badge>
               {:else}
-                <span class="text-xs px-2 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 font-semibold border border-amber-500/20" title={t('promptStudio.sourceBuiltinTitle')}>
+                <Badge variant="warning" size="sm">
                   {t('promptStudio.sourceBuiltin')}
-                </span>
+                </Badge>
               {/if}
             </div>
             <p class="text-sm text-neutral-600 dark:text-neutral-400 mt-1 leading-relaxed">{plan.summary}</p>
@@ -806,21 +788,23 @@
 
           <!-- Quick Actions: Select All / Deselect All -->
           {#if viewMode === 'review'}
-            <div class="flex items-center gap-2 shrink-0 text-xs">
-              <button
+            <div class="flex items-center gap-2 shrink-0">
+              <Button
                 type="button"
+                variant="neutral"
+                size="sm"
                 onclick={() => toggleAllSteps(true)}
-                class="px-2.5 py-1 rounded bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-300 font-medium transition-colors"
               >
                 {t('promptStudio.selectAll')}
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                variant="neutral"
+                size="sm"
                 onclick={() => toggleAllSteps(false)}
-                class="px-2.5 py-1 rounded bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-300 font-medium transition-colors"
               >
                 {t('promptStudio.deselectAll')}
-              </button>
+              </Button>
             </div>
           {/if}
         </div>
@@ -830,13 +814,13 @@
           <div class="pt-2 border-t border-neutral-100 dark:border-neutral-800/80 flex flex-wrap items-center gap-2">
             <span class="text-xs font-medium text-neutral-500 dark:text-neutral-400">{t('promptStudio.components')}</span>
             {#each plan.requirements as req}
-              <span class="text-xs font-medium px-2.5 py-1 rounded-md bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-500/20">
+              <Badge variant="brand" size="sm">
                 {req}
-              </span>
+              </Badge>
             {/each}
           </div>
         {/if}
-      </div>
+      </Card>
 
       <!-- Step-by-Step Checklist of Commands -->
       <div class="space-y-3">
@@ -872,46 +856,36 @@
 
                   <!-- Sudo Badge -->
                   {#if step.is_sudo}
-                    <span class="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 uppercase">
+                    <Badge variant="warning" size="xs">
                       {t('promptStudio.sudo')}
-                    </span>
+                    </Badge>
                   {/if}
 
                   <!-- Danger / Risk Badge -->
                   {#if step.is_danger}
-                    <span class="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30 uppercase">
+                    <Badge variant="danger" size="xs">
                       {t('promptStudio.risk')}
-                    </span>
+                    </Badge>
                   {/if}
 
                   <!-- Status Pill (for executing & completed views) -->
                   {#if viewMode === 'executing' || viewMode === 'completed'}
                     {#if step.status === 'pending'}
-                      <span class="text-[10px] font-medium px-2 py-0.5 rounded bg-neutral-200 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400">
+                      <Badge variant="neutral" size="xs">
                         {t('promptStudio.statusPending')}
-                      </span>
+                      </Badge>
                     {:else if step.status === 'running'}
-                      <span class="text-[10px] font-medium px-2 py-0.5 rounded bg-sky-500/20 text-sky-600 dark:text-sky-400 border border-sky-500/30 flex items-center gap-1.5 animate-pulse">
-                        <svg class="animate-spin w-3 h-3" fill="none" viewBox="0 0 24 24">
-                          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
+                      <Badge variant="info" size="xs">
                         {t('promptStudio.statusRunning')}
-                      </span>
+                      </Badge>
                     {:else if step.status === 'success'}
-                      <span class="text-[10px] font-medium px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
-                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                        </svg>
+                      <Badge variant="success" size="xs">
                         {t('promptStudio.statusSuccess')}
-                      </span>
+                      </Badge>
                     {:else if step.status === 'failed'}
-                      <span class="text-[10px] font-medium px-2 py-0.5 rounded bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/30 flex items-center gap-1">
-                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
+                      <Badge variant="danger" size="xs">
                         {t('promptStudio.statusFailed')}
-                      </span>
+                      </Badge>
                     {/if}
                   {/if}
                 </div>
@@ -919,24 +893,26 @@
               </div>
 
               <!-- Action: Copy Command Button -->
-              <button
+              <Button
                 type="button"
                 onclick={() => copyCommand(step.command, index)}
                 title={t('promptStudio.copyTitle')}
-                class="px-2.5 py-1 text-xs rounded bg-neutral-200/70 dark:bg-neutral-800 hover:bg-neutral-300 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-300 flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
+                variant="neutral"
+                size="sm"
+                class="shrink-0"
               >
                 {#if copiedStepIndex === index}
-                  <svg class="w-3.5 h-3.5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg class="w-3.5 h-3.5 text-emerald-500 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                   </svg>
                   <span class="text-emerald-600 dark:text-emerald-500 font-semibold">{t('promptStudio.copied')}</span>
                 {:else}
-                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                   </svg>
                   <span>{t('promptStudio.copy')}</span>
                 {/if}
-              </button>
+              </Button>
             </div>
 
             <!-- Editable Bash Command Block -->
@@ -997,25 +973,29 @@
       <!-- Action Buttons for Review Mode -->
       {#if viewMode === 'review'}
         <div class="flex flex-col sm:flex-row items-center justify-end gap-3 pt-4 border-t border-neutral-200 dark:border-neutral-800">
-          <button
+          <Button
             type="button"
             onclick={handleReset}
-            class="w-full sm:w-auto px-5 py-2.5 rounded-lg bg-neutral-200 dark:bg-neutral-800 hover:bg-neutral-300 dark:hover:bg-neutral-700 text-neutral-800 dark:text-neutral-200 font-medium text-sm transition-colors cursor-pointer"
+            variant="neutral"
+            size="md"
+            class="w-full sm:w-auto"
           >
             {t('promptStudio.cancelReset')}
-          </button>
+          </Button>
 
-          <button
+          <Button
             type="button"
             onclick={handleExecutePlan}
             disabled={approvedCount === 0}
-            class="w-full sm:w-auto px-6 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/25 transition-all cursor-pointer"
+            variant="success"
+            size="md"
+            class="w-full sm:w-auto"
           >
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
             </svg>
             <span>{t('promptStudio.approveExecute', { count: approvedCount })}</span>
-          </button>
+          </Button>
         </div>
       {/if}
 
@@ -1071,34 +1051,34 @@
           <!-- Navigation Shortcuts -->
           <div class="flex flex-wrap items-center gap-3 pt-2 border-t border-neutral-200 dark:border-neutral-800">
             {#if selectedHostId}
-              <a
-                href={`/session?host=${selectedHostId}`}
-                class="px-4 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-medium text-xs flex items-center gap-2 shadow transition-colors"
-              >
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-                <span>{t('promptStudio.openTerminal')}</span>
+              <a href={`/session?host=${selectedHostId}`}>
+                <Button variant="primary" size="sm">
+                  <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  <span>{t('promptStudio.openTerminal')}</span>
+                </Button>
               </a>
             {/if}
 
-            <a
-              href="/command-logs"
-              class="px-4 py-2 rounded-lg bg-neutral-200 dark:bg-neutral-800 hover:bg-neutral-300 dark:hover:bg-neutral-700 dark:hover:text-white text-neutral-800 dark:text-neutral-300 font-medium text-xs flex items-center gap-2 transition-colors"
-            >
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              <span>{t('promptStudio.viewLogs')}</span>
+            <a href="/command-logs">
+              <Button variant="neutral" size="sm">
+                <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <span>{t('promptStudio.viewLogs')}</span>
+              </Button>
             </a>
 
-            <button
+            <Button
               type="button"
               onclick={handleReset}
-              class="ml-auto px-4 py-2 rounded-lg text-xs font-medium text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors"
+              variant="ghost"
+              size="sm"
+              class="ml-auto"
             >
               {t('promptStudio.startNew')}
-            </button>
+            </Button>
           </div>
         </div>
       {/if}

@@ -6,7 +6,7 @@
   import { writeTextFile } from '@tauri-apps/plugin-fs';
   import { showToast } from '$lib/stores/uiNotifications.svelte';
   import { t, intlLocale } from '$lib/i18n/index.svelte';
-  import PageHeader from '$lib/components/PageHeader.svelte';
+  import { PageHeader, Button, Input, Badge } from '@cecepazhar/caui';
 
   interface CommandLog {
     id: string;
@@ -252,113 +252,105 @@
     subtitle={t('commandLogs.subtitle')}
   >
     {#snippet actions()}
-      <button
+      <Button
+        variant="ghost"
+        size="sm"
         onclick={fetchLogs}
         disabled={isLoading}
-        class="px-3 py-2 bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-200 rounded-lg text-sm transition-colors flex items-center gap-1.5"
+        loading={isLoading}
         title={t('commandLogs.reload')}
       >
-        <svg class="w-4 h-4 {isLoading ? 'animate-spin' : ''}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-        </svg>
-        <span>{t('commandLogs.refresh')}</span>
-      </button>
-      <button
+        {t('commandLogs.refresh')}
+      </Button>
+      <Button
+        variant="primary"
+        size="sm"
         onclick={exportLogs}
-        class="px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white font-medium text-sm rounded-lg transition-colors shadow flex items-center gap-1.5"
       >
-        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-        </svg>
-        <span>{t('commandLogs.exportCsv')}</span>
-      </button>
+        ↓ {t('commandLogs.exportCsv')}
+      </Button>
     {/snippet}
   </PageHeader>
 
   <!-- Quick Filter Buttons -->
   <div class="flex items-center gap-2 mb-4 overflow-x-auto pb-1 text-xs">
     <span class="text-neutral-500 dark:text-neutral-400 font-medium shrink-0">{t('commandLogs.quickFilter')}</span>
-    <button
+    <Button
       type="button"
+      variant={eventFilter === '' ? 'primary' : 'outline'}
+      size="sm"
       onclick={() => (eventFilter = '')}
-      class="px-2.5 py-1 rounded-md transition-colors shrink-0 {eventFilter === ''
-        ? 'bg-neutral-800 text-white dark:bg-white dark:text-black font-semibold'
-        : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700'}"
     >
       {t('commandLogs.all', { count: logs.length })}
-    </button>
-    <button
+    </Button>
+    <Button
       type="button"
+      variant={eventFilter === 'AI_AUTOMATION' ? 'brand' : 'outline'}
+      size="sm"
       onclick={() => (eventFilter = eventFilter === 'AI_AUTOMATION' ? '' : 'AI_AUTOMATION')}
-      class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md transition-all shrink-0 {eventFilter === 'AI_AUTOMATION'
-        ? 'bg-purple-600 text-white font-semibold ring-2 ring-purple-400/50 shadow-sm'
-        : 'bg-purple-500/15 text-purple-700 dark:text-purple-300 hover:bg-purple-500/25 border border-purple-500/30'}"
     >
-      <svg class="w-3.5 h-3.5 text-purple-500 dark:text-purple-400" viewBox="0 0 24 24" fill="currentColor">
+      <svg class="w-3.5 h-3.5 mr-1 text-purple-400 inline" viewBox="0 0 24 24" fill="currentColor">
         <path d="M12 2l2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4L12 2z" />
       </svg>
-      <span>{t('commandLogs.aiAutomation')}</span>
+      {t('commandLogs.aiAutomation')}
       {#if aiAutomationCount > 0}
-        <span class="px-1.5 py-0.2 rounded-full text-[10px] bg-purple-900/40 text-purple-800 dark:text-purple-200 font-semibold">{aiAutomationCount}</span>
+        <Badge variant="brand" size="xs" class="ml-1.5">{aiAutomationCount}</Badge>
       {/if}
-    </button>
-    <button
+    </Button>
+    <Button
       type="button"
+      variant={eventFilter === 'AI_PLAN' ? 'info' : 'outline'}
+      size="sm"
       onclick={() => (eventFilter = eventFilter === 'AI_PLAN' ? '' : 'AI_PLAN')}
-      class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md transition-all shrink-0 {eventFilter === 'AI_PLAN'
-        ? 'bg-indigo-600 text-white font-semibold ring-2 ring-indigo-400/50 shadow-sm'
-        : 'bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-500/25 border border-indigo-500/30'}"
     >
-      <svg class="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <svg class="w-3.5 h-3.5 mr-1 text-indigo-400 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
       </svg>
-      <span>{t('commandLogs.aiPlan')}</span>
+      {t('commandLogs.aiPlan')}
       {#if aiPlanCount > 0}
-        <span class="px-1.5 py-0.2 rounded-full text-[10px] bg-indigo-900/40 text-indigo-800 dark:text-indigo-200 font-semibold">{aiPlanCount}</span>
+        <Badge variant="info" size="xs" class="ml-1.5">{aiPlanCount}</Badge>
       {/if}
-    </button>
-    <button
+    </Button>
+    <Button
       type="button"
+      variant={eventFilter === 'PTY_COMMAND' ? 'primary' : 'outline'}
+      size="sm"
       onclick={() => (eventFilter = eventFilter === 'PTY_COMMAND' ? '' : 'PTY_COMMAND')}
-      class="px-2.5 py-1 rounded-md transition-colors shrink-0 {eventFilter === 'PTY_COMMAND'
-        ? 'bg-blue-600 text-white font-semibold ring-2 ring-blue-400/50'
-        : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700'}"
     >
       {t('commandLogs.ptyCommand')}
-    </button>
-    <button
+    </Button>
+    <Button
       type="button"
+      variant={eventFilter === 'KEY_DEPLOY' ? 'primary' : 'outline'}
+      size="sm"
       onclick={() => (eventFilter = eventFilter === 'KEY_DEPLOY' ? '' : 'KEY_DEPLOY')}
-      class="px-2.5 py-1 rounded-md transition-colors shrink-0 {eventFilter === 'KEY_DEPLOY'
-        ? 'bg-cyan-600 text-white font-semibold ring-2 ring-cyan-400/50'
-        : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700'}"
     >
       {t('commandLogs.keyDeploy')}
-    </button>
+    </Button>
   </div>
 
   <!-- Search & Filter Controls -->
   <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
-    <div class="relative sm:col-span-2 lg:col-span-1">
-      <input
+    <div class="sm:col-span-2 lg:col-span-1">
+      <Input
         type="text"
         bind:value={searchQuery}
         placeholder={t('commandLogs.searchPlaceholder')}
-        class="w-full px-3 py-2 bg-neutral-50 dark:bg-[#2D2D2D] rounded-lg border border-neutral-300 dark:border-neutral-700 text-sm focus:outline-none focus:border-purple-500 transition-colors"
+        size="sm"
       />
     </div>
     <div>
-      <input
+      <Input
         type="text"
         bind:value={hostFilter}
         placeholder={t('commandLogs.hostIdPlaceholder')}
-        class="w-full px-3 py-2 bg-neutral-50 dark:bg-[#2D2D2D] rounded-lg border border-neutral-300 dark:border-neutral-700 text-sm focus:outline-none focus:border-purple-500 transition-colors"
+        size="sm"
       />
     </div>
     <div>
       <select
         bind:value={eventFilter}
-        class="w-full px-3 py-2 bg-neutral-50 dark:bg-[#2D2D2D] rounded-lg border border-neutral-300 dark:border-neutral-700 text-sm focus:outline-none focus:border-purple-500 transition-colors"
+        class="w-full px-3 py-2 bg-neutral-50 dark:bg-[#2D2D2D] rounded-lg border border-neutral-300 dark:border-neutral-700 text-xs focus:outline-none focus:border-purple-500 transition-colors"
       >
         <option value="">{t('commandLogs.allEvents')}</option>
         <option value="AI_AUTOMATION">{t('commandLogs.events.AI_AUTOMATION')}</option>
@@ -372,10 +364,10 @@
       </select>
     </div>
     <div>
-      <input
+      <Input
         type="date"
         bind:value={dateFilter}
-        class="w-full px-3 py-2 bg-neutral-50 dark:bg-[#2D2D2D] rounded-lg border border-neutral-300 dark:border-neutral-700 text-sm focus:outline-none focus:border-purple-500 transition-colors"
+        size="sm"
       />
     </div>
   </div>
@@ -399,39 +391,29 @@
             </td>
             <td class="p-3">
               {#if log.event_type === 'AI_AUTOMATION'}
-                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-mono font-semibold bg-purple-500/20 text-purple-700 dark:text-purple-300 border border-purple-500/40 shadow-sm shadow-purple-950/10">
-                  <svg class="w-3.5 h-3.5 text-purple-600 dark:text-purple-400 animate-pulse shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                <Badge variant="brand" size="xs" class="font-mono">
+                  <svg class="w-3 h-3 animate-pulse inline-block" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M12 2l2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4L12 2z" />
                   </svg>
                   AI_AUTOMATION
-                </span>
+                </Badge>
               {:else if log.event_type === 'AI_PLAN'}
-                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-mono font-medium bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border border-indigo-500/30">
-                  <svg class="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <Badge variant="info" size="xs" class="font-mono">
+                  <svg class="w-3 h-3 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                   </svg>
                   AI_PLAN
-                </span>
+                </Badge>
               {:else if log.event_type === 'PTY_COMMAND'}
-                <span class="px-2 py-1 rounded text-xs font-mono bg-blue-500/20 text-blue-700 dark:text-blue-300 border border-blue-500/30">
-                  {log.event_type}
-                </span>
+                <Badge variant="info" size="xs" class="font-mono">{log.event_type}</Badge>
               {:else if log.event_type.startsWith('TUNNEL')}
-                <span class="px-2 py-1 rounded text-xs font-mono bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
-                  {log.event_type}
-                </span>
+                <Badge variant="success" size="xs" class="font-mono">{log.event_type}</Badge>
               {:else if log.event_type.startsWith('VAULT')}
-                <span class="px-2 py-1 rounded text-xs font-mono bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30">
-                  {log.event_type}
-                </span>
+                <Badge variant="warning" size="xs" class="font-mono">{log.event_type}</Badge>
               {:else if log.event_type === 'KEY_DEPLOY'}
-                <span class="px-2 py-1 rounded text-xs font-mono bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 border border-cyan-500/30">
-                  {log.event_type}
-                </span>
+                <Badge variant="neutral" size="xs" class="font-mono">{log.event_type}</Badge>
               {:else}
-                <span class="px-2 py-1 rounded text-xs font-mono bg-neutral-200 dark:bg-neutral-700/50 text-neutral-700 dark:text-neutral-300 border border-neutral-300 dark:border-neutral-700">
-                  {log.event_type}
-                </span>
+                <Badge variant="neutral" size="xs" class="font-mono">{log.event_type}</Badge>
               {/if}
             </td>
             <td class="p-3 text-neutral-500 dark:text-neutral-400 font-mono text-xs">
@@ -442,17 +424,16 @@
                 {@const parsed = parseAiExec(log.details)}
                 <div class="flex flex-col gap-1.5 py-0.5 max-w-3xl">
                   <div class="flex items-center gap-2 flex-wrap">
-                    <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-purple-500/20 text-purple-700 dark:text-purple-300 border border-purple-500/30">
-                      <svg class="w-3 h-3 text-purple-600 dark:text-purple-400" viewBox="0 0 24 24" fill="currentColor">
+                    <Badge variant="brand" size="xs" class="font-mono">
+                      <svg class="w-3 h-3 inline-block mr-1" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M12 2l2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4L12 2z" />
                       </svg>
                       AI-EXEC
-                    </span>
+                    </Badge>
                     {#if parsed.exitCode !== null}
-                      <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-mono font-semibold {parsed.exitCode === 0 ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30' : 'bg-rose-500/20 text-rose-700 dark:text-rose-300 border border-rose-500/30'}">
-                        <span class="w-1.5 h-1.5 rounded-full {parsed.exitCode === 0 ? 'bg-emerald-500' : 'bg-rose-500 animate-pulse'}"></span>
+                      <Badge variant={parsed.exitCode === 0 ? 'success' : 'danger'} size="xs" class="font-mono">
                         exit: {parsed.exitCode}
-                      </span>
+                      </Badge>
                     {/if}
                   </div>
                   <div class="font-mono text-xs bg-neutral-900 text-emerald-400 rounded-md px-3 py-2 border border-neutral-800 break-all select-text shadow-inner">
@@ -509,45 +490,49 @@
       </div>
 
       <div class="flex items-center gap-1">
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="sm"
           disabled={currentPage <= 1}
           onclick={() => currentPage = 1}
-          class="px-2 py-1 rounded bg-neutral-100 dark:bg-[#2D2D2D] border border-neutral-300 dark:border-neutral-700 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
           title={t('commandLogs.firstPage')}
         >
           «
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
+          variant="ghost"
+          size="sm"
           disabled={currentPage <= 1}
           onclick={() => currentPage = Math.max(1, currentPage - 1)}
-          class="px-2.5 py-1 rounded bg-neutral-100 dark:bg-[#2D2D2D] border border-neutral-300 dark:border-neutral-700 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
         >
           {t('commandLogs.previous')}
-        </button>
+        </Button>
 
         <span class="px-3 py-1 font-mono text-neutral-800 dark:text-neutral-200">
           {t('commandLogs.pageOf', { current: currentPage, total: totalPages })}
         </span>
 
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="sm"
           disabled={currentPage >= totalPages}
           onclick={() => currentPage = Math.min(totalPages, currentPage + 1)}
-          class="px-2.5 py-1 rounded bg-neutral-100 dark:bg-[#2D2D2D] border border-neutral-300 dark:border-neutral-700 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
         >
           {t('commandLogs.next')}
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
+          variant="ghost"
+          size="sm"
           disabled={currentPage >= totalPages}
           onclick={() => currentPage = totalPages}
-          class="px-2 py-1 rounded bg-neutral-100 dark:bg-[#2D2D2D] border border-neutral-300 dark:border-neutral-700 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
           title={t('commandLogs.lastPage')}
         >
           »
-        </button>
+        </Button>
       </div>
     </div>
   {/if}

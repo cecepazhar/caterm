@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Button, Modal } from '@cecepazhar/caui';
   import { t } from '$lib/i18n/index.svelte';
   import type { HostRecord } from '$lib/api/hosts';
   import type { TaskInput, TaskType, ScheduledTaskRecord } from '$lib/api/tasks';
@@ -15,27 +16,28 @@
     onSave: (task: TaskInput) => Promise<void>;
   } = $props();
 
+  let open = $state(true);
   let name = $state(task?.name ?? '');
   let description = $state(task?.description ?? '');
-  let taskType = $state<TaskType>(task?.task_type ?? 'ssh_command');
-  let hostId = $state(task?.host_id ?? (hosts.length > 0 ? hosts[0].id : ''));
-  let scheduleExpr = $state(task?.schedule_expr ?? '0 2 * * *');
-  let isEnabled = $state(task?.is_enabled ?? true);
+  let taskType = $state<TaskType>(task?.taskType ?? 'ssh_command');
+  let hostId = $state(task?.hostId ?? (hosts.length > 0 ? hosts[0].id : ''));
+  let scheduleExpr = $state(task?.scheduleExpr ?? '0 2 * * *');
+  let isEnabled = $state(task?.isEnabled ?? true);
 
   // SSH fields
-  let commandScript = $state(task?.command_script ?? '#!/bin/bash\n# Scheduled script\necho "Running periodic maintenance..."\ndate\n');
-  let timeoutSeconds = $state(task?.timeout_seconds ?? 300);
+  let commandScript = $state(task?.commandScript ?? '#!/bin/bash\n# Scheduled script\necho "Running periodic maintenance..."\ndate\n');
+  let timeoutSeconds = $state(task?.timeoutSeconds ?? 300);
 
   // SFTP fields
-  let remoteSrcPath = $state(task?.remote_src_path ?? '/tmp/db_backup.sql.gz');
-  let localDestDir = $state(task?.local_dest_dir ?? '~/Backups/caterm');
-  let remotePreCmd = $state(task?.remote_pre_cmd ?? 'mysqldump -u root --all-databases | gzip > /tmp/db_backup.sql.gz');
-  let remotePostCmd = $state(task?.remote_post_cmd ?? 'rm -f /tmp/db_backup.sql.gz');
-  let retentionCount = $state(task?.retention_count ?? 7);
+  let remoteSrcPath = $state(task?.remoteSrcPath ?? '/tmp/db_backup.sql.gz');
+  let localDestDir = $state(task?.localDestDir ?? '~/Backups/caterm');
+  let remotePreCmd = $state(task?.remotePreCmd ?? 'mysqldump -u root --all-databases | gzip > /tmp/db_backup.sql.gz');
+  let remotePostCmd = $state(task?.remotePostCmd ?? 'rm -f /tmp/db_backup.sql.gz');
+  let retentionCount = $state(task?.retentionCount ?? 7);
 
   // Notifications
-  let notifyOnSuccess = $state(task?.notify_on_success ?? false);
-  let notifyOnFailure = $state(task?.notify_on_failure ?? true);
+  let notifyOnSuccess = $state(task?.notifyOnSuccess ?? false);
+  let notifyOnFailure = $state(task?.notifyOnFailure ?? true);
 
   let isSaving = $state(false);
   let formError = $state('');
@@ -83,6 +85,11 @@
     return `Schedule expression: ${trimmed}`;
   }
 
+  function handleClose() {
+    open = false;
+    onClose();
+  }
+
   async function handleSubmit(e: Event) {
     e.preventDefault();
     if (!name.trim()) {
@@ -102,23 +109,23 @@
         id: task?.id,
         name: name.trim(),
         description: description.trim() || undefined,
-        task_type: taskType,
-        host_id: hostId || undefined,
-        schedule_expr: scheduleExpr.trim(),
-        is_enabled: isEnabled,
-        command_script: taskType === 'ssh_command' ? commandScript : undefined,
-        timeout_seconds: Number(timeoutSeconds),
-        remote_src_path: taskType === 'sftp_backup' ? remoteSrcPath.trim() : undefined,
-        local_dest_dir: taskType === 'sftp_backup' ? localDestDir.trim() : undefined,
-        remote_pre_cmd: taskType === 'sftp_backup' ? remotePreCmd.trim() || undefined : undefined,
-        remote_post_cmd: taskType === 'sftp_backup' ? remotePostCmd.trim() || undefined : undefined,
-        retention_count: Number(retentionCount),
-        notify_on_success: notifyOnSuccess,
-        notify_on_failure: notifyOnFailure
+        taskType: taskType,
+        hostId: hostId || undefined,
+        scheduleExpr: scheduleExpr.trim(),
+        isEnabled: isEnabled,
+        commandScript: taskType === 'ssh_command' ? commandScript : undefined,
+        timeoutSeconds: Number(timeoutSeconds),
+        remoteSrcPath: taskType === 'sftp_backup' ? remoteSrcPath.trim() : undefined,
+        localDestDir: taskType === 'sftp_backup' ? localDestDir.trim() : undefined,
+        remotePreCmd: taskType === 'sftp_backup' ? remotePreCmd.trim() || undefined : undefined,
+        remotePostCmd: taskType === 'sftp_backup' ? remotePostCmd.trim() || undefined : undefined,
+        retentionCount: Number(retentionCount),
+        notifyOnSuccess: notifyOnSuccess,
+        notifyOnFailure: notifyOnFailure
       };
 
       await onSave(payload);
-      onClose();
+      handleClose();
     } catch (err: any) {
       formError = err?.message || String(err);
     } finally {
@@ -127,56 +134,19 @@
   }
 </script>
 
-<svelte:window onkeydown={(e) => e.key === 'Escape' && onClose()} />
-
-<div class="fixed inset-0 z-[100] flex items-center justify-center p-4 overflow-y-auto">
-  <button
-    type="button"
-    class="fixed inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-sm cursor-default"
-    aria-label={t('common.close')}
-    onclick={onClose}
-  ></button>
-
-  <div
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="task-modal-title"
-    class="no-drag relative w-full max-w-2xl my-8 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#141414] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
-  >
-    <!-- Modal Header -->
-    <div class="flex items-center justify-between px-6 py-4 border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/40 shrink-0">
-      <div class="flex items-center gap-3">
-        <div class="w-9 h-9 rounded-xl bg-purple-500/10 dark:bg-purple-500/20 border border-purple-500/30 flex items-center justify-center text-purple-600 dark:text-purple-400">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-        </div>
-        <div>
-          <h2 id="task-modal-title" class="text-base font-bold text-neutral-900 dark:text-white">
-            {task ? t('tasks.editTask') : t('tasks.newTask')}
-          </h2>
-          <p class="text-xs text-neutral-500 dark:text-neutral-400">
-            {t('tasks.modalSubtitle')}
-          </p>
-        </div>
+<Modal
+  bind:open={open}
+  onclose={handleClose}
+  title={task ? t('tasks.editTask') : t('tasks.newTask')}
+  description={t('tasks.modalSubtitle')}
+  size="xl"
+>
+  <form id="task-modal-form" onsubmit={handleSubmit} class="space-y-5">
+    {#if formError}
+      <div class="p-3 text-xs rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-400">
+        {formError}
       </div>
-      <button
-        type="button"
-        onclick={onClose}
-        class="p-1.5 rounded-lg text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
-        aria-label={t('common.close')}
-      >
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
-      </button>
-    </div>
-
-    <!-- Modal Form Body -->
-    <form onsubmit={handleSubmit} class="p-6 space-y-5 overflow-y-auto flex-1">
-      {#if formError}
-        <div class="p-3 text-xs rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-400">
-          {formError}
-        </div>
-      {/if}
+    {/if}
 
       <!-- Task Type Tabs -->
       <div>
@@ -184,10 +154,11 @@
           {t('tasks.taskType')}
         </span>
         <div class="grid grid-cols-2 gap-3">
-          <button
+          <Button
             type="button"
+            variant={taskType === 'ssh_command' ? 'primary' : 'outline'}
             onclick={() => (taskType = 'ssh_command')}
-            class={`p-3.5 rounded-xl border text-left transition flex items-start gap-3 ${
+            class={`p-3.5 rounded-xl border text-left transition flex items-start justify-start gap-3 w-full h-auto font-normal ${
               taskType === 'ssh_command'
                 ? 'bg-purple-500/10 dark:bg-purple-500/20 border-purple-500/50 text-purple-900 dark:text-purple-200 shadow-sm'
                 : 'bg-neutral-50 dark:bg-neutral-900/50 border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-700'
@@ -202,12 +173,13 @@
                 {t('tasks.typeSshDesc')}
               </div>
             </div>
-          </button>
+          </Button>
 
-          <button
+          <Button
             type="button"
+            variant={taskType === 'sftp_backup' ? 'primary' : 'outline'}
             onclick={() => (taskType = 'sftp_backup')}
-            class={`p-3.5 rounded-xl border text-left transition flex items-start gap-3 ${
+            class={`p-3.5 rounded-xl border text-left transition flex items-start justify-start gap-3 w-full h-auto font-normal ${
               taskType === 'sftp_backup'
                 ? 'bg-purple-500/10 dark:bg-purple-500/20 border-purple-500/50 text-purple-900 dark:text-purple-200 shadow-sm'
                 : 'bg-neutral-50 dark:bg-neutral-900/50 border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-700'
@@ -222,7 +194,7 @@
                 {t('tasks.typeSftpDesc')}
               </div>
             </div>
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -445,30 +417,28 @@
           <span>{t('tasks.notifySuccess')}</span>
         </label>
       </div>
+    </form>
 
-      <!-- Actions Footer -->
-      <div class="flex items-center justify-end gap-3 pt-4 border-t border-neutral-200 dark:border-neutral-800">
-        <button
-          type="button"
-          onclick={onClose}
-          class="px-4 py-2 rounded-xl text-xs font-semibold text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+    {#snippet footer()}
+      <div class="flex items-center justify-end gap-3 w-full">
+        <Button
+          variant="secondary"
+          size="sm"
+          onclick={handleClose}
         >
           {t('common.cancel')}
-        </button>
+        </Button>
 
-        <button
-          type="submit"
+        <Button
+          type="button"
+          variant="primary"
+          size="sm"
           disabled={isSaving}
-          class="px-5 py-2 rounded-xl text-xs font-semibold bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white shadow-md shadow-purple-600/20 transition-all flex items-center gap-2 cursor-pointer"
+          loading={isSaving}
+          onclick={handleSubmit}
         >
-          {#if isSaving}
-            <svg class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-            {t('common.saving')}
-          {:else}
-            {task ? t('common.update') : t('common.create')}
-          {/if}
-        </button>
+          {task ? t('common.update') : t('common.create')}
+        </Button>
       </div>
-    </form>
-  </div>
-</div>
+    {/snippet}
+  </Modal>

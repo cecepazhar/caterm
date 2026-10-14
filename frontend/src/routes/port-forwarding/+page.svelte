@@ -3,24 +3,38 @@
   import { listTunnels, saveTunnel, deleteTunnel, startTunnel, stopTunnel, type TunnelRecord, type ForwardType } from '$lib/api/tunnels';
   import { listHosts, type HostRecord } from '$lib/api/hosts';
   import { t } from '$lib/i18n/index.svelte';
-  import PageHeader from '$lib/components/PageHeader.svelte';
+  import { PageHeader, Button, Input, Badge, Modal } from '@cecepazhar/caui';
   import { confirmModal } from '$lib/stores/uiNotifications.svelte';
 
-  let tunnels: TunnelRecord[] = [];
-  let hosts: HostRecord[] = [];
-  let isLoading = true;
-  let errorMsg = '';
-  let successMsg = '';
+  let tunnels = $state<TunnelRecord[]>([]);
+  let hosts = $state<HostRecord[]>([]);
+  let isLoading = $state(true);
+  let errorMsg = $state('');
+  let successMsg = $state('');
 
   // Add modal
-  let showAddModal = false;
-  let formHostId = '';
-  let formType: ForwardType = 'local';
-  let formBindAddr = '127.0.0.1';
-  let formBindPort = 8080;
-  let formTargetAddr = '127.0.0.1';
-  let formTargetPort = 80;
-  let isSaving = false;
+  let showAddModal = $state(false);
+  let formHostId = $state('');
+  let formType = $state<ForwardType>('local');
+  let formBindAddr = $state('127.0.0.1');
+  let formBindPort = $state(8080);
+  let formTargetAddr = $state('127.0.0.1');
+  let formTargetPort = $state(80);
+  let isSaving = $state(false);
+
+  // String-typed port inputs for Svelte 5 bind:value on Input component
+  let formBindPortStr = $state('8080');
+  let formTargetPortStr = $state('80');
+
+  $effect(() => {
+    formBindPort;
+    formBindPortStr = String(formBindPort);
+  });
+
+  $effect(() => {
+    formTargetPort;
+    formTargetPortStr = String(formTargetPort);
+  });
 
   function errorMessage(e: unknown): string {
     if (!e) return '';
@@ -120,14 +134,18 @@
     subtitle={t('portForwarding.subtitle')}
   >
     {#snippet actions()}
-      <button onclick={openAddModal} class="px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-lg text-sm font-medium transition-colors shadow shadow-sky-600/20">
-        {t('portForwarding.addTunnel')}
-      </button>
+      <Button
+        variant="primary"
+        size="sm"
+        onclick={openAddModal}
+      >
+        + {t('portForwarding.addTunnel')}
+      </Button>
     {/snippet}
   </PageHeader>
 
   {#if errorMsg}
-    <div class="p-4 bg-red-500/10 border border-red-500/20 rounded-lg text-red-600 dark:text-red-400 text-sm">
+    <div class="p-4 bg-red-500/10 border border-red-500/20 rounded-lg text-red-600 dark:text-red-400 text-xs">
       {errorMsg}
     </div>
   {/if}
@@ -139,9 +157,14 @@
       <svg class="w-12 h-12 text-neutral-400 dark:text-neutral-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
       <h3 class="text-lg font-medium text-neutral-900 dark:text-white mb-2">{t('portForwarding.emptyTitle')}</h3>
       <p class="text-sm text-neutral-500 dark:text-neutral-400 max-w-md">{t('portForwarding.emptyBody')}</p>
-      <button onclick={openAddModal} class="mt-6 px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-lg text-sm font-medium transition-colors shadow-lg shadow-sky-600/20">
+      <Button
+        variant="primary"
+        size="sm"
+        onclick={openAddModal}
+        class="mt-6"
+      >
         {t('portForwarding.addRule')}
-      </button>
+      </Button>
     </div>
   {:else}
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -153,9 +176,9 @@
               <span class="w-2 h-2 rounded-full {tun.isActive ? 'bg-emerald-400 animate-pulse' : 'bg-neutral-300 dark:bg-neutral-600'}"></span>
               {tun.bindAddr}:{tun.bindPort} &rarr; {tun.forwardType === 'dynamic' ? 'SOCKS5' : `${tun.targetAddr}:${tun.targetPort}`}
             </span>
-            <span class="text-xs px-2 py-0.5 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 font-mono">
+            <Badge variant="neutral" size="xs" class="font-mono">
               {t(`portForwarding.badge.${tun.forwardType}`)}
-            </span>
+            </Badge>
           </div>
 
           <p class="text-xs text-neutral-500 dark:text-neutral-400 mb-4">
@@ -163,18 +186,20 @@
           </p>
 
           <div class="mt-auto pt-3 border-t border-neutral-100 dark:border-neutral-800/50 flex justify-between items-center">
-            <button
+            <Button
+              variant={tun.isActive ? 'warning' : 'success'}
+              size="sm"
               onclick={() => handleToggle(tun)}
-              class="text-xs px-3 py-1 rounded font-medium transition-colors {tun.isActive ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20' : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20'}"
             >
               {tun.isActive ? t('portForwarding.stopTunnel') : t('portForwarding.startTunnel')}
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="danger"
+              size="sm"
               onclick={() => handleDelete(tun.id)}
-              class="text-xs text-rose-600 dark:text-rose-500 hover:text-rose-500 dark:hover:text-rose-400 font-medium px-2 py-1 rounded hover:bg-rose-500/10 transition-colors"
             >
               {t('common.delete')}
-            </button>
+            </Button>
           </div>
         </div>
       {/each}
@@ -182,65 +207,97 @@
   {/if}
 </div>
 
-{#if showAddModal}
-<div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 dark:bg-black/60 backdrop-blur-sm">
-  <div class="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl w-full max-w-md shadow-2xl p-6">
-    <h3 class="text-lg font-semibold text-neutral-900 dark:text-white mb-4">{t('portForwarding.addRule')}</h3>
-
-    <div class="space-y-4">
-      <div>
-        <label for="pf-host" class="block text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-1">{t('portForwarding.targetHost')}</label>
-        {#if hosts.length === 0}
-          <div class="p-3 bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg text-sm text-neutral-500">
-            {t('portForwarding.noHostsAddOne')}
-          </div>
-        {:else}
-          <select id="pf-host" bind:value={formHostId} class="w-full bg-neutral-50 dark:bg-black/40 border border-neutral-300 dark:border-neutral-800 rounded-lg px-3 py-2 text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-sky-500 transition-colors">
-            {#each hosts as h}
-              <option value={h.id}>{h.label} ({h.username}@{h.address})</option>
-            {/each}
-          </select>
-        {/if}
-      </div>
-
-      <div>
-        <label for="pf-type" class="block text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-1">{t('portForwarding.forwardingType')}</label>
-        <select id="pf-type" bind:value={formType} class="w-full bg-neutral-50 dark:bg-black/40 border border-neutral-300 dark:border-neutral-800 rounded-lg px-3 py-2 text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-sky-500 transition-colors">
-          <option value="local">{t('portForwarding.typeLocal')}</option>
-          <option value="remote">{t('portForwarding.typeRemote')}</option>
-          <option value="dynamic">{t('portForwarding.typeDynamic')}</option>
+<Modal
+  bind:open={showAddModal}
+  title={t('portForwarding.addRule')}
+  size="md"
+>
+  <div class="space-y-4">
+    <div>
+      <label for="pf-host" class="block text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-1">{t('portForwarding.targetHost')}</label>
+      {#if hosts.length === 0}
+        <div class="p-3 bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg text-sm text-neutral-500">
+          {t('portForwarding.noHostsAddOne')}
+        </div>
+      {:else}
+        <select id="pf-host" bind:value={formHostId} class="w-full px-3 py-2 rounded-lg bg-neutral-50 dark:bg-black/40 border border-neutral-300 dark:border-neutral-800 text-xs text-neutral-900 dark:text-white focus:outline-none focus:border-sky-500 transition-colors">
+          {#each hosts as h}
+            <option value={h.id}>{h.label} ({h.username}@{h.address})</option>
+          {/each}
         </select>
-      </div>
+      {/if}
+    </div>
 
-      <div class="grid grid-cols-2 gap-3">
-        <div>
-          <label for="pf-bind-addr" class="block text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-1">{t('portForwarding.bindAddress')}</label>
-          <input id="pf-bind-addr" type="text" bind:value={formBindAddr} class="w-full bg-neutral-50 dark:bg-black/40 border border-neutral-300 dark:border-neutral-800 rounded-lg px-3 py-2 text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-sky-500 transition-colors" />
-        </div>
-        <div>
-          <label for="pf-bind-port" class="block text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-1">{t('portForwarding.bindPort')}</label>
-          <input id="pf-bind-port" type="number" bind:value={formBindPort} class="w-full bg-neutral-50 dark:bg-black/40 border border-neutral-300 dark:border-neutral-800 rounded-lg px-3 py-2 text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-sky-500 transition-colors" />
-        </div>
-      </div>
+    <div>
+      <label for="pf-type" class="block text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-1">{t('portForwarding.forwardingType')}</label>
+      <select id="pf-type" bind:value={formType} class="w-full px-3 py-2 rounded-lg bg-neutral-50 dark:bg-black/40 border border-neutral-300 dark:border-neutral-800 text-xs text-neutral-900 dark:text-white focus:outline-none focus:border-sky-500 transition-colors">
+        <option value="local">{t('portForwarding.typeLocal')}</option>
+        <option value="remote">{t('portForwarding.typeRemote')}</option>
+        <option value="dynamic">{t('portForwarding.typeDynamic')}</option>
+      </select>
+    </div>
 
-      <div class="grid grid-cols-2 gap-3">
-        <div>
-          <label for="pf-target-addr" class="block text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-1">{t('portForwarding.targetAddress')}</label>
-          <input id="pf-target-addr" type="text" bind:value={formTargetAddr} class="w-full bg-neutral-50 dark:bg-black/40 border border-neutral-300 dark:border-neutral-800 rounded-lg px-3 py-2 text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-sky-500 transition-colors" />
-        </div>
-        <div>
-          <label for="pf-target-port" class="block text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-1">{t('portForwarding.targetPort')}</label>
-          <input id="pf-target-port" type="number" bind:value={formTargetPort} class="w-full bg-neutral-50 dark:bg-black/40 border border-neutral-300 dark:border-neutral-800 rounded-lg px-3 py-2 text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-sky-500 transition-colors" />
-        </div>
+    <div class="grid grid-cols-2 gap-3">
+      <div>
+        <label for="pf-bind-addr" class="block text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-1">{t('portForwarding.bindAddress')}</label>
+        <Input id="pf-bind-addr" type="text" bind:value={formBindAddr} size="sm" />
+      </div>
+      <div>
+        <label for="pf-bind-port" class="block text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-1">{t('portForwarding.bindPort')}</label>
+        <Input
+          id="pf-bind-port"
+          type="text"
+          bind:value={formBindPortStr}
+          size="sm"
+          oninput={(e) => {
+            const v = (e.target as HTMLInputElement).value;
+            formBindPort = parseInt(v || '0', 10);
+          }}
+        />
       </div>
     </div>
 
-    <div class="flex justify-end gap-3 mt-6">
-      <button onclick={() => showAddModal = false} class="px-4 py-2 text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors text-sm font-medium">{t('common.cancel')}</button>
-      <button onclick={handleSave} disabled={!formHostId || isSaving} class="px-4 py-2 bg-sky-600 hover:bg-sky-500 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors">
-        {isSaving ? t('portForwarding.savingRule') : t('portForwarding.saveRule')}
-      </button>
+    <div class="grid grid-cols-2 gap-3">
+      <div>
+        <label for="pf-target-addr" class="block text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-1">{t('portForwarding.targetAddress')}</label>
+        <Input id="pf-target-addr" type="text" bind:value={formTargetAddr} size="sm" />
+      </div>
+      <div>
+        <label for="pf-target-port" class="block text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-1">{t('portForwarding.targetPort')}</label>
+        <Input
+          id="pf-target-port"
+          type="text"
+          bind:value={formTargetPortStr}
+          size="sm"
+          oninput={(e) => {
+            const v = (e.target as HTMLInputElement).value;
+            formTargetPort = parseInt(v || '0', 10);
+          }}
+        />
+      </div>
     </div>
   </div>
-</div>
-{/if}
+
+  {#snippet footer()}
+    <div class="flex justify-end gap-3">
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        onclick={() => showAddModal = false}
+      >
+        {t('common.cancel')}
+      </Button>
+      <Button
+        type="button"
+        variant="primary"
+        size="sm"
+        onclick={handleSave}
+        disabled={!formHostId || isSaving}
+        loading={isSaving}
+      >
+        {t('portForwarding.saveRule')}
+      </Button>
+    </div>
+  {/snippet}
+</Modal>

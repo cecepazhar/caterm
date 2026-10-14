@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { Button } from '@cecepazhar/caui';
+
   let {
     totalItems = 0,
     page = $bindable(1),
@@ -44,27 +46,27 @@
 
     {#if totalPages > 1}
       <div class="flex items-center gap-1">
-        <button
-          type="button"
-          onclick={() => setPage(page - 1)}
+        <Button
+          variant="secondary"
+          size="sm"
           disabled={page <= 1}
-          class="px-2.5 py-1 rounded-lg bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-300 disabled:opacity-40 transition-colors font-medium"
+          onclick={() => setPage(page - 1)}
         >
           ← Sebelumnya
-        </button>
+        </Button>
 
         <span class="px-2 font-mono font-semibold text-neutral-900 dark:text-white">
           {page} / {totalPages}
         </span>
 
-        <button
-          type="button"
-          onclick={() => setPage(page + 1)}
+        <Button
+          variant="secondary"
+          size="sm"
           disabled={page >= totalPages}
-          class="px-2.5 py-1 rounded-lg bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-300 disabled:opacity-40 transition-colors font-medium"
+          onclick={() => setPage(page + 1)}
         >
           Selanjutnya →
-        </button>
+        </Button>
       </div>
     {/if}
   </div>

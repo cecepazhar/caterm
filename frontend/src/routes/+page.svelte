@@ -12,7 +12,7 @@
   import { getTabs } from '$lib/stores/sessionTabs.svelte';
   import { monitorState } from '$lib/stores/monitorStore.svelte';
   import { t, intlLocale } from '$lib/i18n/index.svelte';
-  import PageHeader from '$lib/components/PageHeader.svelte';
+  import { PageHeader, Button, Input, Badge, Modal } from '@cecepazhar/caui';
 
   let hosts = $state<HostRecord[]>([]);
   let groups = $state<GroupRecord[]>([]);
@@ -93,10 +93,11 @@
   let formTotpSecret = $state('');
   let testTotpResult = $state<{ token: string; remaining: number } | null>(null);
   let unlistenOsDetected: UnlistenFn | null = null;
+  let handleHostsUpdate: (() => void) | null = null;
 
   onMount(async () => {
     await refreshHosts();
-    const handleHostsUpdate = () => {
+    handleHostsUpdate = () => {
       void refreshHosts();
     };
     window.addEventListener('caterm:hosts-updated', handleHostsUpdate);
@@ -114,13 +115,12 @@
     } catch (e) {
       console.error('Failed to listen for host:os_detected', e);
     }
-
-    return () => {
-      window.removeEventListener('caterm:hosts-updated', handleHostsUpdate);
-    };
   });
 
   onDestroy(() => {
+    if (handleHostsUpdate) {
+      window.removeEventListener('caterm:hosts-updated', handleHostsUpdate);
+    }
     if (unlistenOsDetected) {
       unlistenOsDetected();
     }
@@ -418,47 +418,50 @@
 		subtitle={t('hosts.subtitle', { count: hosts.length, groups: groupCount })}
 	>
 		{#snippet actions()}
-			<button
-				type="button"
-				onclick={() => openSession('local')}
-				class="h-9 w-9 flex items-center justify-center rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors shadow-2xs shrink-0"
-				title={t('hosts.localTerminal')}
+			<Button
+				variant="secondary"
+				size="icon"
+				class="h-9 w-9 rounded-xl shrink-0"
 				aria-label={t('hosts.localTerminal')}
+				title={t('hosts.localTerminal')}
+				onclick={() => openSession('local')}
 			>
 				<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2" stroke-width="1.8" /><path stroke-linecap="round" stroke-width="1.8" d="M8 20h8M12 16v4" /></svg>
-			</button>
-			<button
-				type="button"
+			</Button>
+			<Button
+				variant="primary"
+				class="h-9 rounded-xl shrink-0 shadow-md shadow-sky-600/20"
 				onclick={openAddModal}
-				class="h-9 px-4 flex items-center gap-1.5 rounded-xl text-xs font-semibold bg-sky-600 hover:bg-sky-500 text-white shadow-md shadow-sky-600/20 transition-all shrink-0 active:scale-95"
 			>
 				<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v14m7-7H5" /></svg>
 				{t('hosts.addHost')}
-			</button>
+			</Button>
 		{/snippet}
 	</PageHeader>
 
 	<!-- Search and filter -->
-	<div class="flex gap-2">
-    <div class="relative flex-1">
-      <svg class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 dark:text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-      <input
-        bind:this={searchInput}
-        type="text"
+	<div class="flex items-center gap-2">
+    <div class="flex-1">
+      <Input
+        bind:ref={searchInput}
         bind:value={searchQuery}
         oninput={() => (focusedIndex = 0)}
         placeholder={t('hosts.searchPlaceholder')}
-        aria-label={t('hosts.searchPlaceholder')}
-        class="w-full h-11 pl-10 pr-4 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950/70 text-sm text-neutral-900 dark:text-white placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none focus:border-neutral-400 dark:focus:border-neutral-600 transition-colors"
-      />
+        ariaLabel={t('hosts.searchPlaceholder')}
+        size="lg"
+      >
+        {#snippet leadingIcon()}
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+        {/snippet}
+      </Input>
     </div>
 
     <div class="relative" data-filter-menu>
-      <button
+      <Button
+        variant={filterOpen || filtersActive ? 'secondary' : 'outline'}
+        size="icon"
         onclick={() => (filterOpen = !filterOpen)}
-        aria-haspopup="true"
-        aria-expanded={filterOpen}
-        class="relative w-11 h-11 flex items-center justify-center rounded-lg border bg-white dark:bg-neutral-950/70 transition-colors {filterOpen || filtersActive ? 'border-neutral-400 dark:border-neutral-600 text-neutral-900 dark:text-white' : 'border-neutral-200 dark:border-neutral-800 text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'}"
+        class="relative h-11 w-11 shrink-0"
         title={t('hosts.filterHosts')}
         aria-label={t('hosts.filterHosts')}
       >
@@ -466,7 +469,7 @@
         {#if filtersActive}
           <span class="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-sky-500"></span>
         {/if}
-      </button>
+      </Button>
       {#if filterOpen}
         <div class="absolute right-0 top-full mt-2 z-30 w-52 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#141414] shadow-2xl p-1.5 text-sm">
           <p class="px-2.5 pt-1.5 pb-1 text-[10px] font-semibold uppercase tracking-wider text-neutral-400">{t('hosts.show')}</p>
@@ -510,24 +513,27 @@
         {t('hosts.hostsSelected', { count: selectedIds.length })}
       </span>
       <div class="flex items-center gap-2 ml-auto">
-        <button
+        <Button
+          variant="primary"
+          size="sm"
           onclick={connectSelected}
-          class="px-3 py-1.5 bg-sky-600 hover:bg-sky-500 text-white rounded-lg text-xs font-medium transition-colors"
         >
           {t('hosts.connectAll')}
-        </button>
-        <button
+        </Button>
+        <Button
+          variant="danger"
+          size="sm"
           onclick={deleteSelected}
-          class="px-3 py-1.5 rounded-lg text-xs font-medium border border-rose-300 dark:border-rose-900 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
         >
           {t('common.delete')}
-        </button>
-        <button
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
           onclick={clearSelection}
-          class="px-3 py-1.5 rounded-lg text-xs font-medium text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
         >
           {t('hosts.deselect')}
-        </button>
+        </Button>
       </div>
     </div>
   {/if}
@@ -540,20 +546,25 @@
       </div>
       <h3 class="text-lg font-medium text-neutral-900 dark:text-white mb-1">{t('hosts.emptyTitleNoHosts')}</h3>
       <p class="text-sm text-neutral-500 dark:text-neutral-400 max-w-sm mb-6">{t('hosts.emptyBodyNoHosts')}</p>
-      <button
+      <Button
+        variant="primary"
+        size="md"
         onclick={openAddModal}
-        class="h-10 px-4 rounded-lg text-sm font-medium bg-neutral-900 text-white hover:bg-neutral-700 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200 transition-colors">
+      >
         + {t('hosts.addHost')}
-      </button>
+      </Button>
     </div>
   {:else if filteredHosts.length === 0}
     <div class="mt-6 p-10 border border-dashed border-neutral-300 dark:border-neutral-800 rounded-xl text-center">
       <p class="text-sm text-neutral-500 dark:text-neutral-400">{t('hosts.emptyTitleNoMatch')}</p>
-      <button
+      <Button
+        variant="ghost"
+        size="sm"
+        class="mt-3 text-sky-600 dark:text-sky-400"
         onclick={() => { searchQuery = ''; starredOnly = false; connectedOnly = false; }}
-        class="mt-3 text-sm font-medium text-sky-600 dark:text-sky-400 hover:underline">
+      >
         {t('hosts.clearFilters')}
-      </button>
+      </Button>
     </div>
   {:else}
     <div class="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-3" role="listbox" aria-label={t('hosts.title')}>
@@ -592,10 +603,12 @@
                 <p class="text-xs font-mono text-neutral-500 dark:text-neutral-400 truncate" title="{host.username}@{host.address}:{host.port}">
                   {formatMaskedAddress(host)}
                 </p>
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="icon"
                   onclick={(e) => toggleReveal(host.id, e)}
-                  class="p-0.5 rounded text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors shrink-0"
+                  class="h-5 w-5 p-0.5 rounded text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 shrink-0"
                   title={isRevealed(host.id) ? "Hide User & IP" : "Show User & IP"}
                   aria-label={isRevealed(host.id) ? "Hide User & IP" : "Show User & IP"}
                 >
@@ -611,34 +624,35 @@
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
                     </svg>
                   {/if}
-                </button>
+                </Button>
               </div>
             </div>
-            <button
+            <Button
+              variant="ghost"
+              size="icon"
               onclick={() => toggleFavorite(host.id)}
-              aria-pressed={isFavorite(host.id)}
-              class="p-1.5 -mr-1 -mt-1 rounded-md transition-colors {isFavorite(host.id) ? 'text-amber-500' : 'text-neutral-300 dark:text-neutral-600 hover:text-amber-500'}"
+              class="h-7 w-7 p-1.5 -mr-1 -mt-1 rounded-md transition-colors {isFavorite(host.id) ? 'text-amber-500' : 'text-neutral-300 dark:text-neutral-600 hover:text-amber-500'}"
               title={isFavorite(host.id) ? t('hosts.unstar') : t('hosts.star')}
               aria-label={isFavorite(host.id) ? `${t('hosts.unstar')} ${host.label}` : `${t('hosts.star')} ${host.label}`}
             >
               <svg class="w-4 h-4" viewBox="0 0 24 24" fill={isFavorite(host.id) ? 'currentColor' : 'none'} stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 3.5l2.6 5.3 5.9.9-4.25 4.1 1 5.8L12 16.9l-5.25 2.7 1-5.8L3.5 9.7l5.9-.9z" /></svg>
-            </button>
+            </Button>
           </div>
 
           <!-- OS + status + tags -->
           <div class="mt-3 flex flex-wrap items-center gap-1.5 text-[11px]">
             {#if os}
-              <span class="inline-flex items-center gap-1.5 max-w-[16rem] px-2 py-0.5 rounded-md border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-300" title={os}>
+              <Badge variant="outline" size="xs" class="max-w-[16rem] px-2 py-0.5 text-[11px] gap-1.5" ariaLabel={os}>
                 <OsIcon os={host.os} name={host.label} tags={host.tags} address={host.address} size={12} />
                 <span class="truncate">{os}</span>
-              </span>
+              </Badge>
             {/if}
-            <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md {status.live ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400' : 'text-neutral-500 dark:text-neutral-400'}">
+            <Badge variant={status.live ? 'success' : 'neutral'} size="xs" class="px-2 py-0.5 text-[11px] gap-1.5">
               <span class="w-1.5 h-1.5 rounded-full {status.live ? 'bg-emerald-500 animate-pulse' : 'bg-neutral-300 dark:bg-neutral-600'}"></span>
               {status.text}
-            </span>
+            </Badge>
             {#each host.tags.slice(0, 3) as tag}
-              <span class="px-1.5 py-0.5 rounded text-neutral-500 dark:text-neutral-400 bg-neutral-100 dark:bg-neutral-800/70">#{tag}</span>
+              <Badge variant="neutral" size="xs" class="px-1.5 py-0.5 text-[11px]">#{tag}</Badge>
             {/each}
           </div>
 
@@ -648,38 +662,40 @@
               {host.authMethod.type === 'password' ? t('hosts.authPassword') : t('hosts.authKey')} · {host.hasSecret ? t('hosts.passwordSaved') : host.authMethod.type === 'password' ? t('hosts.passwordNotSaved') : t('hosts.noPassphrase')}
             </span>
 
-            <button
+            <Button
+              variant="ghost"
+              size="icon"
+              class="ml-auto h-8 w-8 rounded-lg"
               onclick={(e) => openEditModal(host, e)}
-              class="ml-auto w-8 h-8 flex items-center justify-center rounded-lg text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
               title={t('hosts.editHost')}
               aria-label={`${t('common.edit')} ${host.label}`}
             >
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M16.9 4.1a2.1 2.1 0 013 3L8.5 18.5 4 20l1.5-4.5z" /></svg>
-            </button>
+            </Button>
 
             <div class="relative" data-host-menu>
-              <button
+              <Button
+                variant="ghost"
+                size="icon"
+                class="h-8 w-8 rounded-lg"
                 onclick={() => (openMenuId = openMenuId === host.id ? null : host.id)}
-                aria-haspopup="menu"
-                aria-expanded={openMenuId === host.id}
-                class="w-8 h-8 flex items-center justify-center rounded-lg text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
                 title={t('hosts.moreActions')}
                 aria-label={`${t('hosts.moreActions')} ${host.label}`}
               >
                 <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.6" /><circle cx="12" cy="12" r="1.6" /><circle cx="19" cy="12" r="1.6" /></svg>
-              </button>
+              </Button>
               {#if openMenuId === host.id}
                 <div role="menu" class="absolute right-0 top-full mt-1 z-30 w-48 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#141414] shadow-2xl py-1 text-sm">
                   <a role="menuitem" href="/security?host={host.id}" class={menuItem}>Security Audit</a>
                   <a role="menuitem" href="/devops?host={host.id}" class={menuItem}>DevOps Lab</a>
                   <a role="menuitem" href="/sftp?host={host.id}" class={menuItem}>{t('hosts.filesSftp')}</a>
-                  <button role="menuitem" onclick={() => { openMenuId = null; detailHost = host; }} class={menuItem}>{t('common.details')}</button>
-                  <button role="menuitem" onclick={() => { openMenuId = null; handleClone(host); }} class={menuItem}>{t('common.clone')}</button>
-                  <button role="menuitem" onclick={() => { openMenuId = null; toggleSelected(host.id); }} class={menuItem}>
+                  <Button variant="ghost" size="sm" class="w-full !justify-start text-left rounded-none px-3 py-1.5 font-normal" onclick={() => { openMenuId = null; detailHost = host; }}>{t('common.details')}</Button>
+                  <Button variant="ghost" size="sm" class="w-full !justify-start text-left rounded-none px-3 py-1.5 font-normal" onclick={() => { openMenuId = null; handleClone(host); }}>{t('common.clone')}</Button>
+                  <Button variant="ghost" size="sm" class="w-full !justify-start text-left rounded-none px-3 py-1.5 font-normal" onclick={() => { openMenuId = null; toggleSelected(host.id); }}>
                     {isSelected(host.id) ? t('hosts.deselect') : t('hosts.selectForBatch')}
-                  </button>
+                  </Button>
                   <div class="my-1 border-t border-neutral-100 dark:border-neutral-800"></div>
-                  <button role="menuitem" onclick={() => { openMenuId = null; handleDelete(host.id); }} class="{menuItemBase} text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30">{t('common.delete')}</button>
+                  <Button variant="danger" size="sm" class="w-full !justify-start text-left rounded-none px-3 py-1.5 font-normal border-0" onclick={() => { openMenuId = null; handleDelete(host.id); }}>{t('common.delete')}</Button>
                 </div>
               {/if}
             </div>
@@ -702,14 +718,16 @@
               <span>Lab</span>
             </a>
 
-            <button
+            <Button
+              variant="primary"
+              size="sm"
+              class="h-8 px-3 rounded-lg font-semibold"
               onclick={() => openSession(host.id)}
-              class="h-8 px-3 flex items-center gap-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold transition-colors"
               title={t('hosts.connectTo', { name: host.label })}
             >
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 7l5 5-5 5M13 17h6" /></svg>
               {t('common.connect')}
-            </button>
+            </Button>
           </div>
         </div>
       {/each}
@@ -721,145 +739,125 @@
   <HostDetailPanel host={detailHost} onClose={() => (detailHost = null)} />
 {/if}
 
-{#if isAddModalOpen}
-  <!-- Add / edit host drawer -->
-  <div class="fixed inset-0 z-50 flex justify-end">
-    <button
-      type="button"
-      class="absolute inset-0 bg-black/50 dark:bg-black/70 cursor-default"
-      aria-label={t('hosts.closeEditor')}
-      onclick={() => (isAddModalOpen = false)}
-    ></button>
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label={editingId ? 'Edit host' : 'Add host'}
-      class="relative h-full w-full max-w-lg overflow-y-auto bg-white dark:bg-[#141414] border-l border-neutral-200 dark:border-neutral-800 p-6 space-y-4 shadow-2xl"
-    >
-      <div class="flex items-center justify-between border-b border-neutral-200 dark:border-neutral-800 pb-3">
-        <h3 class="text-lg font-bold text-neutral-900 dark:text-white">{editingId ? 'Edit SSH Host' : 'Add New SSH Host'}</h3>
-        <button onclick={() => isAddModalOpen = false} class="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 text-xl font-bold">×</button>
+<Modal
+  bind:open={isAddModalOpen}
+  title={editingId ? 'Edit SSH Host' : 'Add New SSH Host'}
+  size="lg"
+>
+  {#if errorMsg}
+    <div class="p-3 mb-4 text-xs rounded bg-rose-500/10 border border-rose-500/30 text-rose-500 dark:text-rose-400">
+      {errorMsg}
+    </div>
+  {/if}
+
+  <div class="space-y-4 text-sm">
+    <Input 
+      id="form-label"
+      label={t('hosts.form.labelField')}
+      bind:value={formLabel} 
+      placeholder={t('hosts.form.labelPlaceholder')}
+    />
+
+    <div class="grid grid-cols-3 gap-3">
+      <div class="col-span-2">
+        <Input 
+          id="form-address"
+          label={t('hosts.form.addressField')}
+          bind:value={formAddress} 
+          placeholder={t('hosts.addressPlaceholder')}
+        />
       </div>
+      <div>
+        <label for="form-port" class="block text-xs font-medium text-neutral-700 dark:text-neutral-400 mb-1">{t('hosts.form.port')}</label>
+        <input 
+          id="form-port"
+          type="number" 
+          bind:value={formPort} 
+          placeholder="22"
+          class="w-full px-3 py-2 bg-neutral-50 dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-800 rounded-lg text-neutral-900 dark:text-white focus:outline-none focus:border-sky-500 shadow-sm dark:shadow-none text-xs"
+        />
+      </div>
+    </div>
 
-      {#if errorMsg}
-        <div class="p-3 text-xs rounded bg-rose-500/10 border border-rose-500/30 text-rose-500 dark:text-rose-400">
-          {errorMsg}
-        </div>
+    <div>
+      <label for="form-protocol" class="block text-xs font-medium text-neutral-700 dark:text-neutral-400 mb-1">{t('hosts.form.protocol')}</label>
+      <select
+        id="form-protocol"
+        bind:value={formProtocol}
+        onchange={(e) => {
+          const proto = (e.currentTarget as HTMLSelectElement).value;
+          if (proto === 'ftp' && formPort === 22) formPort = 21;
+          else if (proto === 'ssh' && formPort === 21) formPort = 22;
+          else if ((proto === 'webdav' || proto === 's3') && (formPort === 22 || formPort === 21)) formPort = 443;
+        }}
+        class="w-full px-3 py-2 bg-neutral-50 dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-800 rounded-lg text-neutral-900 dark:text-white focus:outline-none focus:border-sky-500 shadow-sm dark:shadow-none text-xs"
+      >
+        <option value="ssh">SSH / SFTP</option>
+        <option value="ftp">FTP</option>
+        <option value="ftps">FTPS</option>
+        <option value="webdav">WebDAV</option>
+        <option value="s3">S3</option>
+      </select>
+    </div>
+
+    <Input 
+      id="form-username"
+      label={t('hosts.form.usernameField')}
+      bind:value={formUsername} 
+      placeholder={t('hosts.form.usernamePlaceholder')}
+    />
+
+    <div>
+      <span class="block text-xs font-medium text-neutral-700 dark:text-neutral-400 mb-1">{t('hosts.form.authMethod')}</span>
+      <div class="flex gap-4 mb-2">
+        <label class="flex items-center gap-2 text-xs text-neutral-700 dark:text-neutral-300 cursor-pointer">
+          <input type="radio" value="password" bind:group={formAuthType} class="text-sky-600 focus:ring-0" />
+          {t('hosts.form.authPasswordOption')}
+        </label>
+        <label class="flex items-center gap-2 text-xs text-neutral-700 dark:text-neutral-300 cursor-pointer">
+          <input type="radio" value="keyId" bind:group={formAuthType} class="text-sky-600 focus:ring-0" />
+          {t('hosts.form.authVaultKey')}
+        </label>
+        <label class="flex items-center gap-2 text-xs text-neutral-700 dark:text-neutral-300 cursor-pointer">
+          <input type="radio" value="key" bind:group={formAuthType} class="text-sky-600 focus:ring-0" />
+          {t('hosts.form.authLocalFile')}
+        </label>
+      </div>
+      {#if formAuthType === 'key'}
+        <Input
+          id="form-key-path"
+          bind:value={formKeyPath}
+          placeholder={t('hosts.form.keyPathPlaceholder')}
+          class="mb-3"
+        />
+      {:else if formAuthType === 'keyId'}
+        <select
+          bind:value={formKeyId}
+          class="w-full px-3 py-2 bg-neutral-50 dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-800 rounded-lg text-neutral-900 dark:text-white focus:outline-none focus:border-sky-500 mb-3 shadow-sm dark:shadow-none text-xs"
+        >
+          <option value="" disabled>{t('hosts.form.selectVaultKey')}</option>
+          {#each vaultKeys as k}
+            <option value={k.id}>{k.name} ({k.algorithm})</option>
+          {/each}
+        </select>
       {/if}
-
-      <div class="space-y-4 text-sm">
-        <div>
-          <label class="block text-xs font-medium text-neutral-700 dark:text-neutral-400 mb-1">{t('hosts.form.labelField')}</label>
-          <input 
-            type="text" 
-            bind:value={formLabel} 
-            placeholder={t('hosts.form.labelPlaceholder')}
-            class="w-full px-3 py-2 bg-neutral-50 dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-800 rounded-lg text-neutral-900 dark:text-white focus:outline-none focus:border-sky-500 shadow-sm dark:shadow-none"
-          />
-        </div>
-
-        <div class="grid grid-cols-3 gap-3">
-          <div class="col-span-2">
-            <label class="block text-xs font-medium text-neutral-700 dark:text-neutral-400 mb-1">{t('hosts.form.addressField')}</label>
-            <input 
-              type="text" 
-              bind:value={formAddress} 
-              placeholder={t('hosts.addressPlaceholder')}
-              class="w-full px-3 py-2 bg-neutral-50 dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-800 rounded-lg text-neutral-900 dark:text-white focus:outline-none focus:border-sky-500 shadow-sm dark:shadow-none"
-            />
-          </div>
-          <div>
-            <label class="block text-xs font-medium text-neutral-700 dark:text-neutral-400 mb-1">{t('hosts.form.port')}</label>
-            <input 
-              type="number" 
-              bind:value={formPort} 
-              placeholder="22"
-              class="w-full px-3 py-2 bg-neutral-50 dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-800 rounded-lg text-neutral-900 dark:text-white focus:outline-none focus:border-sky-500 shadow-sm dark:shadow-none"
-            />
-          </div>
-        </div>
-
-        <div>
-          <label class="block text-xs font-medium text-neutral-700 dark:text-neutral-400 mb-1">{t('hosts.form.protocol')}</label>
-          <select
-            bind:value={formProtocol}
-            onchange={(e) => {
-              const proto = (e.currentTarget as HTMLSelectElement).value;
-              if (proto === 'ftp' && formPort === 22) formPort = 21;
-              else if (proto === 'ssh' && formPort === 21) formPort = 22;
-              else if ((proto === 'webdav' || proto === 's3') && (formPort === 22 || formPort === 21)) formPort = 443;
-            }}
-            class="w-full px-3 py-2 bg-neutral-50 dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-800 rounded-lg text-neutral-900 dark:text-white focus:outline-none focus:border-sky-500 shadow-sm dark:shadow-none text-xs"
-          >
-            <option value="ssh">SSH / SFTP</option>
-            <option value="ftp">FTP</option>
-            <option value="ftps">FTPS</option>
-            <option value="webdav">WebDAV</option>
-            <option value="s3">S3</option>
-          </select>
-        </div>
-
-        <div>
-          <label class="block text-xs font-medium text-neutral-700 dark:text-neutral-400 mb-1">{t('hosts.form.usernameField')}</label>
-          <input 
-            type="text" 
-            bind:value={formUsername} 
-            placeholder={t('hosts.form.usernamePlaceholder')}
-            class="w-full px-3 py-2 bg-neutral-50 dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-800 rounded-lg text-neutral-900 dark:text-white focus:outline-none focus:border-sky-500 shadow-sm dark:shadow-none"
-          />
-        </div>
-
-        <div>
-          <label class="block text-xs font-medium text-neutral-700 dark:text-neutral-400 mb-1">{t('hosts.form.authMethod')}</label>
-          <div class="flex gap-4 mb-2">
-            <label class="flex items-center gap-2 text-xs text-neutral-700 dark:text-neutral-300">
-              <input type="radio" value="password" bind:group={formAuthType} class="text-sky-600 focus:ring-0" />
-              {t('hosts.form.authPasswordOption')}
-            </label>
-            <label class="flex items-center gap-2 text-xs text-neutral-700 dark:text-neutral-300">
-              <input type="radio" value="keyId" bind:group={formAuthType} class="text-sky-600 focus:ring-0" />
-              {t('hosts.form.authVaultKey')}
-            </label>
-            <label class="flex items-center gap-2 text-xs text-neutral-700 dark:text-neutral-300">
-              <input type="radio" value="key" bind:group={formAuthType} class="text-sky-600 focus:ring-0" />
-              {t('hosts.form.authLocalFile')}
-            </label>
-          </div>
-          {#if formAuthType === 'key'}
-            <input
-              type="text"
-              bind:value={formKeyPath}
-              placeholder={t('hosts.form.keyPathPlaceholder')}
-              class="w-full px-3 py-2 bg-neutral-50 dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-800 rounded-lg text-neutral-900 dark:text-white focus:outline-none focus:border-sky-500 mb-3 shadow-sm dark:shadow-none"
-            />
-          {:else if formAuthType === 'keyId'}
-            <select
-              bind:value={formKeyId}
-              class="w-full px-3 py-2 bg-neutral-50 dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-800 rounded-lg text-neutral-900 dark:text-white focus:outline-none focus:border-sky-500 mb-3 shadow-sm dark:shadow-none"
-            >
-              <option value="" disabled>{t('hosts.form.selectVaultKey')}</option>
-              {#each vaultKeys as k}
-                <option value={k.id}>{k.name} ({k.algorithm})</option>
-              {/each}
-            </select>
-          {/if}
-          {#if formAuthType !== 'keyId'}
-          <label class="block text-xs font-medium text-neutral-700 dark:text-neutral-400 mb-1">
-            {formAuthType === 'key' ? t('hosts.form.keyPassphraseOptional') : t('hosts.form.passwordField')}
-          </label>
-          <div class="relative">
-            <input
-              type={showFormSecret ? 'text' : 'password'}
-              bind:value={formSecret}
-              placeholder={editingId && editingHadSecret ? t('hosts.form.leaveBlankUnchanged') : (formAuthType === 'key' ? t('hosts.form.leaveBlankNoPassphrase') : t('hosts.form.requiredToConnect'))}
-              class="w-full pl-3 pr-10 py-2 bg-neutral-50 dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-800 rounded-lg text-neutral-900 dark:text-white focus:outline-none focus:border-sky-500 shadow-sm dark:shadow-none"
-            />
-            <button
+      {#if formAuthType !== 'keyId'}
+        <Input
+          id="form-secret"
+          type={showFormSecret ? 'text' : 'password'}
+          label={formAuthType === 'key' ? t('hosts.form.keyPassphraseOptional') : t('hosts.form.passwordField')}
+          bind:value={formSecret}
+          placeholder={editingId && editingHadSecret ? t('hosts.form.leaveBlankUnchanged') : (formAuthType === 'key' ? t('hosts.form.leaveBlankNoPassphrase') : t('hosts.form.requiredToConnect'))}
+        >
+          {#snippet trailingAction()}
+            <Button
               type="button"
+              variant="ghost"
+              size="icon"
               onclick={() => (showFormSecret = !showFormSecret)}
-              class="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 p-1"
               aria-label={showFormSecret ? t('hosts.form.hideSecret') : t('hosts.form.showSecret')}
               title={showFormSecret ? t('hosts.form.hideSecret') : t('hosts.form.showSecret')}
+              class="h-6 w-6 p-0 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200"
             >
               {#if showFormSecret}
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -871,118 +869,115 @@
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                 </svg>
               {/if}
-            </button>
-          </div>
-          {/if}
-          <p class="text-neutral-500 text-xs mt-1">{t('hosts.form.encryptedNote')}</p>
-        </div>
+            </Button>
+          {/snippet}
+        </Input>
+      {/if}
+      <p class="text-neutral-500 text-xs mt-1">{t('hosts.form.encryptedNote')}</p>
+    </div>
 
-        <div>
-          <label class="block text-xs font-medium text-neutral-700 dark:text-neutral-400 mb-1">{t('hosts.form.osField')}</label>
-          <div class="flex items-center gap-2">
-            <OsIcon os={formOs} name={formLabel} tags={formTags.split(',')} address={formAddress} size={20} />
-            <select
-              bind:value={formOs}
-              class="w-full px-3 py-2 bg-neutral-50 dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-800 rounded-lg text-neutral-900 dark:text-white focus:outline-none focus:border-sky-500 shadow-sm dark:shadow-none text-xs"
-            >
-              <option value="">{t('hosts.form.osAutoDetect')}</option>
-              <optgroup label={t('hosts.form.osPopularGroup')}>
-                <option value="ubuntu">Ubuntu</option>
-                <option value="debian">Debian</option>
-                <option value="fedora">Fedora</option>
-                <option value="redhat">Red Hat / RHEL</option>
-                <option value="centos">CentOS</option>
-                <option value="rocky">Rocky Linux</option>
-                <option value="almalinux">AlmaLinux</option>
-                <option value="arch">Arch Linux</option>
-                <option value="manjaro">Manjaro</option>
-                <option value="alpine">Alpine Linux</option>
-                <option value="opensuse">openSUSE / SUSE</option>
-                <option value="mint">Linux Mint</option>
-                <option value="kali">Kali Linux</option>
-                <option value="popos">Pop!_OS</option>
-                <option value="gentoo">Gentoo</option>
-                <option value="void">Void Linux</option>
-                <option value="nixos">NixOS</option>
-                <option value="endeavour">EndeavourOS</option>
-                <option value="elementary">Elementary OS</option>
-                <option value="zorin">Zorin OS</option>
-                <option value="raspberry">Raspberry Pi OS / Raspbian</option>
-                <option value="amazon">Amazon Linux</option>
-                <option value="oracle">Oracle Linux</option>
-                <option value="slackware">Slackware</option>
-                <option value="mageia">Mageia</option>
-                <option value="solus">Solus</option>
-                <option value="tails">Tails</option>
-                <option value="deepin">Deepin</option>
-                <option value="clear">Clear Linux</option>
-                <option value="garuda">Garuda Linux</option>
-                <option value="steam">SteamOS</option>
-                <option value="coreos">CoreOS / Flatcar</option>
-                <option value="devuan">Devuan</option>
-                <option value="parrot">Parrot OS</option>
-                <option value="mx">MX Linux</option>
-                <option value="lubuntu">Lubuntu / Xubuntu / Kubuntu</option>
-                <option value="linux">{t('hosts.osGenericLinux')}</option>
-              </optgroup>
-              <optgroup label={t('hosts.form.osOtherGroup')}>
-                <option value="windows">Windows</option>
-                <option value="macos">macOS / Apple</option>
-                <option value="android">Android</option>
-                <option value="ios">iOS</option>
-                <option value="freebsd">FreeBSD</option>
-                <option value="openbsd">OpenBSD</option>
-                <option value="netbsd">NetBSD</option>
-                <option value="mikrotik">MikroTik / RouterOS</option>
-                <option value="cisco">Cisco IOS</option>
-                <option value="server">{t('hosts.osGenericServer')}</option>
-              </optgroup>
-            </select>
-          </div>
-        </div>
-
-        <div>
-          <label class="block text-xs font-medium text-neutral-700 dark:text-neutral-400 mb-1">{t('hosts.form.tagsField')}</label>
-          <input 
-            type="text" 
-            bind:value={formTags} 
-            placeholder={t('hosts.form.tagsPlaceholder')}
-            class="w-full px-3 py-2 bg-neutral-50 dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-800 rounded-lg text-neutral-900 dark:text-white focus:outline-none focus:border-sky-500 shadow-sm dark:shadow-none"
-          />
-        </div>
-
-        <!-- 2FA / TOTP Authenticator Secret -->
-        <div>
-          <label class="block text-xs font-medium text-neutral-700 dark:text-neutral-400 mb-1">
-            2FA / TOTP Secret Key (Opsional)
-          </label>
-          <div class="space-y-1.5">
-            <input 
-              type="password" 
-              bind:value={formTotpSecret} 
-              placeholder="Base32 Key (misal: JBSWY3DPEHPK3PXP) atau otpauth:// URL"
-              class="w-full px-3 py-2 bg-neutral-50 dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-800 rounded-lg text-neutral-900 dark:text-white focus:outline-none focus:border-sky-500 shadow-sm dark:shadow-none text-xs font-mono"
-            />
-            <p class="text-[11px] text-neutral-500 dark:text-neutral-400">
-              Digunakan untuk auto-inject kode 6-digit saat server meminta verifikasi SSH 2FA / OTP.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div class="flex justify-end gap-3 pt-4 border-t border-neutral-200 dark:border-neutral-800">
-        <button 
-          onclick={() => isAddModalOpen = false} 
-          class="px-4 py-2 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-300 rounded-lg text-sm font-medium transition-colors">
-          {t('common.cancel')}
-        </button>
-        <button 
-          onclick={handleSaveHost}
-          disabled={isLoading}
-          class="px-4 py-2 bg-sky-600 hover:bg-sky-500 disabled:opacity-50 text-white rounded-lg text-sm font-medium shadow-lg shadow-sky-600/20">
-          {isLoading ? t('common.saving') : t('common.save')}
-        </button>
+    <div>
+      <label for="form-os" class="block text-xs font-medium text-neutral-700 dark:text-neutral-400 mb-1">{t('hosts.form.osField')}</label>
+      <div class="flex items-center gap-2">
+        <OsIcon os={formOs} name={formLabel} tags={formTags.split(',')} address={formAddress} size={20} />
+        <select
+          id="form-os"
+          bind:value={formOs}
+          class="w-full px-3 py-2 bg-neutral-50 dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-800 rounded-lg text-neutral-900 dark:text-white focus:outline-none focus:border-sky-500 shadow-sm dark:shadow-none text-xs"
+        >
+          <option value="">{t('hosts.form.osAutoDetect')}</option>
+          <optgroup label={t('hosts.form.osPopularGroup')}>
+            <option value="ubuntu">Ubuntu</option>
+            <option value="debian">Debian</option>
+            <option value="fedora">Fedora</option>
+            <option value="redhat">Red Hat / RHEL</option>
+            <option value="centos">CentOS</option>
+            <option value="rocky">Rocky Linux</option>
+            <option value="almalinux">AlmaLinux</option>
+            <option value="arch">Arch Linux</option>
+            <option value="manjaro">Manjaro</option>
+            <option value="alpine">Alpine Linux</option>
+            <option value="opensuse">openSUSE / SUSE</option>
+            <option value="mint">Linux Mint</option>
+            <option value="kali">Kali Linux</option>
+            <option value="popos">Pop!_OS</option>
+            <option value="gentoo">Gentoo</option>
+            <option value="void">Void Linux</option>
+            <option value="nixos">NixOS</option>
+            <option value="endeavour">EndeavourOS</option>
+            <option value="elementary">Elementary OS</option>
+            <option value="zorin">Zorin OS</option>
+            <option value="raspberry">Raspberry Pi OS / Raspbian</option>
+            <option value="amazon">Amazon Linux</option>
+            <option value="oracle">Oracle Linux</option>
+            <option value="slackware">Slackware</option>
+            <option value="mageia">Mageia</option>
+            <option value="solus">Solus</option>
+            <option value="tails">Tails</option>
+            <option value="deepin">Deepin</option>
+            <option value="clear">Clear Linux</option>
+            <option value="garuda">Garuda Linux</option>
+            <option value="steam">SteamOS</option>
+            <option value="coreos">CoreOS / Flatcar</option>
+            <option value="devuan">Devuan</option>
+            <option value="parrot">Parrot OS</option>
+            <option value="mx">MX Linux</option>
+            <option value="lubuntu">Lubuntu / Xubuntu / Kubuntu</option>
+            <option value="linux">{t('hosts.osGenericLinux')}</option>
+          </optgroup>
+          <optgroup label={t('hosts.form.osOtherGroup')}>
+            <option value="windows">Windows</option>
+            <option value="macos">macOS / Apple</option>
+            <option value="android">Android</option>
+            <option value="ios">iOS</option>
+            <option value="freebsd">FreeBSD</option>
+            <option value="openbsd">OpenBSD</option>
+            <option value="netbsd">NetBSD</option>
+            <option value="mikrotik">MikroTik / RouterOS</option>
+            <option value="cisco">Cisco IOS</option>
+            <option value="server">{t('hosts.osGenericServer')}</option>
+          </optgroup>
+        </select>
       </div>
     </div>
+
+    <Input 
+      id="form-tags"
+      label={t('hosts.form.tagsField')}
+      bind:value={formTags} 
+      placeholder={t('hosts.form.tagsPlaceholder')}
+    />
+
+    <!-- 2FA / TOTP Authenticator Secret -->
+    <div class="space-y-1.5">
+      <Input 
+        id="form-totp"
+        type="password" 
+        label="2FA / TOTP Secret Key (Opsional)"
+        bind:value={formTotpSecret} 
+        placeholder="Base32 Key (misal: JBSWY3DPEHPK3PXP) atau otpauth:// URL"
+        class="text-xs font-mono"
+      />
+      <p class="text-[11px] text-neutral-500 dark:text-neutral-400">
+        Digunakan untuk auto-inject kode 6-digit saat server meminta verifikasi SSH 2FA / OTP.
+      </p>
+    </div>
   </div>
-{/if}
+
+  {#snippet footer()}
+    <Button 
+      variant="secondary"
+      onclick={() => (isAddModalOpen = false)} 
+    >
+      {t('common.cancel')}
+    </Button>
+    <Button 
+      variant="primary"
+      onclick={handleSaveHost}
+      disabled={isLoading}
+      loading={isLoading}
+    >
+      {isLoading ? t('common.saving') : t('common.save')}
+    </Button>
+  {/snippet}
+</Modal>

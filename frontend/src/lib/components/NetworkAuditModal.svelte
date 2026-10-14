@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Button, Modal } from '@cecepazhar/caui';
   import { onMount } from 'svelte';
   import {
     runNetworkSecurityAudit,
@@ -28,6 +29,7 @@
 
   let { hostId, onClose }: { hostId?: string; onClose: () => void } = $props();
 
+  let open = $state(true);
   let hosts = $state<HostRecord[]>([]);
   let selectedHostId = $state<string>(hostId || '');
   let activeMainTab = $state<'security' | 'speed_qos' | 'benchmark' | 'mesh_tools'>('security');
@@ -245,34 +247,23 @@ SSH Hardening Fail/Warn: ${securityReport.hardeningChecklist.filter((h) => h.sta
     const found = hosts.find((h) => h.id === id);
     return found ? found.label || found.address : id;
   }
+
+  function handleClose() {
+    open = false;
+    onClose();
+  }
 </script>
 
-<div class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-  <div class="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl shadow-2xl max-w-5xl w-full max-h-[92vh] flex flex-col overflow-hidden">
-    <!-- Header -->
-    <div class="px-6 py-4 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between bg-neutral-50 dark:bg-neutral-900/50">
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400 flex items-center justify-center border border-sky-500/20">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
-          </svg>
-        </div>
-        <div>
-          <h2 class="text-lg font-bold text-neutral-900 dark:text-white">DevOps Diagnostics & Security Lab Suite</h2>
-          <p class="text-xs text-neutral-500">Security Hole Hunter, Speed & QoS Bufferbloat, Hardware Benchmark & Mesh Matrix Lab</p>
-        </div>
-      </div>
-      <button 
-        onclick={onClose}
-        aria-label="Tutup"
-        class="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 p-1.5 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 transition"
-      >
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-      </button>
-    </div>
-
-    <!-- Controls Bar -->
-    <div class="px-6 py-3 border-b border-neutral-200 dark:border-neutral-800 flex flex-wrap items-center justify-between gap-3 bg-neutral-50/50 dark:bg-neutral-950/40">
+<Modal
+  bind:open={open}
+  onclose={handleClose}
+  size="xl"
+  class="!max-w-5xl"
+  title="DevOps Diagnostics & Security Lab Suite"
+  description="Security Hole Hunter, Speed & QoS Bufferbloat, Hardware Benchmark & Mesh Matrix Lab"
+>
+  <!-- Controls Bar -->
+  <div class="sticky -top-5 z-10 -mx-6 -mt-5 px-6 py-3 border-b border-neutral-200 dark:border-neutral-800 flex flex-wrap items-center justify-between gap-3 bg-neutral-50 dark:bg-neutral-900 shadow-xs mb-6">
       <div class="flex items-center gap-3">
         <label for="audit-host-select" class="text-xs font-medium text-neutral-500 uppercase">Target Host:</label>
         <select 
@@ -290,46 +281,52 @@ SSH Hardening Fail/Warn: ${securityReport.hardeningChecklist.filter((h) => h.sta
 
       <!-- Main Navigation Tabs -->
       <div class="flex items-center gap-1 bg-neutral-200/60 dark:bg-neutral-800/60 p-1 rounded-lg text-xs font-semibold">
-        <button
+        <Button
+          variant={activeMainTab === 'security' ? 'primary' : 'ghost'}
+          size="sm"
           onclick={() => (activeMainTab = 'security')}
-          class="px-3 py-1.5 rounded-md transition {activeMainTab === 'security' ? 'bg-white dark:bg-neutral-700 text-sky-600 dark:text-sky-400 shadow-xs' : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'}"
         >
           🛡️ Security & Hole Hunter
-        </button>
-        <button
+        </Button>
+        <Button
+          variant={activeMainTab === 'speed_qos' ? 'primary' : 'ghost'}
+          size="sm"
           onclick={() => (activeMainTab = 'speed_qos')}
-          class="px-3 py-1.5 rounded-md transition {activeMainTab === 'speed_qos' ? 'bg-white dark:bg-neutral-700 text-sky-600 dark:text-sky-400 shadow-xs' : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'}"
         >
           ⚡ Speed & QoS Bufferbloat
-        </button>
-        <button
+        </Button>
+        <Button
+          variant={activeMainTab === 'benchmark' ? 'primary' : 'ghost'}
+          size="sm"
           onclick={() => (activeMainTab = 'benchmark')}
-          class="px-3 py-1.5 rounded-md transition {activeMainTab === 'benchmark' ? 'bg-white dark:bg-neutral-700 text-sky-600 dark:text-sky-400 shadow-xs' : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'}"
         >
           🔥 Server Benchmark
-        </button>
-        <button
+        </Button>
+        <Button
+          variant={activeMainTab === 'mesh_tools' ? 'primary' : 'ghost'}
+          size="sm"
           onclick={() => (activeMainTab = 'mesh_tools')}
-          class="px-3 py-1.5 rounded-md transition {activeMainTab === 'mesh_tools' ? 'bg-white dark:bg-neutral-700 text-sky-600 dark:text-sky-400 shadow-xs' : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'}"
         >
           🌐 Mesh Matrix & Tools Lab
-        </button>
+        </Button>
       </div>
 
       {#if securityReport}
-        <button
+        <Button
+          variant="secondary"
+          size="sm"
           onclick={exportToInvestigation}
           disabled={isSavingIncident}
-          class="px-3 py-1.5 bg-neutral-200 dark:bg-neutral-800 hover:bg-neutral-300 dark:hover:bg-neutral-700 text-xs font-medium rounded-lg text-neutral-800 dark:text-neutral-200 flex items-center gap-1.5 transition"
+          loading={isSavingIncident}
         >
           <svg class="w-3.5 h-3.5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
           <span>{isSavingIncident ? 'Menyimpan...' : 'Ekspor ke Investigasi'}</span>
-        </button>
+        </Button>
       {/if}
     </div>
 
     <!-- Content Area -->
-    <div class="flex-1 overflow-y-auto p-6 space-y-6">
+    <div class="space-y-6">
       <!-- TAB 1: SECURITY & HOLE HUNTER -->
       {#if activeMainTab === 'security'}
         <div class="space-y-6">
@@ -339,31 +336,28 @@ SSH Hardening Fail/Warn: ${securityReport.hardeningChecklist.filter((h) => h.sta
               <p class="text-xs text-neutral-500">Egress port leaks, listening sockets 0.0.0.0, reverse shell watchdog, dan SSH baseline hardening.</p>
             </div>
             <div class="flex items-center gap-2">
-              <button
+              <Button
+                variant="danger"
+                size="sm"
                 onclick={startThreatWatchdog}
                 disabled={isRunningWatchdog || !selectedHostId}
-                class="px-3 py-1.5 bg-rose-600 hover:bg-rose-500 disabled:opacity-50 text-white text-xs font-semibold rounded-lg flex items-center gap-1.5 transition"
+                loading={isRunningWatchdog}
               >
-                {#if isRunningWatchdog}
-                  <span class="animate-spin text-xs">⏳</span>
-                {:else}
-                  <span>🚨</span>
-                {/if}
+                <span>🚨</span>
                 <span>Threat Watchdog Scan</span>
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
                 onclick={startSecurityAudit}
                 disabled={isRunningSecurity || !selectedHostId}
-                class="px-4 py-1.5 bg-sky-600 hover:bg-sky-500 disabled:opacity-50 text-white text-xs font-semibold rounded-lg shadow shadow-sky-600/20 flex items-center gap-2 transition"
+                loading={isRunningSecurity}
               >
-                {#if isRunningSecurity}
-                  <span class="animate-spin text-xs">⏳</span>
-                  <span>Mengaudit...</span>
-                {:else}
+                {#if !isRunningSecurity}
                   <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/></svg>
-                  <span>Jalankan Security Audit</span>
                 {/if}
-              </button>
+                <span>{isRunningSecurity ? 'Mengaudit...' : 'Jalankan Security Audit'}</span>
+              </Button>
             </div>
           </div>
 
@@ -469,30 +463,24 @@ SSH Hardening Fail/Warn: ${securityReport.hardeningChecklist.filter((h) => h.sta
               <p class="text-xs text-neutral-500">Mengukur bandwidth download/upload real-time dan degradasi latensi di bawah beban (Bufferbloat A+ sampai F).</p>
             </div>
             <div class="flex items-center gap-2">
-              <button
+              <Button
+                variant="primary"
+                size="sm"
                 onclick={startSpeedTest}
                 disabled={isRunningSpeed || !selectedHostId}
-                class="px-4 py-1.5 bg-sky-600 hover:bg-sky-500 disabled:opacity-50 text-white text-xs font-semibold rounded-lg flex items-center gap-2 transition"
+                loading={isRunningSpeed}
               >
-                {#if isRunningSpeed}
-                  <span class="animate-spin text-xs">⏳</span>
-                  <span>Testing Speed...</span>
-                {:else}
-                  <span>🚀 Test Speedometer</span>
-                {/if}
-              </button>
-              <button
+                <span>🚀 {isRunningSpeed ? 'Testing Speed...' : 'Test Speedometer'}</span>
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
                 onclick={startQosAudit}
                 disabled={isRunningQos || !selectedHostId}
-                class="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-semibold rounded-lg flex items-center gap-2 transition"
+                loading={isRunningQos}
               >
-                {#if isRunningQos}
-                  <span class="animate-spin text-xs">⏳</span>
-                  <span>Auditing QoS...</span>
-                {:else}
-                  <span>📊 Audit Bufferbloat</span>
-                {/if}
-              </button>
+                <span>📊 {isRunningQos ? 'Auditing QoS...' : 'Audit Bufferbloat'}</span>
+              </Button>
             </div>
           </div>
 
@@ -567,18 +555,15 @@ SSH Hardening Fail/Warn: ${securityReport.hardeningChecklist.filter((h) => h.sta
                 <h3 class="text-sm font-bold text-neutral-900 dark:text-white">Hardware & Storage Benchmark</h3>
                 <p class="text-xs text-neutral-500">Benchmark komputasi multi-core CPU, memory bandwidth RAM, dan disk write IOPS (4k/64k/1M direct IO).</p>
               </div>
-              <button
+              <Button
+                variant="primary"
+                size="sm"
                 onclick={startBenchmark}
                 disabled={isRunningBench || !selectedHostId}
-                class="px-4 py-1.5 bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white text-xs font-semibold rounded-lg flex items-center gap-2 transition"
+                loading={isRunningBench}
               >
-                {#if isRunningBench}
-                  <span class="animate-spin text-xs">⏳</span>
-                  <span>Benchmarking Hardware...</span>
-                {:else}
-                  <span>🔥 Jalankan Server Benchmark</span>
-                {/if}
-              </button>
+                <span>🔥 {isRunningBench ? 'Benchmarking Hardware...' : 'Jalankan Server Benchmark'}</span>
+              </Button>
             </div>
 
             {#if benchResult}
@@ -642,18 +627,15 @@ SSH Hardening Fail/Warn: ${securityReport.hardeningChecklist.filter((h) => h.sta
                 <h3 class="text-sm font-bold text-neutral-900 dark:text-white">Mesh Fleet Matrix, Subnet Sweeper & PMTUD</h3>
                 <p class="text-xs text-neutral-500">RTT N x N antar armada server, pemindai CIDR lokal, penentu ukuran MTU aman, dan sertifikat SSL/TLS.</p>
               </div>
-              <button
+              <Button
+                variant="primary"
+                size="sm"
                 onclick={startMeshMatrix}
                 disabled={isRunningMesh || !selectedHostId}
-                class="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-semibold rounded-lg flex items-center gap-2 transition"
+                loading={isRunningMesh}
               >
-                {#if isRunningMesh}
-                  <span class="animate-spin text-xs">⏳</span>
-                  <span>Probing Fleet...</span>
-                {:else}
-                  <span>🌐 Probe Mesh Matrix Armada</span>
-                {/if}
-              </button>
+                <span>🌐 {isRunningMesh ? 'Probing Fleet...' : 'Probe Mesh Matrix Armada'}</span>
+              </Button>
             </div>
 
             <!-- Mesh Grid View -->
@@ -689,13 +671,15 @@ SSH Hardening Fail/Warn: ${securityReport.hardeningChecklist.filter((h) => h.sta
                     placeholder="192.168.1.0/24"
                     class="flex-1 px-2.5 py-1 text-xs bg-neutral-50 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded text-neutral-900 dark:text-white font-mono"
                   />
-                  <button
+                  <Button
+                    variant="primary"
+                    size="sm"
                     onclick={startSubnetSweep}
                     disabled={isRunningSubnet || !selectedHostId}
-                    class="px-3 py-1 bg-sky-600 text-white rounded text-xs font-semibold"
+                    loading={isRunningSubnet}
                   >
                     {isRunningSubnet ? '...' : 'Scan'}
-                  </button>
+                  </Button>
                 </div>
                 {#if subnetResult}
                   <div class="text-xs text-neutral-500">Ditemukan <strong>{subnetResult.activeHosts}</strong> host aktif:</div>
@@ -720,13 +704,15 @@ SSH Hardening Fail/Warn: ${securityReport.hardeningChecklist.filter((h) => h.sta
                     placeholder="1.1.1.1"
                     class="flex-1 px-2.5 py-1 text-xs bg-neutral-50 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded text-neutral-900 dark:text-white font-mono"
                   />
-                  <button
+                  <Button
+                    variant="primary"
+                    size="sm"
                     onclick={startPmtudProbe}
                     disabled={isRunningPmtud || !selectedHostId}
-                    class="px-3 py-1 bg-sky-600 text-white rounded text-xs font-semibold"
+                    loading={isRunningPmtud}
                   >
                     {isRunningPmtud ? '...' : 'Find'}
-                  </button>
+                  </Button>
                 </div>
                 {#if pmtudResult}
                   <div class="p-3 rounded-lg bg-sky-500/10 border border-sky-500/20 text-center">
@@ -747,13 +733,15 @@ SSH Hardening Fail/Warn: ${securityReport.hardeningChecklist.filter((h) => h.sta
                     placeholder="domain.com"
                     class="flex-1 px-2.5 py-1 text-xs bg-neutral-50 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded text-neutral-900 dark:text-white font-mono"
                   />
-                  <button
+                  <Button
+                    variant="primary"
+                    size="sm"
                     onclick={startTlsAudit}
                     disabled={isRunningTls}
-                    class="px-3 py-1 bg-sky-600 text-white rounded text-xs font-semibold"
+                    loading={isRunningTls}
                   >
                     {isRunningTls ? '...' : 'Check'}
-                  </button>
+                  </Button>
                 </div>
                 {#if tlsResult}
                   <div class="space-y-1.5 text-xs font-mono">
@@ -777,14 +765,15 @@ SSH Hardening Fail/Warn: ${securityReport.hardeningChecklist.filter((h) => h.sta
       {/if}
     </div>
 
-    <!-- Footer -->
-    <div class="px-6 py-3 border-t border-neutral-200 dark:border-neutral-800 flex justify-end bg-neutral-50/50 dark:bg-neutral-900/50">
-      <button 
-        onclick={onClose}
-        class="px-4 py-2 bg-neutral-200 dark:bg-neutral-800 hover:bg-neutral-300 dark:hover:bg-neutral-700 text-xs font-semibold rounded-lg text-neutral-800 dark:text-neutral-200 transition"
-      >
-        Tutup
-      </button>
-    </div>
-  </div>
-</div>
+    {#snippet footer()}
+      <div class="flex items-center justify-end gap-2.5 w-full">
+        <Button
+          variant="secondary"
+          size="sm"
+          onclick={handleClose}
+        >
+          Tutup
+        </Button>
+      </div>
+    {/snippet}
+  </Modal>

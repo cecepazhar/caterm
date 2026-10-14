@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Button } from '@cecepazhar/caui';
   import { t } from '$lib/i18n/index.svelte';
   import { getUpdater, installUpdate, dismissUpdateToast } from '$lib/stores/updater.svelte';
   import { releaseNotesUrl } from '$lib/appInfo';
@@ -27,14 +28,17 @@
         </p>
       </div>
       {#if updater.status !== 'downloading'}
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="icon"
           onclick={dismissUpdateToast}
-          class="p-1 -mt-1 -mr-1 rounded-md text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
           aria-label={t('updater.dismiss')}
+          title={t('updater.dismiss')}
+          class="-mt-1 -mr-1 h-6 w-6 text-neutral-400 hover:text-neutral-900 dark:hover:text-white"
         >
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
-        </button>
+        </Button>
       {/if}
     </div>
 
@@ -45,13 +49,14 @@
         </div>
         <span class="text-[11px] font-mono text-neutral-500 w-10 text-right">{percent === null ? '…' : `${percent}%`}</span>
       {:else}
-        <button
+        <Button
           type="button"
+          variant="primary"
+          size="sm"
           onclick={installUpdate}
-          class="px-3 py-1.5 rounded-md text-xs font-semibold bg-neutral-900 text-white hover:bg-neutral-700 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200 transition-colors"
         >
           {t('updater.installRestart')}
-        </button>
+        </Button>
       {/if}
     </div>
   </div>

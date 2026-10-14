@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Button } from '@cecepazhar/caui';
   import { getAmbientStore } from '$lib/stores/ambient.svelte';
   import { getPro } from '$lib/stores/pro.svelte';
 
@@ -45,19 +46,20 @@
       <span class="text-xs font-medium text-neutral-500 dark:text-neutral-400">
         {ambient.config.enabled && pro.isPro ? 'Aktif' : 'Nonaktif'}
       </span>
-      <button
+      <Button
         type="button"
         role="switch"
+        variant="ghost"
         aria-label="Toggle Ambient Underglow"
         aria-checked={ambient.config.enabled}
         disabled={!pro.isPro}
         onclick={() => ambient.setEnabled(!ambient.config.enabled)}
-        class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none disabled:opacity-40 disabled:cursor-not-allowed {ambient.config.enabled && pro.isPro ? 'bg-sky-600' : 'bg-neutral-300 dark:bg-neutral-700'}"
+        class="relative inline-flex !h-6 !w-11 !p-0 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none disabled:opacity-40 disabled:cursor-not-allowed {ambient.config.enabled && pro.isPro ? '!bg-sky-600' : '!bg-neutral-300 dark:!bg-neutral-700'}"
       >
         <span
           class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out {ambient.config.enabled && pro.isPro ? 'translate-x-5' : 'translate-x-0'}"
         ></span>
-      </button>
+      </Button>
     </div>
   </div>
 
@@ -79,53 +81,57 @@
           Mode Warna (Color Mode)
         </span>
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-          <button
+          <Button
             type="button"
+            variant="ghost"
             onclick={() => ambient.setMode('app-accent')}
-            class="p-3 rounded-xl border text-left transition-all {ambient.config.mode === 'app-accent' ? 'border-sky-500 bg-sky-500/10 text-sky-700 dark:text-sky-300' : 'border-neutral-200 dark:border-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-800'}"
+            class="p-3 rounded-xl border text-left transition-all h-auto block w-full justify-start {ambient.config.mode === 'app-accent' ? 'border-sky-500 bg-sky-500/10 text-sky-700 dark:text-sky-300' : 'border-neutral-200 dark:border-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-800'}"
           >
             <div class="flex items-center gap-2 mb-1">
               <span class="w-3 h-3 rounded-full border border-black/20" style:background-color={defaultAccent}></span>
               <span class="text-xs font-semibold">Tema {appName}</span>
             </div>
             <p class="text-[10px] text-neutral-500 dark:text-neutral-400">Bawaan warna aplikasi</p>
-          </button>
+          </Button>
 
-          <button
+          <Button
             type="button"
+            variant="ghost"
             onclick={() => ambient.setMode('solid')}
-            class="p-3 rounded-xl border text-left transition-all {ambient.config.mode === 'solid' ? 'border-sky-500 bg-sky-500/10 text-sky-700 dark:text-sky-300' : 'border-neutral-200 dark:border-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-800'}"
+            class="p-3 rounded-xl border text-left transition-all h-auto block w-full justify-start {ambient.config.mode === 'solid' ? 'border-sky-500 bg-sky-500/10 text-sky-700 dark:text-sky-300' : 'border-neutral-200 dark:border-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-800'}"
           >
             <div class="flex items-center gap-2 mb-1">
               <span class="w-3 h-3 rounded-full border border-black/20" style:background-color={ambient.config.customColor}></span>
               <span class="text-xs font-semibold">Warna Solid</span>
             </div>
             <p class="text-[10px] text-neutral-500 dark:text-neutral-400">Pilih warna bebas</p>
-          </button>
+          </Button>
 
-          <button
+          <Button
             type="button"
+            variant="ghost"
             onclick={() => ambient.setMode('rgb-cycle')}
-            class="p-3 rounded-xl border text-left transition-all {ambient.config.mode === 'rgb-cycle' ? 'border-sky-500 bg-sky-500/10 text-sky-700 dark:text-sky-300' : 'border-neutral-200 dark:border-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-800'}"
+            class="p-3 rounded-xl border text-left transition-all h-auto block w-full justify-start {ambient.config.mode === 'rgb-cycle' ? 'border-sky-500 bg-sky-500/10 text-sky-700 dark:text-sky-300' : 'border-neutral-200 dark:border-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-800'}"
           >
             <div class="flex items-center gap-2 mb-1">
               <span class="w-3 h-3 rounded-full bg-[linear-gradient(135deg,#ff0055,#33cc33,#0099ff)]"></span>
               <span class="text-xs font-semibold">RGB Chroma</span>
             </div>
             <p class="text-[10px] text-neutral-500 dark:text-neutral-400">Keyboard mechanical cycle</p>
-          </button>
+          </Button>
 
-          <button
+          <Button
             type="button"
+            variant="ghost"
             onclick={() => ambient.setMode('aurora')}
-            class="p-3 rounded-xl border text-left transition-all {ambient.config.mode === 'aurora' ? 'border-sky-500 bg-sky-500/10 text-sky-700 dark:text-sky-300' : 'border-neutral-200 dark:border-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-800'}"
+            class="p-3 rounded-xl border text-left transition-all h-auto block w-full justify-start {ambient.config.mode === 'aurora' ? 'border-sky-500 bg-sky-500/10 text-sky-700 dark:text-sky-300' : 'border-neutral-200 dark:border-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-800'}"
           >
             <div class="flex items-center gap-2 mb-1">
               <span class="w-3 h-3 rounded-full bg-[radial-gradient(circle,#ef4444,#8b5cf6)]"></span>
               <span class="text-xs font-semibold">Aurora Drift</span>
             </div>
             <p class="text-[10px] text-neutral-500 dark:text-neutral-400">Gelombang cahaya halus</p>
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -137,19 +143,22 @@
           </span>
           <div class="flex flex-wrap items-center gap-2">
             {#each PRESET_COLORS as preset}
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="icon"
                 title={preset.name}
+                aria-label={preset.name}
                 onclick={() => ambient.setCustomColor(preset.hex)}
-                class="w-7 h-7 rounded-full border-2 transition-transform hover:scale-110 flex items-center justify-center {ambient.config.customColor === preset.hex ? 'border-white ring-2 ring-sky-500 scale-110' : 'border-black/20'}"
-                style:background-color={preset.hex}
+                class="!w-7 !h-7 rounded-full border-2 transition-transform hover:scale-110 flex items-center justify-center !p-0 {ambient.config.customColor === preset.hex ? 'border-white ring-2 ring-sky-500 scale-110' : 'border-black/20'}"
+                style="background-color: {preset.hex}"
               >
                 {#if ambient.config.customColor === preset.hex}
                   <svg class="w-3.5 h-3.5 text-white drop-shadow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
                   </svg>
                 {/if}
-              </button>
+              </Button>
             {/each}
 
             <div class="flex items-center gap-2 ml-auto">
@@ -174,32 +183,35 @@
           Efek Animasi (Animation Effect)
         </span>
         <div class="grid grid-cols-3 gap-2.5">
-          <button
+          <Button
             type="button"
+            variant="ghost"
             onclick={() => ambient.setEffect('static')}
-            class="p-3 rounded-xl border text-center transition-all {ambient.config.effect === 'static' ? 'border-sky-500 bg-sky-500/10 text-sky-700 dark:text-sky-300 font-semibold' : 'border-neutral-200 dark:border-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-800'}"
+            class="p-3 rounded-xl border text-center transition-all h-auto block w-full {ambient.config.effect === 'static' ? 'border-sky-500 bg-sky-500/10 text-sky-700 dark:text-sky-300 font-semibold' : 'border-neutral-200 dark:border-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-800'}"
           >
             <div class="text-xs">Statis (Steady)</div>
             <div class="text-[10px] text-neutral-500 dark:text-neutral-400 mt-0.5">Cahaya konstan</div>
-          </button>
+          </Button>
 
-          <button
+          <Button
             type="button"
+            variant="ghost"
             onclick={() => ambient.setEffect('breathing')}
-            class="p-3 rounded-xl border text-center transition-all {ambient.config.effect === 'breathing' ? 'border-sky-500 bg-sky-500/10 text-sky-700 dark:text-sky-300 font-semibold' : 'border-neutral-200 dark:border-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-800'}"
+            class="p-3 rounded-xl border text-center transition-all h-auto block w-full {ambient.config.effect === 'breathing' ? 'border-sky-500 bg-sky-500/10 text-sky-700 dark:text-sky-300 font-semibold' : 'border-neutral-200 dark:border-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-800'}"
           >
             <div class="text-xs">Bernafas (Pulse)</div>
             <div class="text-[10px] text-neutral-500 dark:text-neutral-400 mt-0.5">Siklus redup & terang</div>
-          </button>
+          </Button>
 
-          <button
+          <Button
             type="button"
+            variant="ghost"
             onclick={() => ambient.setEffect('wave')}
-            class="p-3 rounded-xl border text-center transition-all {ambient.config.effect === 'wave' ? 'border-sky-500 bg-sky-500/10 text-sky-700 dark:text-sky-300 font-semibold' : 'border-neutral-200 dark:border-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-800'}"
+            class="p-3 rounded-xl border text-center transition-all h-auto block w-full {ambient.config.effect === 'wave' ? 'border-sky-500 bg-sky-500/10 text-sky-700 dark:text-sky-300 font-semibold' : 'border-neutral-200 dark:border-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-800'}"
           >
             <div class="text-xs">Gelombang (Wave)</div>
             <div class="text-[10px] text-neutral-500 dark:text-neutral-400 mt-0.5">Aliran dinamis</div>
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -280,18 +292,19 @@
             <span class="text-xs text-neutral-500 dark:text-neutral-400">
               {ambient.config.typingReactive ? 'Aktif' : 'Nonaktif'}
             </span>
-            <button
+            <Button
               type="button"
               role="switch"
+              variant="ghost"
               aria-label="Toggle Typing Reactive Glow"
               aria-checked={ambient.config.typingReactive}
               onclick={() => ambient.setTypingReactive(!ambient.config.typingReactive)}
-              class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none {ambient.config.typingReactive ? 'bg-sky-600' : 'bg-neutral-300 dark:bg-neutral-700'}"
+              class="relative inline-flex !h-5 !w-9 !p-0 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none {ambient.config.typingReactive ? '!bg-sky-600' : '!bg-neutral-300 dark:!bg-neutral-700'}"
             >
               <span
                 class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out {ambient.config.typingReactive ? 'translate-x-4' : 'translate-x-0'}"
               ></span>
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -316,18 +329,19 @@
               <span class="text-xs text-neutral-500 dark:text-neutral-400">
                 {ambient.config.bicolorEnabled ? 'Aktif' : 'Nonaktif'}
               </span>
-              <button
+              <Button
                 type="button"
                 role="switch"
+                variant="ghost"
                 aria-label="Toggle Bicolor Dual-Axis Gradient"
                 aria-checked={ambient.config.bicolorEnabled}
                 onclick={() => ambient.setBicolorEnabled(!ambient.config.bicolorEnabled)}
-                class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none {ambient.config.bicolorEnabled ? 'bg-sky-600' : 'bg-neutral-300 dark:bg-neutral-700'}"
+                class="relative inline-flex !h-5 !w-9 !p-0 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none {ambient.config.bicolorEnabled ? '!bg-sky-600' : '!bg-neutral-300 dark:!bg-neutral-700'}"
               >
                 <span
                   class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out {ambient.config.bicolorEnabled ? 'translate-x-4' : 'translate-x-0'}"
                 ></span>
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -338,22 +352,25 @@
               </span>
               <div class="flex flex-wrap items-center gap-2">
                 {#each PRESET_COLORS as preset}
-                  <button
+                  <Button
                     type="button"
+                    variant="ghost"
+                    size="icon"
                     title={preset.name}
+                    aria-label={preset.name}
                     onclick={() => ambient.setSecondaryAccent(preset.hex)}
-                    class="w-6 h-6 rounded-full border-2 transition-transform hover:scale-110 flex items-center justify-center {ambient.config.secondaryAccent === preset.hex ? 'border-white ring-2 ring-emerald-500 scale-110' : 'border-black/20'}"
-                    style:background-color={preset.hex}
+                    class="!w-6 !h-6 rounded-full border-2 transition-transform hover:scale-110 flex items-center justify-center !p-0 {ambient.config.secondaryAccent === preset.hex ? 'border-white ring-2 ring-emerald-500 scale-110' : 'border-black/20'}"
+                    style="background-color: {preset.hex}"
                   >
                     {#if ambient.config.secondaryAccent === preset.hex}
                       <svg class="w-3 h-3 text-white drop-shadow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
                       </svg>
                     {/if}
-                  </button>
-                {/each}
+                  </Button>
+            {/each}
 
-                <div class="flex items-center gap-2 ml-auto">
+            <div class="flex items-center gap-2 ml-auto">
                   <span class="text-xs text-neutral-400 font-mono">Hex:</span>
                   <input
                     type="color"
@@ -392,28 +409,30 @@
             <span class="text-xs text-neutral-500 dark:text-neutral-400">
               {ambient.config.avatarGlowEnabled ? 'Aktif' : 'Nonaktif'}
             </span>
-            <button
+            <Button
               type="button"
               role="switch"
+              variant="ghost"
               aria-label="Toggle Avatar Glow Effect"
               aria-checked={ambient.config.avatarGlowEnabled}
               onclick={() => ambient.setAvatarGlowEnabled(!ambient.config.avatarGlowEnabled)}
-              class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none {ambient.config.avatarGlowEnabled ? 'bg-sky-600' : 'bg-neutral-300 dark:bg-neutral-700'}"
+              class="relative inline-flex !h-5 !w-9 !p-0 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none {ambient.config.avatarGlowEnabled ? '!bg-sky-600' : '!bg-neutral-300 dark:!bg-neutral-700'}"
             >
               <span
                 class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out {ambient.config.avatarGlowEnabled ? 'translate-x-4' : 'translate-x-0'}"
               ></span>
-            </button>
+            </Button>
           </div>
         </div>
 
         {#if ambient.config.avatarGlowEnabled}
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
             <!-- 1. Comet Beam -->
-            <button
+            <Button
               type="button"
+              variant="ghost"
               onclick={() => ambient.setAvatarGlowEffect('comet-beam')}
-              class="p-3.5 rounded-xl border text-left transition-all relative flex flex-col justify-between gap-3 {ambient.config.avatarGlowEffect === 'comet-beam' ? 'border-sky-500 bg-sky-500/10 text-sky-700 dark:text-sky-300 ring-1 ring-sky-500/50' : 'border-neutral-200 dark:border-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-800'}"
+              class="p-3.5 rounded-xl border text-left transition-all relative flex flex-col justify-between gap-3 h-auto w-full {ambient.config.avatarGlowEffect === 'comet-beam' ? 'border-sky-500 bg-sky-500/10 text-sky-700 dark:text-sky-300 ring-1 ring-sky-500/50' : 'border-neutral-200 dark:border-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-800'}"
             >
               <div class="flex items-center justify-between">
                 <span class="text-xs font-semibold">Conic Comet Beam</span>
@@ -426,13 +445,14 @@
               <p class="text-[10px] text-neutral-500 dark:text-neutral-400 leading-relaxed">
                 Default: Berkas laser komet berputar 120° mengelilingi cincin avatar.
               </p>
-            </button>
+            </Button>
 
             <!-- 2. Dual Photons -->
-            <button
+            <Button
               type="button"
+              variant="ghost"
               onclick={() => ambient.setAvatarGlowEffect('dual-photons')}
-              class="p-3.5 rounded-xl border text-left transition-all relative flex flex-col justify-between gap-3 {ambient.config.avatarGlowEffect === 'dual-photons' ? 'border-sky-500 bg-sky-500/10 text-sky-700 dark:text-sky-300 ring-1 ring-sky-500/50' : 'border-neutral-200 dark:border-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-800'}"
+              class="p-3.5 rounded-xl border text-left transition-all relative flex flex-col justify-between gap-3 h-auto w-full {ambient.config.avatarGlowEffect === 'dual-photons' ? 'border-sky-500 bg-sky-500/10 text-sky-700 dark:text-sky-300 ring-1 ring-sky-500/50' : 'border-neutral-200 dark:border-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-800'}"
             >
               <div class="flex items-center justify-between">
                 <span class="text-xs font-semibold">Dual Photons</span>
@@ -445,13 +465,14 @@
               <p class="text-[10px] text-neutral-500 dark:text-neutral-400 leading-relaxed">
                 2 partikel foton satelit berkejaran 180° dengan pendar ganda.
               </p>
-            </button>
+            </Button>
 
             <!-- 3. Reactive Chroma Ring -->
-            <button
+            <Button
               type="button"
+              variant="ghost"
               onclick={() => ambient.setAvatarGlowEffect('chroma-ring')}
-              class="p-3.5 rounded-xl border text-left transition-all relative flex flex-col justify-between gap-3 {ambient.config.avatarGlowEffect === 'chroma-ring' ? 'border-sky-500 bg-sky-500/10 text-sky-700 dark:text-sky-300 ring-1 ring-sky-500/50' : 'border-neutral-200 dark:border-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-800'}"
+              class="p-3.5 rounded-xl border text-left transition-all relative flex flex-col justify-between gap-3 h-auto w-full {ambient.config.avatarGlowEffect === 'chroma-ring' ? 'border-sky-500 bg-sky-500/10 text-sky-700 dark:text-sky-300 ring-1 ring-sky-500/50' : 'border-neutral-200 dark:border-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-800'}"
             >
               <div class="flex items-center justify-between">
                 <span class="text-xs font-semibold">Reactive Chroma</span>
@@ -464,7 +485,7 @@
               <p class="text-[10px] text-neutral-500 dark:text-neutral-400 leading-relaxed">
                 Aura reaktif mengikuti spektrum warna & kecepatan ambient terpilih.
               </p>
-            </button>
+            </Button>
           </div>
         {/if}
       </div>
@@ -490,28 +511,30 @@
             <span class="text-xs text-neutral-500 dark:text-neutral-400">
               {ambient.config.cardGlowEnabled ? 'Aktif' : 'Nonaktif'}
             </span>
-            <button
+            <Button
               type="button"
               role="switch"
+              variant="ghost"
               aria-label="Toggle Card Glow Effect"
               aria-checked={ambient.config.cardGlowEnabled}
               onclick={() => ambient.setCardGlowEnabled(!ambient.config.cardGlowEnabled)}
-              class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none {ambient.config.cardGlowEnabled ? 'bg-sky-600' : 'bg-neutral-300 dark:bg-neutral-700'}"
+              class="relative inline-flex !h-5 !w-9 !p-0 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none {ambient.config.cardGlowEnabled ? '!bg-sky-600' : '!bg-neutral-300 dark:!bg-neutral-700'}"
             >
               <span
                 class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out {ambient.config.cardGlowEnabled ? 'translate-x-4' : 'translate-x-0'}"
               ></span>
-            </button>
+            </Button>
           </div>
         </div>
 
         {#if ambient.config.cardGlowEnabled}
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
             <!-- 1. Diffused Halo -->
-            <button
+            <Button
               type="button"
+              variant="ghost"
               onclick={() => ambient.setCardGlowStyle('diffused-halo')}
-              class="p-3.5 rounded-xl border text-left transition-all relative flex flex-col justify-between gap-3 {ambient.config.cardGlowStyle === 'diffused-halo' ? 'border-sky-500 bg-sky-500/10 text-sky-700 dark:text-sky-300 ring-1 ring-sky-500/50' : 'border-neutral-200 dark:border-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-800'}"
+              class="p-3.5 rounded-xl border text-left transition-all relative flex flex-col justify-between gap-3 h-auto w-full {ambient.config.cardGlowStyle === 'diffused-halo' ? 'border-sky-500 bg-sky-500/10 text-sky-700 dark:text-sky-300 ring-1 ring-sky-500/50' : 'border-neutral-200 dark:border-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-800'}"
             >
               <div class="flex items-center justify-between">
                 <span class="text-xs font-semibold">Diffused Halo</span>
@@ -524,13 +547,14 @@
               <p class="text-[10px] text-neutral-500 dark:text-neutral-400 leading-relaxed">
                 Pendaran cahaya ambient lembut memancar keluar ke kanvas dan sekeliling sudut siku.
               </p>
-            </button>
+            </Button>
 
             <!-- 2. Neon Hairline -->
-            <button
+            <Button
               type="button"
+              variant="ghost"
               onclick={() => ambient.setCardGlowStyle('neon-border')}
-              class="p-3.5 rounded-xl border text-left transition-all relative flex flex-col justify-between gap-3 {ambient.config.cardGlowStyle === 'neon-border' ? 'border-sky-500 bg-sky-500/10 text-sky-700 dark:text-sky-300 ring-1 ring-sky-500/50' : 'border-neutral-200 dark:border-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-800'}"
+              class="p-3.5 rounded-xl border text-left transition-all relative flex flex-col justify-between gap-3 h-auto w-full {ambient.config.cardGlowStyle === 'neon-border' ? 'border-sky-500 bg-sky-500/10 text-sky-700 dark:text-sky-300 ring-1 ring-sky-500/50' : 'border-neutral-200 dark:border-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-800'}"
             >
               <div class="flex items-center justify-between">
                 <span class="text-xs font-semibold">Neon Hairline</span>
@@ -542,13 +566,14 @@
               <p class="text-[10px] text-neutral-500 dark:text-neutral-400 leading-relaxed">
                 Garis tepi siku atas & kiri menyala tegas dengan pendaran neon berpresisi tinggi.
               </p>
-            </button>
+            </Button>
 
             <!-- 3. Chroma Border Beam -->
-            <button
+            <Button
               type="button"
+              variant="ghost"
               onclick={() => ambient.setCardGlowStyle('chroma-beam')}
-              class="p-3.5 rounded-xl border text-left transition-all relative flex flex-col justify-between gap-3 {ambient.config.cardGlowStyle === 'chroma-beam' ? 'border-sky-500 bg-sky-500/10 text-sky-700 dark:text-sky-300 ring-1 ring-sky-500/50' : 'border-neutral-200 dark:border-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-800'}"
+              class="p-3.5 rounded-xl border text-left transition-all relative flex flex-col justify-between gap-3 h-auto w-full {ambient.config.cardGlowStyle === 'chroma-beam' ? 'border-sky-500 bg-sky-500/10 text-sky-700 dark:text-sky-300 ring-1 ring-sky-500/50' : 'border-neutral-200 dark:border-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-800'}"
             >
               <div class="flex items-center justify-between">
                 <span class="text-xs font-semibold">Chroma Border Beam</span>
@@ -561,7 +586,7 @@
               <p class="text-[10px] text-neutral-500 dark:text-neutral-400 leading-relaxed">
                 Sinar berkas laser mengalir dinamis mengitari lengkungan siku rounded.
               </p>
-            </button>
+            </Button>
           </div>
         {/if}
       </div>
