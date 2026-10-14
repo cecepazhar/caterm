@@ -91,10 +91,10 @@
     <!-- Suggestion items list -->
     <div class="max-h-56 overflow-y-auto divide-y divide-neutral-100 dark:divide-neutral-800/40 py-1">
       {#each suggestions as item, idx}
-        <Button
+        <button
           type="button"
-          variant="ghost"
-          class="w-full !px-3 !py-1.5 flex items-center justify-between gap-3 text-left transition-colors !h-auto !rounded-none justify-between {idx === selectedIndex ? 'bg-sky-500/15 dark:bg-sky-600/30 text-sky-900 dark:text-white border-l-2 border-sky-500 dark:border-sky-400' : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800/50'}"
+          class="w-full px-3 py-1.5 flex items-center justify-between gap-3 text-left transition-colors cursor-pointer {idx === selectedIndex ? 'bg-sky-500/15 dark:bg-sky-600/30 text-sky-900 dark:text-white border-l-2 border-sky-500 dark:border-sky-400' : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800/50'}"
+          onmousedown={(e) => e.preventDefault()}
           onclick={() => onSelect(item)}
         >
           <div class="flex items-center gap-2 min-w-0 flex-1">
@@ -123,7 +123,7 @@
               {item.sourceLabel ? `[${item.sourceLabel}] ` : ''}{item.desc || ''}
             </span>
           {/if}
-        </Button>
+        </button>
       {/each}
     </div>
   </div>

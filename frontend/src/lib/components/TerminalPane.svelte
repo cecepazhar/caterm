@@ -249,24 +249,30 @@
   function applySuggestion(item: AutocompleteItem) {
     if (!session || !term) return;
 
-    // Calculate characters to replace
-    const currentLen = currentInputLine.length;
-    // Backspace previous typed chars on the active line in terminal
-    let backspaces = '';
-    for (let i = 0; i < currentLen; i++) {
-      backspaces += '\b \b';
+    // Determine how many characters to clear from the active input line.
+    // Snippets and history replace the entire current input; command suggestions
+    // only replace the last word.
+    let charsToErase: number;
+    let replacementText: string;
+
+    if (item.type === 'snippet' || item.type === 'history') {
+      charsToErase = currentInputLine.length;
+      replacementText = item.text;
+    } else {
+      const lastSpace = currentInputLine.lastIndexOf(' ');
+      charsToErase = currentInputLine.length - (lastSpace + 1);
+      replacementText = currentInputLine.slice(0, lastSpace + 1) + item.text;
     }
 
-    // Erase what user typed on the terminal screen & backend pty line
+    // Send the erase sequence to clear previously typed characters.
     let erasePty = '';
-    for (let i = 0; i < currentLen; i++) {
-      erasePty += '\x7f';
+    for (let i = 0; i < charsToErase; i++) {
+      erasePty += '\x7f'; // Backspace to clear previous input.
     }
 
-    // Write the completed command text
-    void sshWrite(session.sessionId, erasePty + item.text).catch(() => {});
-
-    currentInputLine = item.text;
+    // Write the final completed line to the PTY and update internal state.
+    void sshWrite(session.sessionId, erasePty + replacementText).catch(() => {});
+    currentInputLine = replacementText;
     suggestions = [];
     selectedSuggestionIndex = 0;
     term.focus();
@@ -494,29 +500,39 @@
         return false;
       }
       if (suggestions.length > 0 && !isAlternateScreen()) {
-        if (event.type === 'keydown') {
-          if (event.key === 'Tab') {
+        if (event.key === 'Tab' || event.key === 'Enter') {
+          if (event.type === 'keydown') {
             event.preventDefault();
+            event.stopPropagation();
             const picked = suggestions[selectedSuggestionIndex];
             if (picked) applySuggestion(picked);
-            return false;
           }
-          if (event.key === 'ArrowDown') {
+          return false;
+        }
+        if (event.key === 'ArrowDown') {
+          if (event.type === 'keydown') {
             event.preventDefault();
+            event.stopPropagation();
             selectedSuggestionIndex = (selectedSuggestionIndex + 1) % suggestions.length;
-            return false;
           }
-          if (event.key === 'ArrowUp') {
+          return false;
+        }
+        if (event.key === 'ArrowUp') {
+          if (event.type === 'keydown') {
             event.preventDefault();
+            event.stopPropagation();
             selectedSuggestionIndex =
               (selectedSuggestionIndex - 1 + suggestions.length) % suggestions.length;
-            return false;
           }
-          if (event.key === 'Escape') {
+          return false;
+        }
+        if (event.key === 'Escape') {
+          if (event.type === 'keydown') {
             event.preventDefault();
+            event.stopPropagation();
             dismissSuggestions();
-            return false;
           }
+          return false;
         }
       }
       return true;
