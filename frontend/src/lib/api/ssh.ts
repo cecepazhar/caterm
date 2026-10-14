@@ -46,6 +46,10 @@ export function sshDisconnect(sessionId: string): Promise<void> {
   return invoke('ssh_disconnect', { sessionId });
 }
 
+export function sshClearHostKey(address: string, port?: number): Promise<boolean> {
+  return invoke('ssh_clear_host_key', { address, port });
+}
+
 /** Subscribe to PTY output for every session; filter by `sessionId` in the handler. */
 export function onSshOutput(handler: (event: SshOutputEvent) => void): Promise<UnlistenFn> {
   return listen<SshOutputEvent>('ssh://output', (e) => handler(e.payload));

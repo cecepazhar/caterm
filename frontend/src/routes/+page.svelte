@@ -2,6 +2,7 @@
   import { onMount, onDestroy } from 'svelte';
   import { listen, type UnlistenFn } from '@tauri-apps/api/event';
   import { listHosts, saveHost, deleteHost, testHostConnection, type HostRecord, type HostInput, type ConnectionProtocol } from '$lib/api/hosts';
+  import { sshClearHostKey } from '$lib/api/ssh';
   import { listGroups, type GroupRecord } from '$lib/api/groups';
   import { listKeys, type KeyRecord } from '$lib/api/keys';
   import { open } from '@tauri-apps/plugin-dialog';
@@ -417,6 +418,27 @@
       await refreshHosts();
     } catch (err: any) {
       showToast(err?.message || 'Failed to clone host', 'error');
+    }
+  }
+
+  async function handleClearHostKey(host: HostRecord) {
+    const confirmed = await confirmModal(
+      t('hosts.clearHostKeyConfirm', { name: host.label }),
+      t('hosts.clearHostKeyTitle'),
+      false,
+      t('hosts.clearHostKey'),
+      t('common.cancel')
+    );
+    if (!confirmed) return;
+    try {
+      const cleared = await sshClearHostKey(host.address, host.port);
+      if (cleared) {
+        showToast(t('hosts.clearHostKeySuccess', { name: host.label }), 'success');
+      } else {
+        showToast(t('hosts.clearHostKeyNone', { name: host.label }), 'info');
+      }
+    } catch (err: any) {
+      showToast(err?.message || 'Gagal membersihkan host key', 'error');
     }
   }
 
@@ -861,6 +883,10 @@
                   <Button variant="ghost" size="sm" class="w-full !justify-start text-left rounded-none px-3 py-1.5 font-normal" onclick={() => { openMenuId = null; handleClone(host); }}>{t('common.clone')}</Button>
                   <Button variant="ghost" size="sm" class="w-full !justify-start text-left rounded-none px-3 py-1.5 font-normal" onclick={() => { openMenuId = null; toggleSelected(host.id); }}>
                     {isSelected(host.id) ? t('hosts.deselect') : t('hosts.selectForBatch')}
+                  </Button>
+                  <Button variant="ghost" size="sm" class="w-full !justify-start text-left rounded-none px-3 py-1.5 font-normal text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300" onclick={() => { openMenuId = null; handleClearHostKey(host); }}>
+                    <svg class="w-3.5 h-3.5 mr-2 inline-block shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" /></svg>
+                    {t('hosts.clearHostKey')}
                   </Button>
                   <div class="my-1 border-t border-neutral-100 dark:border-neutral-800"></div>
                   <Button variant="danger" size="sm" class="w-full !justify-start text-left rounded-none px-3 py-1.5 font-normal border-0" onclick={() => { openMenuId = null; handleDelete(host.id); }}>{t('common.delete')}</Button>
