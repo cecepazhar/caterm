@@ -73,7 +73,7 @@
       rel="noreferrer"
       class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#ff5e5b] text-white text-sm font-semibold hover:opacity-90 transition-opacity"
     >
-      <span aria-hidden="true">☕</span>
+      <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M18 8h1a4 4 0 0 1 0 8h-1M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8zM6 1v3M10 1v3M14 1v3" /></svg>
       {t('sponsorWall.cta')}
     </a>
     <a

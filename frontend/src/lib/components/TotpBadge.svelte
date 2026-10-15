@@ -2,6 +2,7 @@
   import { Button } from '@cecepazhar/caui';
   import { showToast } from '$lib/stores/uiNotifications.svelte';
   import { copyText } from '$lib/utils/clipboard';
+  import { t } from '$lib/i18n/index.svelte';
 
   let {
     id = '',
@@ -61,7 +62,7 @@
     const clean = token.replace(/\s+/g, '');
     await copyText(clean);
     copied = true;
-    showToast(`2FA Token ${formattedToken} tersalin!`, 'success');
+    showToast(t('totp.tokenCopied', { token: formattedToken }), 'success');
     onCopy?.();
     setTimeout(() => {
       copied = false;
@@ -105,8 +106,8 @@
           size="icon"
           onclick={toggleShowCode}
           class="!p-0.5 rounded text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors shrink-0"
-          title={showCode ? 'Sembunyikan Kode 2FA' : 'Tampilkan Kode 2FA'}
-          aria-label={showCode ? 'Sembunyikan Kode 2FA' : 'Tampilkan Kode 2FA'}
+          title={showCode ? t('totp.hideCode') : t('totp.showCode')}
+          aria-label={showCode ? t('totp.hideCode') : t('totp.showCode')}
         >
           {#if showCode}
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -162,8 +163,8 @@
         size="icon"
         onclick={onEdit}
         class="ml-auto !w-8 !h-8 flex items-center justify-center rounded-lg text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors !p-0"
-        title="Ubah Kunci 2FA"
-        aria-label="Ubah Kunci 2FA"
+        title={t('totp.editKey')}
+        aria-label={t('totp.editKey')}
       >
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M16.9 4.1a2.1 2.1 0 013 3L8.5 18.5 4 20l1.5-4.5z" /></svg>
       </Button>
@@ -176,8 +177,8 @@
         size="icon"
         onclick={onDelete}
         class="!w-8 !h-8 flex items-center justify-center rounded-lg text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors !p-0"
-        title="Hapus Kunci 2FA"
-        aria-label="Hapus Kunci 2FA"
+        title={t('totp.deleteKey')}
+        aria-label={t('totp.deleteKey')}
       >
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
       </Button>
@@ -189,19 +190,19 @@
       size="sm"
       onclick={handleCopy}
       class="!h-8 !px-3 flex items-center gap-1.5 !bg-sky-600 hover:!bg-sky-500 text-white text-xs font-semibold transition-colors"
-      title="Salin Kode 2FA"
-      aria-label="Salin Kode 2FA"
+      title={t('totp.copyCode')}
+      aria-label={t('totp.copyCode')}
     >
       {#if copied}
         <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
         </svg>
-        <span>Tersalin!</span>
+        <span>{t('common.copied')}</span>
       {:else}
         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
         </svg>
-        <span>Salin Kode</span>
+        <span>{t('common.copy')}</span>
       {/if}
     </Button>
   </div>

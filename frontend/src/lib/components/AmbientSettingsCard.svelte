@@ -2,6 +2,7 @@
   import { Button } from '@cecepazhar/caui';
   import { getAmbientStore } from '$lib/stores/ambient.svelte';
   import { getPro } from '$lib/stores/pro.svelte';
+  import { t } from '$lib/i18n/index.svelte';
 
   let { defaultAccent = '#ef4444', appName = 'CATerm' }: { defaultAccent?: string; appName?: string } = $props();
 
@@ -104,7 +105,7 @@
               <span class="w-3 h-3 rounded-full border border-black/20" style:background-color={ambient.config.customColor}></span>
               <span class="text-xs font-semibold">Warna Solid</span>
             </div>
-            <p class="text-[10px] text-neutral-500 dark:text-neutral-400">Pilih warna bebas</p>
+            <p class="text-[10px] text-neutral-500 dark:text-neutral-400">{t('ambient.customColorDesc')}</p>
           </Button>
 
           <Button
@@ -401,7 +402,7 @@
               </span>
             </div>
             <p class="text-[11px] text-neutral-500 dark:text-neutral-400">
-              Pancaran halo mikro reaktif pada avatar profil di LockScreen, Menu, dan Pengaturan.
+              {t('ambient.haloDesc')}
             </p>
           </div>
 

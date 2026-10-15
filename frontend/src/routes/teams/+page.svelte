@@ -38,7 +38,7 @@
       teams = results[0].value || [];
     } else {
       console.error('Failed to load teams:', results[0].reason);
-      showToast(t('teams.loadFailed') || 'Gagal memuat daftar tim', 'error');
+      showToast(t('teams.loadFailed'), 'error');
     }
 
     if (results[1].status === 'fulfilled') {
@@ -100,12 +100,12 @@
       teams = editingId
         ? teams.map((t) => (t.id === saved.id ? saved : t))
         : [...teams, saved];
-      showToast(editingId ? 'Tim berhasil diperbarui' : 'Tim berhasil dibuat', 'success');
+      showToast(editingId ? t('teams.teamUpdated') : t('teams.teamCreated'), 'success');
       editingId = null;
       isAddModalOpen = false;
     } catch (err) {
       console.error('Failed to save team:', err);
-      showToast(t('teams.saveFailed') || 'Gagal menyimpan tim', 'error');
+      showToast(t('teams.saveFailed'), 'error');
     }
   }
 
@@ -113,10 +113,10 @@
     try {
       await deleteTeam(id);
       teams = teams.filter((t) => t.id !== id);
-      showToast('Tim berhasil dihapus', 'info');
+      showToast(t('teams.teamDeleted'), 'info');
     } catch (err) {
       console.error('Failed to delete team:', err);
-      showToast(t('teams.deleteFailed') || 'Gagal menghapus tim', 'error');
+      showToast(t('teams.deleteFailed'), 'error');
     }
   }
 
@@ -146,11 +146,13 @@
   >
     {#snippet actions()}
       <Button
-        onclick={openAddModal}
         variant="primary"
-        size="md"
+        class="h-9 rounded-xl shrink-0 shadow-xs"
+        onclick={openAddModal}
       >
-        <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+        <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v14m7-7H5" />
+        </svg>
         {t('teams.createTeam')}
       </Button>
     {/snippet}

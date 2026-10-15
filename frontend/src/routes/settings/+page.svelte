@@ -753,8 +753,10 @@
               disabled={licenseBusy}
               variant="warning"
               size="sm"
+              class="flex items-center gap-1.5"
             >
-              👑 Activate Founder Lifetime (Cecep Azhar)
+              <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm14 3c0 .6-.4 1-1 1H6c-.6 0-1-.4-1-1v-1h14v1z"/></svg>
+              <span>Activate Founder Lifetime (Cecep Azhar)</span>
             </Button>
           </div>
         </div>

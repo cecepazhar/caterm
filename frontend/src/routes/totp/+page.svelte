@@ -154,12 +154,12 @@
   >
     {#snippet actions()}
       <Button
-        variant="info"
-        size="sm"
+        variant="primary"
+        class="h-9 rounded-xl shrink-0 shadow-xs"
         onclick={openAddModal}
       >
-        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v14m7-7H5" />
         </svg>
         {t('totp.newKey')}
       </Button>

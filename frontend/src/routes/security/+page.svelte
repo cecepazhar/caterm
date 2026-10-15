@@ -29,6 +29,7 @@
   import { listHosts, type HostRecord } from '$lib/api/hosts';
   import { saveInvestigation } from '$lib/api/investigations';
   import { showToast } from '$lib/stores/uiNotifications.svelte';
+  import { t } from '$lib/i18n/index.svelte';
   import { errorText } from '$lib/errors';
   import { PageHeader, Button, Input, Badge, Card } from '@cecepazhar/caui';
   import ProGate from '$lib/components/ProGate.svelte';
@@ -93,7 +94,7 @@
 
   async function startSecurityAudit() {
     if (!selectedHostId) {
-      showToast('Pilih host target terlebih dahulu', 'error');
+      showToast(t('security.selectHostFirst'), 'error');
       return;
     }
     isRunningSecurity = true;
@@ -101,9 +102,9 @@
     try {
       const res = await runNetworkSecurityAudit(selectedHostId);
       securityReport = res;
-      showToast(`Audit keamanan selesai! Skor: ${res.summaryScore}%`, res.summaryScore > 70 ? 'success' : 'error');
+      showToast(t('security.auditCompleted', { score: res.summaryScore }), res.summaryScore > 70 ? 'success' : 'error');
     } catch (e) {
-      showToast(`Audit gagal: ${errorText(e)}`, 'error');
+      showToast(t('security.auditFailed', { error: errorText(e) }), 'error');
     } finally {
       isRunningSecurity = false;
     }
@@ -114,9 +115,9 @@
     isRunningWatchdog = true;
     try {
       watchdogResult = await runThreatWatchdog(selectedHostId);
-      showToast(`Threat Watchdog selesai: Status ${watchdogResult.threatLevel}`, watchdogResult.threatLevel === 'CLEAN' ? 'success' : 'error');
+      showToast(t('security.watchdogCompleted', { status: watchdogResult.threatLevel }), watchdogResult.threatLevel === 'CLEAN' ? 'success' : 'error');
     } catch (e) {
-      showToast(`Watchdog gagal: ${errorText(e)}`, 'error');
+      showToast(t('security.watchdogFailed', { error: errorText(e) }), 'error');
     } finally {
       isRunningWatchdog = false;
     }
@@ -127,9 +128,9 @@
     isRunningTls = true;
     try {
       tlsResult = await runTlsAudit(tlsHost, tlsPort);
-      showToast(`TLS Audit selesai: ${tlsResult.status}`, tlsResult.status === 'HEALTHY' ? 'success' : 'error');
+      showToast(t('security.tlsAuditCompleted', { status: tlsResult.status }), tlsResult.status === 'HEALTHY' ? 'success' : 'error');
     } catch (e) {
-      showToast(`TLS Audit gagal: ${errorText(e)}`, 'error');
+      showToast(t('security.tlsAuditFailed', { error: errorText(e) }), 'error');
     } finally {
       isRunningTls = false;
     }
@@ -139,9 +140,9 @@
     isRunningLaptop = true;
     try {
       laptopReport = await scanLaptopPosture();
-      showToast(`Laptop Posture Scan selesai! Skor: ${laptopReport.overallScore}%`, laptopReport.overallScore > 75 ? 'success' : 'error');
+      showToast(t('security.laptopScanCompleted', { score: laptopReport.overallScore }), laptopReport.overallScore > 75 ? 'success' : 'error');
     } catch (e) {
-      showToast(`Scan gagal: ${errorText(e)}`, 'error');
+      showToast(t('security.laptopScanFailed', { error: errorText(e) }), 'error');
     } finally {
       isRunningLaptop = false;
     }
@@ -152,9 +153,9 @@
     try {
       const records = await createIntegrityBaseline('local');
       baselineRecords = records;
-      showToast(`Baseline hash dibuat untuk ${records.length} file kritis!`, 'success');
+      showToast(t('security.baselineCreated', { count: records.length }), 'success');
     } catch (e) {
-      showToast(`Gagal membuat baseline: ${errorText(e)}`, 'error');
+      showToast(t('security.baselineFailed', { error: errorText(e) }), 'error');
     } finally {
       isRunningBaseline = false;
     }
@@ -162,19 +163,19 @@
 
   async function runIntegrityCheck() {
     if (baselineRecords.length === 0) {
-      showToast('Buat baseline snapshot terlebih dahulu!', 'error');
+      showToast(t('security.baselineRequired'), 'error');
       return;
     }
     isRunningTripwire = true;
     try {
       tripwireReport = await verifyIntegrityTripwire('local', baselineRecords);
       if (tripwireReport.tamperedCount === 0) {
-        showToast('Integrity Check: Semua file konfigurasi identik & aman!', 'success');
+        showToast(t('security.integritySafe'), 'success');
       } else {
-        showToast(`Integrity Alert: Ditemukan ${tripwireReport.tamperedCount} perubahan konfigurasi!`, 'error');
+        showToast(t('security.integrityAlert', { count: tripwireReport.tamperedCount }), 'error');
       }
     } catch (e) {
-      showToast(`Integrity check gagal: ${errorText(e)}`, 'error');
+      showToast(t('security.integrityFailed', { error: errorText(e) }), 'error');
     } finally {
       isRunningTripwire = false;
     }
@@ -199,9 +200,9 @@
       });
       newGeneratedPubkey = rec.publicKey;
       await loadEphemeralKeys();
-      showToast(`Kunci Ed25519 Ephemeral dibuat (TTL: ${ephKeyTtl / 3600}h)!`, 'success');
+      showToast(t('security.ephemeralKeyCreated', { ttl: ephKeyTtl / 3600 }), 'success');
     } catch (e) {
-      showToast(`Gagal membuat ephemeral key: ${errorText(e)}`, 'error');
+      showToast(t('security.ephemeralKeyFailed', { error: errorText(e) }), 'error');
     } finally {
       isGeneratingEphemeral = false;
     }
@@ -211,9 +212,9 @@
     try {
       await revokeEphemeralKey(id);
       await loadEphemeralKeys();
-      showToast('Ephemeral key berhasil di-revoke!', 'success');
+      showToast(t('security.ephemeralKeyRevoked'), 'success');
     } catch (e) {
-      showToast(`Revoke gagal: ${errorText(e)}`, 'error');
+      showToast(t('security.revokeFailed', { error: errorText(e) }), 'error');
     }
   }
 
@@ -251,12 +252,12 @@
       jumpProbeResult = await probeJumpChain(config);
       showToast(
         jumpProbeResult.isFullyTraversable
-          ? 'Multi-hop Jump Chain berhasil diverifikasi!'
-          : 'Beberapa hop dalam jump chain tidak dapat dijangkau!',
+          ? t('security.jumpChainVerified')
+          : t('security.jumpChainUnreachable'),
         jumpProbeResult.isFullyTraversable ? 'success' : 'error'
       );
     } catch (e) {
-      showToast(`Probe jump chain gagal: ${errorText(e)}`, 'error');
+      showToast(t('security.jumpChainFailed', { error: errorText(e) }), 'error');
     } finally {
       isProbingJumpChain = false;
     }
@@ -266,9 +267,9 @@
     isRunningDockerProbe = true;
     try {
       dockerReport = await runDockerProbe();
-      showToast(`Docker Leak Probe selesai! Skor: ${dockerReport.securityScore}%`, dockerReport.securityScore > 75 ? 'success' : 'error');
+      showToast(t('security.dockerProbeCompleted', { score: dockerReport.securityScore }), dockerReport.securityScore > 75 ? 'success' : 'error');
     } catch (e) {
-      showToast(`Docker probe gagal: ${errorText(e)}`, 'error');
+      showToast(t('security.dockerProbeFailed', { error: errorText(e) }), 'error');
     } finally {
       isRunningDockerProbe = false;
     }
@@ -302,9 +303,9 @@ SSH Hardening Non-Pass: ${securityReport.hardeningChecklist.filter((h) => h.stat
           2
         )
       });
-      showToast('Laporan audit berhasil diekspor ke menu Investigations!', 'success');
+      showToast(t('security.reportExported'), 'success');
     } catch (e) {
-      showToast(`Gagal menyimpan incident: ${errorText(e)}`, 'error');
+      showToast(t('security.incidentSaveFailed', { error: errorText(e) }), 'error');
     } finally {
       isSavingIncident = false;
     }
@@ -317,7 +318,7 @@ SSH Hardening Non-Pass: ${securityReport.hardeningChecklist.filter((h) => h.stat
   }
 </script>
 
-<div class="p-6 max-w-7xl mx-auto space-y-6">
+<div class="max-w-5xl mx-auto space-y-6">
   <!-- HEADER -->
   <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
     <div class="flex items-center gap-3">
@@ -364,8 +365,10 @@ SSH Hardening Non-Pass: ${securityReport.hardeningChecklist.filter((h) => h.stat
           onclick={exportToInvestigation}
           disabled={isSavingIncident}
           loading={isSavingIncident}
+          class="flex items-center gap-1.5"
         >
-          <span>📁 Export Incident</span>
+          <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+          <span>Export Incident</span>
         </Button>
       {/if}
     </div>
@@ -377,76 +380,85 @@ SSH Hardening Non-Pass: ${securityReport.hardeningChecklist.filter((h) => h.stat
       variant={activeTab === 'exposure' ? 'secondary' : 'ghost'}
       size="sm"
       onclick={() => (activeTab = 'exposure')}
-      class="whitespace-nowrap {activeTab === 'exposure' ? 'text-emerald-500 font-bold' : ''}"
+      class="whitespace-nowrap flex items-center gap-1.5 {activeTab === 'exposure' ? 'text-emerald-500 font-bold' : ''}"
     >
-      <span>🛡️ Exposure & Hole Hunter</span>
+      <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      <span>Exposure & Hole Hunter</span>
     </Button>
     <Button
       variant={activeTab === 'hardening' ? 'secondary' : 'ghost'}
       size="sm"
       onclick={() => (activeTab = 'hardening')}
-      class="whitespace-nowrap {activeTab === 'hardening' ? 'text-sky-500 font-bold' : ''}"
+      class="whitespace-nowrap flex items-center gap-1.5 {activeTab === 'hardening' ? 'text-sky-500 font-bold' : ''}"
     >
-      <span>🔒 SSH Hardening Checklist</span>
+      <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+      <span>SSH Hardening Checklist</span>
     </Button>
     <Button
       variant={activeTab === 'watchdog' ? 'secondary' : 'ghost'}
       size="sm"
       onclick={() => (activeTab = 'watchdog')}
-      class="whitespace-nowrap {activeTab === 'watchdog' ? 'text-rose-500 font-bold' : ''}"
+      class="whitespace-nowrap flex items-center gap-1.5 {activeTab === 'watchdog' ? 'text-rose-500 font-bold' : ''}"
     >
-      <span>🚨 Threat Watchdog (Pro)</span>
+      <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <span>Threat Watchdog (Pro)</span>
       <Badge variant="danger" size="xs">PRO</Badge>
     </Button>
     <Button
       variant={activeTab === 'tls' ? 'secondary' : 'ghost'}
       size="sm"
       onclick={() => (activeTab = 'tls')}
-      class="whitespace-nowrap {activeTab === 'tls' ? 'text-amber-500 font-bold' : ''}"
+      class="whitespace-nowrap flex items-center gap-1.5 {activeTab === 'tls' ? 'text-amber-500 font-bold' : ''}"
     >
-      <span>📜 TLS & SSL Auditor</span>
+      <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+      <span>TLS & SSL Auditor</span>
     </Button>
     <Button
       variant={activeTab === 'laptop' ? 'secondary' : 'ghost'}
       size="sm"
       onclick={() => (activeTab = 'laptop')}
-      class="whitespace-nowrap {activeTab === 'laptop' ? 'text-indigo-500 font-bold' : ''}"
+      class="whitespace-nowrap flex items-center gap-1.5 {activeTab === 'laptop' ? 'text-indigo-500 font-bold' : ''}"
     >
-      <span>💻 Laptop Posture Scanner</span>
+      <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+      <span>Laptop Posture Scanner</span>
     </Button>
     <Button
       variant={activeTab === 'tripwire' ? 'secondary' : 'ghost'}
       size="sm"
       onclick={() => (activeTab = 'tripwire')}
-      class="whitespace-nowrap {activeTab === 'tripwire' ? 'text-rose-500 font-bold' : ''}"
+      class="whitespace-nowrap flex items-center gap-1.5 {activeTab === 'tripwire' ? 'text-rose-500 font-bold' : ''}"
     >
-      <span>⚡ Integrity Tripwire</span>
+      <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+      <span>Integrity Tripwire</span>
     </Button>
     <Button
       variant={activeTab === 'ephemeral' ? 'secondary' : 'ghost'}
       size="sm"
       onclick={() => { activeTab = 'ephemeral'; loadEphemeralKeys(); }}
-      class="whitespace-nowrap {activeTab === 'ephemeral' ? 'text-purple-500 font-bold' : ''}"
+      class="whitespace-nowrap flex items-center gap-1.5 {activeTab === 'ephemeral' ? 'text-purple-500 font-bold' : ''}"
     >
-      <span>⏳ Ephemeral SSH Keys</span>
+      <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      <span>Ephemeral SSH Keys</span>
       <Badge variant="brand" size="xs">PRO</Badge>
     </Button>
     <Button
       variant={activeTab === 'jumpchain' ? 'secondary' : 'ghost'}
       size="sm"
       onclick={() => (activeTab = 'jumpchain')}
-      class="whitespace-nowrap {activeTab === 'jumpchain' ? 'text-cyan-500 font-bold' : ''}"
+      class="whitespace-nowrap flex items-center gap-1.5 {activeTab === 'jumpchain' ? 'text-cyan-500 font-bold' : ''}"
     >
-      <span>🔗 Bastion Jump Visualizer</span>
+      <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+      <span>Bastion Jump Visualizer</span>
       <Badge variant="info" size="xs">PRO</Badge>
     </Button>
     <Button
       variant={activeTab === 'docker' ? 'secondary' : 'ghost'}
       size="sm"
       onclick={() => (activeTab = 'docker')}
-      class="whitespace-nowrap {activeTab === 'docker' ? 'text-emerald-500 font-bold' : ''}"
+      class="whitespace-nowrap flex items-center gap-1.5 {activeTab === 'docker' ? 'text-emerald-500 font-bold' : ''}"
     >
-      <span>🐳 Docker Daemon Probe</span>
+      <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+      <span>Docker Daemon Probe</span>
       <Badge variant="success" size="xs">PRO</Badge>
     </Button>
   </div>
@@ -556,8 +568,10 @@ SSH Hardening Non-Pass: ${securityReport.hardeningChecklist.filter((h) => h.stat
             onclick={startThreatWatchdog}
             disabled={isRunningWatchdog || !selectedHostId}
             loading={isRunningWatchdog}
+            class="flex items-center gap-1.5"
           >
-            <span>🚨 Jalankan Watchdog</span>
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            <span>Jalankan Watchdog</span>
           </Button>
         </div>
 
@@ -647,8 +661,10 @@ SSH Hardening Non-Pass: ${securityReport.hardeningChecklist.filter((h) => h.stat
             onclick={startLaptopScan}
             disabled={isRunningLaptop}
             loading={isRunningLaptop}
+            class="flex items-center gap-1.5"
           >
-            <span>💻 Scan Local Machine</span>
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+            <span>Scan Local Machine</span>
           </Button>
         </div>
 
@@ -684,7 +700,8 @@ SSH Hardening Non-Pass: ${securityReport.hardeningChecklist.filter((h) => h.stat
             <h5 class="text-xs font-bold uppercase tracking-wider text-neutral-400">Audit Findings ({laptopReport.findings.length})</h5>
             {#if laptopReport.findings.length === 0}
               <div class="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs flex items-center gap-2">
-                <span>✓</span> Mesin lokal Anda dalam postur prima: izin SSH aman, tidak ada kebocoran .env, dan tidak ada port database tanpa autentikasi yang terekspos.
+                <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                <span>Mesin lokal Anda dalam postur prima: izin SSH aman, tidak ada kebocoran .env, dan tidak ada port database tanpa autentikasi yang terekspos.</span>
               </div>
             {:else}
               <div class="space-y-2">
@@ -738,8 +755,10 @@ SSH Hardening Non-Pass: ${securityReport.hardeningChecklist.filter((h) => h.stat
               onclick={createBaseline}
               disabled={isRunningBaseline}
               loading={isRunningBaseline}
+              class="flex items-center gap-1.5"
             >
-              <span>📷 Create Baseline Snapshot</span>
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+              <span>Create Baseline Snapshot</span>
             </Button>
             <Button
               variant="danger"
@@ -747,8 +766,10 @@ SSH Hardening Non-Pass: ${securityReport.hardeningChecklist.filter((h) => h.stat
               onclick={runIntegrityCheck}
               disabled={isRunningTripwire || baselineRecords.length === 0}
               loading={isRunningTripwire}
+              class="flex items-center gap-1.5"
             >
-              <span>⚡ Verify Integrity</span>
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+              <span>Verify Integrity</span>
             </Button>
           </div>
         </div>
@@ -765,7 +786,17 @@ SSH Hardening Non-Pass: ${securityReport.hardeningChecklist.filter((h) => h.stat
             <div class="flex items-center justify-between">
               <h5 class="text-xs font-bold uppercase tracking-wider text-neutral-400">Hasil Verifikasi Integritas</h5>
               <Badge variant={tripwireReport.tamperedCount === 0 ? 'success' : 'danger'} size="sm">
-                {tripwireReport.tamperedCount === 0 ? '✓ SEMUA BERKAS IDENTIK' : `🚨 ${tripwireReport.tamperedCount} BERKAS BERUBAH / TAMPERED`}
+                {#if tripwireReport.tamperedCount === 0}
+                  <span class="inline-flex items-center gap-1">
+                    <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span>SEMUA BERKAS IDENTIK</span>
+                  </span>
+                {:else}
+                  <span class="inline-flex items-center gap-1">
+                    <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                    <span>{tripwireReport.tamperedCount} BERKAS BERUBAH / TAMPERED</span>
+                  </span>
+                {/if}
               </Badge>
             </div>
 
@@ -860,8 +891,10 @@ SSH Hardening Non-Pass: ${securityReport.hardeningChecklist.filter((h) => h.stat
             onclick={handleGenerateEphemeralKey}
             disabled={isGeneratingEphemeral}
             loading={isGeneratingEphemeral}
+            class="flex items-center gap-1.5"
           >
-            <span>🔑 Generate Self-Destructing Key</span>
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-1.5 1.5L14 9l-1.5-1.5L11 9l-1.5-1.5L8 9c-3.3 0-6 2.7-6 6s2.7 6 6 6 6-2.7 6-6c0-.8-.2-1.5-.5-2.2L22 4.2V2h-2.2z"/><circle cx="8" cy="15" r="1.5"/></svg>
+            <span>Generate Self-Destructing Key</span>
           </Button>
         </div>
 
@@ -874,7 +907,7 @@ SSH Hardening Non-Pass: ${securityReport.hardeningChecklist.filter((h) => h.stat
                 size="sm"
                 onclick={() => {
                   navigator.clipboard.writeText(newGeneratedPubkey || '');
-                  showToast('Public key disalin ke clipboard!', 'success');
+                  showToast(t('security.pubkeyCopied'), 'success');
                 }}
               >
                 Copy Key
@@ -971,8 +1004,10 @@ SSH Hardening Non-Pass: ${securityReport.hardeningChecklist.filter((h) => h.stat
             onclick={handleProbeJumpChain}
             disabled={isProbingJumpChain}
             loading={isProbingJumpChain}
+            class="flex items-center gap-1.5"
           >
-            <span>🔗 Test & Validate Chain</span>
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+            <span>Test & Validate Chain</span>
           </Button>
         </div>
 
@@ -1028,8 +1063,10 @@ SSH Hardening Non-Pass: ${securityReport.hardeningChecklist.filter((h) => h.stat
             onclick={handleRunDockerProbe}
             disabled={isRunningDockerProbe}
             loading={isRunningDockerProbe}
+            class="flex items-center gap-1.5"
           >
-            <span>🐳 Run Docker Probe</span>
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+            <span>Run Docker Probe</span>
           </Button>
         </div>
 
@@ -1058,8 +1095,9 @@ SSH Hardening Non-Pass: ${securityReport.hardeningChecklist.filter((h) => h.stat
           <div class="space-y-3 pt-4">
             <h5 class="text-xs font-bold uppercase tracking-wider text-neutral-400">Security Findings</h5>
             {#if dockerReport.findings.length === 0}
-              <div class="p-4 rounded-xl bg-emerald-950/20 border border-emerald-800/40 text-emerald-300 text-xs">
-                ✓ Konfigurasi daemon Docker dan seluruh container berada dalam parameter aman!
+              <div class="p-4 rounded-xl bg-emerald-950/20 border border-emerald-800/40 text-emerald-300 text-xs flex items-center gap-2">
+                <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                <span>Konfigurasi daemon Docker dan seluruh container berada dalam parameter aman!</span>
               </div>
             {:else}
               <div class="space-y-2">
@@ -1072,8 +1110,9 @@ SSH Hardening Non-Pass: ${securityReport.hardeningChecklist.filter((h) => h.stat
                       </Badge>
                     </div>
                     <p class="text-neutral-400 text-xs">{f.description}</p>
-                    <div class="p-2 rounded bg-neutral-900/60 border border-neutral-800 text-[11px] text-emerald-400">
-                      💡 Solusi: {f.recommendation}
+                    <div class="p-2 rounded bg-neutral-900/60 border border-neutral-800 text-[11px] text-emerald-400 flex items-start gap-1.5">
+                      <svg class="w-3.5 h-3.5 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 00-7 7c0 2.5 1.5 4.5 3 6h8c1.5-1.5 3-3.5 3-6a7 7 0 00-7-7z"/></svg>
+                      <span><strong>Solusi:</strong> {f.recommendation}</span>
                     </div>
                   </div>
                 {/each}

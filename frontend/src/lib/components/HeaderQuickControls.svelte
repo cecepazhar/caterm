@@ -84,7 +84,7 @@
                 size="sm"
                 disabled={sessionCount < option.minTabs}
                 onclick={() => { onSetLayout(option.value); isOpen = false; }}
-                class="py-1.5 !flex-col !h-auto {layout === option.value ? '!bg-sky-600 !text-white !border-transparent shadow-xs' : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-800'}"
+                class="py-1.5 !flex-col !h-auto {layout === option.value ? '!bg-neutral-900 !text-white dark:!bg-white dark:!text-neutral-950 !border-transparent shadow-xs' : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-800'}"
                 title={option.title}
                 aria-label={option.title}
               >
@@ -112,9 +112,9 @@
             <Button
               variant="outline"
               onclick={() => { onToggleFiles(); isOpen = false; }}
-              class="!justify-start gap-2 p-2 !font-normal {showFiles ? 'bg-sky-500/15 border-sky-500/40 text-sky-600 dark:text-sky-400' : 'bg-neutral-50 dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800/60'}"
+              class="!justify-start gap-2 p-2 !font-normal {showFiles ? '!bg-neutral-900 !text-white dark:!bg-white dark:!text-neutral-950 !border-neutral-900 dark:!border-white' : 'bg-neutral-50 dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800/60'}"
             >
-              <svg class="w-4 h-4 shrink-0 text-sky-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
               </svg>
               <span class="font-medium text-xs truncate">{showFiles ? (t('shell.hideFiles') || 'Files: ON') : (t('shell.showFiles') || 'Files')}</span>
@@ -124,9 +124,9 @@
           <Button
             variant="outline"
             onclick={() => { onToggleAi(); isOpen = false; }}
-            class="!justify-start gap-2 p-2 !font-normal {aiOpen ? 'bg-rose-500/15 border-rose-500/40 text-rose-600 dark:text-rose-400' : 'bg-neutral-50 dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800/60'}"
+            class="!justify-start gap-2 p-2 !font-normal {aiOpen ? '!bg-neutral-900 !text-white dark:!bg-white dark:!text-neutral-950 !border-neutral-900 dark:!border-white' : 'bg-neutral-50 dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800/60'}"
           >
-            <svg class="w-3.5 h-3.5 text-rose-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
             </svg>
             <span class="font-medium text-xs truncate">{aiOpen ? 'Hana: ON' : 'Hana AI'}</span>
@@ -136,16 +136,16 @@
             <Button
               variant="outline"
               onclick={() => { onToggleBroadcast?.(); isOpen = false; }}
-              class="col-span-2 !justify-between p-2 !font-normal {broadcastInput ? 'bg-amber-500/15 border-amber-500/40 text-amber-600 dark:text-amber-400' : 'bg-neutral-50 dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800/60'}"
+              class="col-span-2 !justify-between p-2 !font-normal {broadcastInput ? '!bg-neutral-900 !text-white dark:!bg-white dark:!text-neutral-950 !border-neutral-900 dark:!border-white' : 'bg-neutral-50 dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800/60'}"
               title={t('shell.broadcastInputTooltip')}
             >
               <div class="flex items-center gap-2">
-                <svg class="w-4 h-4 shrink-0 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
                 </svg>
                 <span class="font-medium text-xs truncate">{t('shell.broadcastInput')}</span>
               </div>
-              <span class="text-[10px] px-1.5 py-0.5 rounded font-mono font-bold {broadcastInput ? 'bg-amber-500 text-neutral-950' : 'bg-neutral-200 dark:bg-neutral-800 text-neutral-500'}">
+              <span class="text-[10px] px-1.5 py-0.5 rounded font-mono font-bold {broadcastInput ? 'bg-white text-neutral-950 dark:bg-neutral-900 dark:text-white' : 'bg-neutral-200 dark:bg-neutral-800 text-neutral-500'}">
                 {broadcastInput ? 'ON' : 'Ctrl+Shift+B'}
               </span>
             </Button>

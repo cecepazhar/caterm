@@ -7,6 +7,7 @@
   import { openSession } from '$lib/nav';
   import { errorText } from '$lib/errors';
   import { t, intlLocale } from '$lib/i18n/index.svelte';
+  import OsIcon from '$lib/components/OsIcon.svelte';
 
   let { host, onClose }: { host: HostRecord; onClose: () => void } = $props();
 
@@ -72,11 +73,16 @@
     aria-label={t('hostDetail.ariaLabel', { label: host.label })}
   >
     <header class="p-4 border-b border-neutral-200 dark:border-neutral-800 flex items-start justify-between gap-3 shrink-0">
-      <div class="min-w-0">
-        <h2 class="text-base font-bold text-neutral-900 dark:text-white truncate">{host.label}</h2>
-        <p class="text-xs font-mono text-sky-600 dark:text-sky-400 truncate">
-          {host.username}@{host.address}:{host.port}
-        </p>
+      <div class="flex items-center gap-3 min-w-0">
+        <span class="w-10 h-10 rounded-lg bg-neutral-100 dark:bg-neutral-800/80 border border-neutral-200 dark:border-neutral-700/80 flex items-center justify-center shrink-0 text-neutral-700 dark:text-neutral-300">
+          <OsIcon os={host.os} name={host.label} tags={host.tags} address={host.address} size={22} />
+        </span>
+        <div class="min-w-0">
+          <h2 class="text-base font-bold text-neutral-900 dark:text-white truncate">{host.label}</h2>
+          <p class="text-xs font-mono text-neutral-500 dark:text-neutral-400 truncate">
+            {host.username}@{host.address}:{host.port}
+          </p>
+        </div>
       </div>
       <Button
         type="button"
@@ -205,7 +211,7 @@
         variant="primary"
         size="md"
         onclick={() => openSession(host.id)}
-        class="flex-1 !px-3 !py-2 !bg-sky-600 hover:!bg-sky-500 text-white rounded-lg text-xs font-medium text-center transition-colors justify-center"
+        class="flex-1 !px-3 !py-2 rounded-lg text-xs font-medium text-center transition-colors justify-center"
       >
         {t('common.connect')}
       </Button>

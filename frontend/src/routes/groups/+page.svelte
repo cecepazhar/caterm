@@ -12,14 +12,14 @@
   import { copyText } from '$lib/utils/clipboard';
 
   const ALL_CATEGORIES = [
-    { id: 'hosts', label: 'Hosts & Servers', icon: '🖥️' },
-    { id: 'snippets', label: 'Command Snippets', icon: '📜' },
-    { id: 'tasks', label: 'Scheduled Tasks', icon: '⏰' },
-    { id: 'tunnels', label: 'Port Forwarding', icon: '🔀' },
-    { id: 'keys', label: 'SSH Keys', icon: '🔑' },
-    { id: 'totp', label: '2FA Authenticator', icon: '🔐' },
-    { id: 'investigations', label: 'Investigations', icon: '🔍' },
-    { id: 'teams', label: 'Teams', icon: '👥' }
+    { id: 'hosts', label: 'Hosts & Servers', path: 'M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z' },
+    { id: 'snippets', label: 'Command Snippets', path: 'M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8zM14 2v6h6M16 13H8M16 17H8M10 9H8' },
+    { id: 'tasks', label: 'Scheduled Tasks', path: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
+    { id: 'tunnels', label: 'Port Forwarding', path: 'M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4' },
+    { id: 'keys', label: 'SSH Keys', path: 'M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z' },
+    { id: 'totp', label: '2FA Authenticator', path: 'M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z' },
+    { id: 'investigations', label: 'Investigations', path: 'M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z' },
+    { id: 'teams', label: 'Teams', path: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z' }
   ];
 
   let isAddModalOpen = $state(false);
@@ -166,7 +166,7 @@
         ? groups.map((g) => (g.id === saved.id ? saved : g))
         : [...groups, saved];
 
-      showToast(editingId ? 'Grup kerja diperbarui!' : 'Grup kerja berhasil dibuat!', 'success');
+      showToast(editingId ? t('groups.updatedToast') : t('groups.createdToast'), 'success');
       window.dispatchEvent(new CustomEvent('caterm:groups-updated'));
     } catch (err) {
       showToast(String(err), 'error');
@@ -178,17 +178,17 @@
 
   async function removeGroup(id: string, name: string) {
     const confirmed = await confirmModal(
-      `Hapus grup kerja "${name}"? Seluruh resource di dalamnya akan tetap aman.`,
-      'Hapus Grup Kerja',
+      t('groups.deleteConfirm', { name }),
+      t('groups.deleteTitle'),
       true,
-      'Hapus',
-      'Batal'
+      t('common.delete'),
+      t('common.cancel')
     );
     if (confirmed) {
       try {
         await deleteGroup(id);
         groups = groups.filter((g) => g.id !== id);
-        showToast(`Grup kerja "${name}" dihapus!`, 'success');
+        showToast(t('groups.deletedToast', { name }), 'success');
         window.dispatchEvent(new CustomEvent('caterm:groups-updated'));
       } catch (e: any) {
         showToast(String(e), 'error');
@@ -205,7 +205,7 @@
     a.download = `caterm-work-groups-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
-    showToast('Data Work Groups diekspor!', 'success');
+    showToast(t('groups.exportSuccess'), 'success');
   }
 
   function importGroupsJson() {
@@ -229,11 +229,11 @@
               });
             }
           }
-          showToast(`${imported.length} Grup Kerja berhasil diimpor!`, 'success');
+          showToast(t('groups.importSuccess', { count: imported.length }), 'success');
           await loadAllData();
         }
       } catch (err) {
-        showToast('Format file JSON tidak valid', 'error');
+        showToast(t('groups.importInvalidFormat'), 'error');
       }
     };
     input.click();
@@ -267,34 +267,36 @@
     subtitle="Pengelompokan klaster kerja multi-kategori untuk Hosts, Snippets, Tasks, Port Forwarding, Keys, 2FA, dan Tim."
   >
     {#snippet actions()}
-      <div class="flex items-center gap-2">
-        <Button
-          variant="secondary"
-          size="sm"
-          onclick={importGroupsJson}
-          title="Impor Grup Kerja dari JSON"
-        >
-          📥 Impor
-        </Button>
-        <Button
-          variant="secondary"
-          size="sm"
-          onclick={exportGroupsJson}
-          title="Ekspor Grup Kerja ke JSON"
-        >
-          📤 Ekspor
-        </Button>
-        <Button
-          variant="info"
-          size="sm"
-          onclick={openAddModal}
-        >
-          <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-          </svg>
-          + Buat Work Group
-        </Button>
-      </div>
+      <Button
+        variant="secondary"
+        size="sm"
+        class="h-9 px-3 rounded-xl shrink-0 flex items-center gap-1.5"
+        onclick={importGroupsJson}
+        title="Impor Grup Kerja dari JSON"
+      >
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+        <span>Impor</span>
+      </Button>
+      <Button
+        variant="secondary"
+        size="sm"
+        class="h-9 px-3 rounded-xl shrink-0 flex items-center gap-1.5"
+        onclick={exportGroupsJson}
+        title="Ekspor Grup Kerja ke JSON"
+      >
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+        <span>Ekspor</span>
+      </Button>
+      <Button
+        variant="primary"
+        class="h-9 rounded-xl shrink-0 shadow-xs"
+        onclick={openAddModal}
+      >
+        <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v14m7-7H5" />
+        </svg>
+        {t('groups.createGroup')}
+      </Button>
     {/snippet}
   </PageHeader>
 
@@ -318,8 +320,9 @@
           variant={activeCategoryFilter === cat.id ? 'info' : 'ghost'}
           size="sm"
           onclick={() => { activeCategoryFilter = cat.id; currentPage = 1; }}
+          class="flex items-center gap-1.5"
         >
-          <span>{cat.icon}</span>
+          <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d={cat.path}/></svg>
           <span>{cat.label}</span>
         </Button>
       {/each}
@@ -384,8 +387,10 @@
                   size="sm"
                   onclick={() => openSession(group.hostIds)}
                   title="Buka semua host di grup ini"
+                  class="flex items-center gap-1.5"
                 >
-                  <span>⚡ Launch</span>
+                  <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                  <span>Launch</span>
                 </Button>
               {/if}
             </div>
@@ -396,7 +401,10 @@
                 {@const catMeta = ALL_CATEGORIES.find(c => c.id === cId)}
                 {#if catMeta}
                   <Badge variant="neutral" size="xs">
-                    {catMeta.icon} {catMeta.label}
+                    <span class="inline-flex items-center gap-1">
+                      <svg class="w-3 h-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d={catMeta.path}/></svg>
+                      <span>{catMeta.label}</span>
+                    </span>
                   </Badge>
                 {/if}
               {/each}
@@ -520,7 +528,10 @@
               onchange={() => toggleCategory(cat.id)}
               class="rounded bg-white dark:bg-neutral-900 border-neutral-300 dark:border-neutral-700 text-sky-600 focus:ring-sky-500"
             />
-            <span class="text-xs">{cat.icon} {cat.label}</span>
+            <span class="inline-flex items-center gap-1.5 text-xs">
+              <svg class="w-3.5 h-3.5 shrink-0 text-neutral-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d={cat.path}/></svg>
+              <span>{cat.label}</span>
+            </span>
           </label>
         {/each}
       </div>

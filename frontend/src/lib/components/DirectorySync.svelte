@@ -151,7 +151,7 @@
   <!-- Header -->
   <div class="px-4 py-3 bg-neutral-100 dark:bg-[#1c212c] border-b border-neutral-200 dark:border-slate-800 flex items-center justify-between">
     <div class="flex items-center gap-2">
-      <span class="text-base">🔄</span>
+      <svg class="w-4 h-4 text-cyan-500 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
       <h2 class="text-sm font-bold tracking-wide">{t('dirSync.title')}</h2>
     </div>
     {#if onClose}
@@ -164,7 +164,7 @@
         title={t('common.close')}
         aria-label={t('common.close')}
       >
-        ✕
+        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
       </Button>
     {/if}
   </div>
@@ -231,7 +231,7 @@
         <div class="flex items-center gap-2">
           <Button
             type="button"
-            variant="primary"
+            variant="info"
             size="sm"
             onclick={handlePlan}
             disabled={isPlanning || isExecuting}
@@ -241,7 +241,8 @@
             {#if isPlanning}
               {t('dirSync.scanning')}
             {:else}
-              <span>🔍</span> {t('dirSync.previewDiff')}
+              <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <span>{t('dirSync.previewDiff')}</span>
             {/if}
           </Button>
 
@@ -258,7 +259,8 @@
               {#if isExecuting}
                 {t('dirSync.synchronizing')}
               {:else}
-                <span>🚀</span> {t('dirSync.executeSync', { count: plan.to_upload.length + plan.to_download.length })}
+                <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v8m0 0l-3-3m3 3l3-3M2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                <span>{t('dirSync.executeSync', { count: plan.to_upload.length + plan.to_download.length })}</span>
               {/if}
             </Button>
           {/if}
@@ -426,7 +428,8 @@
       <div class="flex items-center justify-between">
         <div>
           <h3 class="font-bold flex items-center gap-1.5 text-neutral-800 dark:text-neutral-100">
-            <span>👁️</span> {t('dirSync.watchTitle')}
+            <svg class="w-4 h-4 shrink-0 text-sky-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            <span>{t('dirSync.watchTitle')}</span>
           </h3>
           <p class="text-[11px] text-neutral-500 dark:text-slate-400">
             {t('dirSync.watchBody')}
@@ -444,7 +447,8 @@
           {#if isStartingWatch}
             {t('dirSync.starting')}
           {:else}
-            <span>▶</span> {t('dirSync.startWatch')}
+            <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            <span>{t('dirSync.startWatch')}</span>
           {/if}
         </Button>
       </div>
@@ -477,8 +481,10 @@
                       {w.is_active ? t('dirSync.active') : t('dirSync.stopped')}
                     </span>
                   </div>
-                  <div class="text-neutral-500 dark:text-slate-400 truncate">
-                    <span>{t('dirSync.local', { path: w.local_dir })}</span> ➔ <span>{t('dirSync.remote', { path: w.remote_dir })}</span>
+                  <div class="text-neutral-500 dark:text-slate-400 truncate flex items-center gap-1.5">
+                    <span>{t('dirSync.local', { path: w.local_dir })}</span>
+                    <svg class="w-3 h-3 shrink-0 text-neutral-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                    <span>{t('dirSync.remote', { path: w.remote_dir })}</span>
                   </div>
                 </div>
 

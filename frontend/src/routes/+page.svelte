@@ -98,8 +98,25 @@
   let unlistenOsDetected: UnlistenFn | null = null;
   let handleHostsUpdate: (() => void) | null = null;
 
-  onMount(async () => {
-    await refreshHosts();
+  onMount(() => {
+    void (async () => {
+      await refreshHosts();
+      try {
+        unlistenOsDetected = await listen<{ hostId: string; os: string }>('host:os_detected', (event) => {
+          const { hostId, os } = event.payload;
+          const targetIndex = hosts.findIndex((h) => h.id === hostId);
+          if (targetIndex !== -1) {
+            hosts[targetIndex] = { ...hosts[targetIndex], os };
+          }
+          if (detailHost && detailHost.id === hostId) {
+            detailHost = { ...detailHost, os };
+          }
+        });
+      } catch (e) {
+        console.error('Failed to listen for host:os_detected', e);
+      }
+    })();
+
     handleHostsUpdate = () => {
       void refreshHosts();
     };
@@ -118,21 +135,6 @@
       }
     };
     window.addEventListener('pointerdown', handleBackdropClick, true);
-
-    try {
-      unlistenOsDetected = await listen<{ hostId: string; os: string }>('host:os_detected', (event) => {
-        const { hostId, os } = event.payload;
-        const targetIndex = hosts.findIndex((h) => h.id === hostId);
-        if (targetIndex !== -1) {
-          hosts[targetIndex] = { ...hosts[targetIndex], os };
-        }
-        if (detailHost && detailHost.id === hostId) {
-          detailHost = { ...detailHost, os };
-        }
-      });
-    } catch (e) {
-      console.error('Failed to listen for host:os_detected', e);
-    }
 
     return () => {
       window.removeEventListener('pointerdown', handleBackdropClick, true);
@@ -208,11 +210,11 @@
   async function handleRequestClose() {
     if (isFormDirty()) {
       const leave = await confirmModal(
-        'Perubahan yang Anda masukkan belum disimpan. Apakah Anda yakin ingin membatalkan dan keluar?',
-        'Konfirmasi Batal (Discard Changes)',
+        t('hosts.discardChangesConfirm'),
+        t('hosts.discardChangesTitle'),
         true,
-        'Ya, Keluar',
-        'Tetap Mengedit'
+        t('hosts.discardChangesYes'),
+        t('hosts.discardChangesNo')
       );
       if (!leave) return;
     }
@@ -222,7 +224,7 @@
 
   async function runConnectionTest() {
     if (!formAddress.trim()) {
-      showToast('Alamat Host / IP Address wajib diisi untuk menguji koneksi.', 'error');
+      showToast(t('hosts.addressRequiredForTest'), 'error');
       return;
     }
     isTestingConnection = true;
@@ -244,7 +246,7 @@
       };
       testResult = await testHostConnection(input);
       if (testResult.success) {
-        showToast(`Koneksi berhasil! (${testResult.latencyMs} ms)`, 'success');
+        showToast(t('hosts.connectionSuccess', { ms: testResult.latencyMs }), 'success');
       } else {
         showToast(testResult.message, 'error');
       }
@@ -253,7 +255,7 @@
         success: false,
         latencyMs: 0,
         banner: null,
-        message: typeof err === 'string' ? err : (err?.message || 'Gagal terhubung ke host')
+        message: typeof err === 'string' ? err : (err?.message || t('hosts.connectionFailed'))
       };
       showToast(testResult.message, 'error');
     } finally {
@@ -265,7 +267,7 @@
     try {
       const selected = await open({
         multiple: false,
-        title: 'Pilih Private Key File (id_ed25519, id_rsa, .pem, .key)',
+        title: t('hosts.selectKeyFileTitle'),
         filters: [
           { name: 'All Files', extensions: ['*'] },
           { name: 'SSH Private Keys', extensions: ['pem', 'key', 'id_rsa', 'id_ed25519', 'pkcs8'] }
@@ -438,7 +440,7 @@
         showToast(t('hosts.clearHostKeyNone', { name: host.label }), 'info');
       }
     } catch (err: any) {
-      showToast(err?.message || 'Gagal membersihkan host key', 'error');
+      showToast(err?.message || t('hosts.clearHostKeyFailed'), 'error');
     }
   }
 
@@ -620,7 +622,7 @@
 			</Button>
 			<Button
 				variant="primary"
-				class="h-9 rounded-xl shrink-0 shadow-md shadow-sky-600/20"
+				class="h-9 rounded-xl shrink-0 shadow-xs"
 				onclick={openAddModal}
 			>
 				<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v14m7-7H5" /></svg>
@@ -773,7 +775,7 @@
         >
           <!-- Identity -->
           <div class="flex items-start gap-3">
-            <span class="w-10 h-10 rounded-lg bg-neutral-100 dark:bg-white flex items-center justify-center shrink-0">
+            <span class="w-10 h-10 rounded-lg bg-neutral-100 dark:bg-neutral-800/80 border border-neutral-200 dark:border-neutral-700/80 flex items-center justify-center shrink-0 text-neutral-700 dark:text-neutral-300">
               <OsIcon os={host.os} name={host.label} tags={host.tags} address={host.address} size={22} />
             </span>
             <div class="min-w-0 flex-1">
@@ -821,11 +823,11 @@
               variant="ghost"
               size="icon"
               onclick={() => toggleFavorite(host.id)}
-              class="h-7 w-7 p-1.5 -mr-1 -mt-1 rounded-md transition-colors {isFavorite(host.id) ? 'text-amber-500' : 'text-neutral-300 dark:text-neutral-600 hover:text-amber-500'}"
+              class="h-7 w-7 p-1.5 -mr-1 -mt-1 rounded-md transition-colors {isFavorite(host.id) ? 'text-neutral-900 dark:text-white fill-current stroke-current' : 'text-neutral-400 dark:text-neutral-600 hover:text-neutral-700 dark:hover:text-neutral-300 fill-none stroke-current'}"
               title={isFavorite(host.id) ? t('hosts.unstar') : t('hosts.star')}
               aria-label={isFavorite(host.id) ? `${t('hosts.unstar')} ${host.label}` : `${t('hosts.star')} ${host.label}`}
             >
-              <svg class="w-4 h-4" viewBox="0 0 24 24" fill={isFavorite(host.id) ? 'currentColor' : 'none'} stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 3.5l2.6 5.3 5.9.9-4.25 4.1 1 5.8L12 16.9l-5.25 2.7 1-5.8L3.5 9.7l5.9-.9z" /></svg>
+              <svg class="w-4 h-4 {isFavorite(host.id) ? 'fill-current stroke-current' : 'fill-none stroke-current'}" viewBox="0 0 24 24" stroke-width="1.8" stroke-linejoin="round"><path d="M12 3.5l2.6 5.3 5.9.9-4.25 4.1 1 5.8L12 16.9l-5.25 2.7 1-5.8L3.5 9.7l5.9-.9z" /></svg>
             </Button>
           </div>
 
@@ -896,26 +898,26 @@
 
             <a
               href="/security?host={host.id}"
-              class="h-8 px-2 flex items-center gap-1 rounded-lg border border-neutral-200 dark:border-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-600 dark:text-neutral-300 text-xs font-medium transition-colors"
+              class="h-8 px-2.5 flex items-center gap-1.5 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 hover:bg-neutral-200/70 dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-300 text-xs font-medium transition-colors"
               title="Security Exposure & Threat Audit"
             >
-              <svg class="w-3.5 h-3.5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
               <span>Security</span>
             </a>
 
             <a
               href="/devops?host={host.id}"
-              class="h-8 px-2 flex items-center gap-1 rounded-lg border border-neutral-200 dark:border-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-600 dark:text-neutral-300 text-xs font-medium transition-colors"
+              class="h-8 px-2.5 flex items-center gap-1.5 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 hover:bg-neutral-200/70 dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-300 text-xs font-medium transition-colors"
               title="DevOps Lab, Bench & QoS"
             >
-              <svg class="w-3.5 h-3.5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
               <span>Lab</span>
             </a>
 
             <Button
               variant="primary"
               size="sm"
-              class="h-8 px-3 rounded-lg font-semibold"
+              class="h-8 px-3 rounded-lg font-semibold shadow-none"
               onclick={() => openSession(host.id)}
               title={t('hosts.connectTo', { name: host.label })}
             >
@@ -950,7 +952,7 @@
         </div>
         <div class="min-w-0">
           <h3 class="text-base font-bold text-neutral-900 dark:text-white truncate">
-            {editingId ? 'Edit SSH Host' : 'Tambah Host SSH Baru'}
+            {editingId ? t('hosts.form.editTitle') : t('hosts.form.addTitle')}
           </h3>
           <p class="text-xs text-neutral-500 dark:text-neutral-400">
             {editingId ? `Konfigurasi kredensial & koneksi untuk ${formLabel || 'server'}` : 'Hubungkan server Linux / VPS baru ke CATerm'}
@@ -1116,7 +1118,8 @@
               class="text-xs font-semibold text-sky-600 dark:text-sky-400 hover:underline flex items-center gap-1"
               title="Buka Manajemen SSH Keys"
             >
-              <span>🔑 Kelola SSH Keys ({vaultKeys.length})</span>
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" /></svg>
+              <span>Kelola SSH Keys ({vaultKeys.length})</span>
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
             </a>
           </div>
@@ -1164,7 +1167,8 @@
               onclick={browseKeyFile}
               class="h-10 px-3.5 text-xs font-semibold shrink-0"
             >
-              📁 Browse...
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" /></svg>
+              Browse...
             </Button>
           </div>
 
@@ -1245,9 +1249,9 @@
             {t('hosts.form.osField')}
           </label>
           <div class="flex items-center gap-3 p-1.5 rounded-xl border border-neutral-300 dark:border-neutral-800 bg-white dark:bg-neutral-950">
-            <div class="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 bg-neutral-100 dark:bg-neutral-900 shadow-xs">
+            <span class="w-10 h-10 rounded-lg bg-neutral-100 dark:bg-neutral-800/80 border border-neutral-200 dark:border-neutral-700/80 flex items-center justify-center shrink-0 text-neutral-700 dark:text-neutral-300">
               <OsIcon os={formOs} name={formLabel} tags={formTags.split(',')} address={formAddress} size={32} />
-            </div>
+            </span>
             <select
               id="form-os"
               bind:value={formOs}
@@ -1356,7 +1360,8 @@
                 <span>{testResult.success ? 'Uji Koneksi Berhasil!' : 'Uji Koneksi Gagal!'}</span>
                 {#if testResult.latencyMs > 0}
                   <span class="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold {testResult.success ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400' : 'bg-rose-500/20 text-rose-600 dark:text-rose-400'}">
-                    ⚡ {testResult.latencyMs} ms
+                    <svg class="w-3.5 h-3.5 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                    <span>{testResult.latencyMs} ms</span>
                   </span>
                 {/if}
               </div>

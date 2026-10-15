@@ -130,8 +130,27 @@
     subtitle={t('sshKeys.subtitle')}
   >
     {#snippet actions()}
-      <Button variant="secondary" size="sm" onclick={() => (showImportModal = true)}>{t('sshKeys.import')}</Button>
-      <Button variant="info" size="sm" onclick={() => (showGenerateModal = true)}>{t('sshKeys.generate')}</Button>
+      <Button
+        variant="secondary"
+        size="sm"
+        class="h-9 px-3 rounded-xl shrink-0 flex items-center gap-1.5"
+        onclick={() => (showImportModal = true)}
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+        </svg>
+        <span>{t('sshKeys.import')}</span>
+      </Button>
+      <Button
+        variant="primary"
+        class="h-9 rounded-xl shrink-0 shadow-xs"
+        onclick={() => (showGenerateModal = true)}
+      >
+        <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v14m7-7H5" />
+        </svg>
+        {t('sshKeys.generate')}
+      </Button>
     {/snippet}
   </PageHeader>
 

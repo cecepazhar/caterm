@@ -28,8 +28,8 @@
 
   const filterOptions = $derived<TaskFilterOption[]>([
     { value: 'all', label: t('tasks.allTasks', { count: tasks.length }) },
-    { value: 'sftp_backup', label: '📦 ' + t('tasks.sftpBackup') },
-    { value: 'ssh_command', label: '⚡ ' + t('tasks.sshPlaybook') }
+    { value: 'sftp_backup', label: t('tasks.sftpBackup') },
+    { value: 'ssh_command', label: t('tasks.sshPlaybook') }
   ]);
 
   // Modal State: Create / Edit Task
@@ -123,7 +123,7 @@
 
   async function handleSaveTask() {
     if (!formName.trim()) {
-      showToast('Nama tugas wajib diisi', 'error');
+      showToast(t('tasks.nameRequired'), 'error');
       return;
     }
 
@@ -149,7 +149,7 @@
       });
 
       isAddModalOpen = false;
-      showToast(editingId ? 'Tugas diperbarui!' : 'Tugas berhasil dijadwalkan!', 'success');
+      showToast(editingId ? t('tasks.taskUpdated') : t('tasks.taskScheduled'), 'success');
       await loadData();
     } catch (e: any) {
       showToast(String(e), 'error');
@@ -160,16 +160,16 @@
 
   async function handleDeleteTask(task: ScheduledTaskRecord) {
     const confirmed = await confirmModal(
-      `Hapus tugas terjadwal "${task.name}"? Riwayat log eksekusi akan ikut dibersihkan.`,
-      'Hapus Tugas Terjadwal',
+      t('tasks.deleteConfirm', { name: task.name }),
+      t('tasks.deleteTitle'),
       true,
-      'Hapus',
-      'Batal'
+      t('common.delete'),
+      t('common.cancel')
     );
     if (confirmed) {
       try {
         await deleteScheduledTask(task.id);
-        showToast(`Tugas "${task.name}" dihapus!`, 'success');
+        showToast(t('tasks.taskDeleted', { name: task.name }), 'success');
         await loadData();
       } catch (e: any) {
         showToast(String(e), 'error');
@@ -181,10 +181,10 @@
     isExecutingTaskId = task.id;
     try {
       const log = await triggerTaskRunNow(task.id);
-      showToast(`Tugas "${task.name}" selesai dieksekusi! (${log.status})`, log.status === 'success' ? 'success' : 'error');
+      showToast(t('tasks.taskExecuted', { name: task.name, status: log.status }), log.status === 'success' ? 'success' : 'error');
       await loadData();
     } catch (e: any) {
-      showToast(`Gagal menjalankan tugas: ${e}`, 'error');
+      showToast(t('tasks.taskRunFailed', { error: String(e) }), 'error');
     } finally {
       isExecutingTaskId = null;
     }
@@ -226,10 +226,13 @@
       <Button
         type="button"
         variant="primary"
-        size="sm"
+        class="h-9 rounded-xl shrink-0 shadow-xs"
         onclick={openAddModal}
       >
-        + {t('tasks.newTask')}
+        <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v14m7-7H5" />
+        </svg>
+        {t('tasks.newTask')}
       </Button>
     {/snippet}
   </PageHeader>
@@ -283,10 +286,19 @@
               <div>
                 <div class="flex items-center gap-2">
                   <Badge variant={task.taskType === 'sftp_backup' ? 'brand' : 'info'} size="xs">
-                    {task.taskType === 'sftp_backup' ? '📦 SFTP Backup' : '⚡ SSH Playbook'}
+                    <span class="inline-flex items-center gap-1">
+                      {#if task.taskType === 'sftp_backup'}
+                        <svg class="w-3 h-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+                        <span>SFTP Backup</span>
+                      {:else}
+                        <svg class="w-3 h-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                        <span>SSH Playbook</span>
+                      {/if}
+                    </span>
                   </Badge>
-                  <span class="text-xs text-neutral-500 font-mono">
-                    ⏰ {task.scheduleExpr}
+                  <span class="text-xs text-neutral-500 font-mono inline-flex items-center gap-1">
+                    <svg class="w-3 h-3 shrink-0 text-neutral-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    <span>{task.scheduleExpr}</span>
                   </span>
                 </div>
                 <h3 class="font-bold text-neutral-900 dark:text-white text-base mt-1.5">{task.name}</h3>
@@ -327,8 +339,10 @@
               variant="ghost"
               size="sm"
               onclick={() => openLogModal(task)}
+              class="flex items-center gap-1.5"
             >
-              📜 Riwayat Log
+              <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+              <span>Riwayat Log</span>
             </Button>
 
             <div class="flex items-center gap-1.5">
@@ -339,8 +353,10 @@
                 onclick={() => handleRunNow(task)}
                 disabled={isExecutingTaskId === task.id}
                 loading={isExecutingTaskId === task.id}
+                class="flex items-center gap-1.5"
               >
-                ⚡ Run Now
+                <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                <span>Run Now</span>
               </Button>
               <Button
                 type="button"
@@ -392,18 +408,20 @@
           variant={formTaskType === 'sftp_backup' ? 'brand' : 'outline'}
           size="sm"
           onclick={() => (formTaskType = 'sftp_backup')}
-          class="justify-start"
+          class="justify-start flex items-center gap-1.5"
         >
-          📦 SFTP Auto-Backup
+          <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+          <span>SFTP Auto-Backup</span>
         </Button>
         <Button
           type="button"
           variant={formTaskType === 'ssh_command' ? 'primary' : 'outline'}
           size="sm"
           onclick={() => (formTaskType = 'ssh_command')}
-          class="justify-start"
+          class="justify-start flex items-center gap-1.5"
         >
-          ⚡ SSH Script Playbook
+          <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          <span>SSH Script Playbook</span>
         </Button>
       </div>
     </div>

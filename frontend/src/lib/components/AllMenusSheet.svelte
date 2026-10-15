@@ -20,7 +20,7 @@
   const menus: MenuGroup[] = $derived([
     {
       id: 'workspace',
-      title: t('shell.workspace') || 'Workspace & Sesi',
+      title: t('nav.sectionWorkspace'),
       items: [
         {
           id: 'hosts',
@@ -56,7 +56,7 @@
     },
     {
       id: 'operations',
-      title: 'Operasional & Monitoring',
+      title: t('nav.sectionOps'),
       items: [
         {
           id: 'monitoring',
@@ -92,7 +92,7 @@
     },
     {
       id: 'security-access',
-      title: 'Akses & Keamanan',
+      title: t('nav.sectionAccess'),
       items: [
         {
           id: 'ssh-keys',
@@ -128,7 +128,7 @@
     },
     {
       id: 'labs-settings',
-      title: 'Lab & Pengaturan',
+      title: t('nav.sectionLab'),
       items: [
         {
           id: 'devops',
@@ -138,13 +138,13 @@
         },
         {
           id: 'design-system',
-          label: 'Design System Lab',
+          label: t('nav.designSystem'),
           icon: designSystemIcon,
           action: () => navigateTo('/design-system'),
         },
         {
           id: 'ambient',
-          label: 'Ambient',
+          label: t('nav.ambient'),
           icon: ambientIcon,
           action: () => navigateTo('/settings?tab=ambient'),
         },
@@ -190,9 +190,9 @@
 <CauiAllMenusSheet
   {menus}
   bind:open
-  title="Semua Menu Modul"
+  title={t('nav.allMenusSheet')}
   searchable={true}
-  searchPlaceholder="Cari modul atau menu..."
+  searchPlaceholder={t('nav.searchMenus')}
   size="lg"
   onOpenChange={(next) => {
     open = next;

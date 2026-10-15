@@ -7,6 +7,7 @@
     type CustomSkill
   } from '$lib/api/aiRouting';
   import { showToast, confirmModal } from '$lib/stores/uiNotifications.svelte';
+  import { t } from '$lib/i18n/index.svelte';
   import { errorText } from '$lib/errors';
   import { PageHeader, Button, Input, Badge, Card, Modal, Textarea } from '@cecepazhar/caui';
   import AiNavTabs from '$lib/components/AiNavTabs.svelte';
@@ -41,7 +42,7 @@
     try {
       skills = await aiGetSkills();
     } catch (e) {
-      showToast(`Gagal memuat skills: ${errorText(e)}`, 'error');
+      showToast(t('aiSkills.loadFailed', { error: errorText(e) }), 'error');
     } finally {
       isLoading = false;
     }
@@ -75,7 +76,7 @@
 
   async function handleSave() {
     if (!formName.trim() || !formTitle.trim()) {
-      showToast('Nama dan Title skill wajib diisi', 'error');
+      showToast(t('aiSkills.nameTitleRequired'), 'error');
       return;
     }
 
@@ -105,11 +106,11 @@
       };
 
       await aiSaveSkill(skillToSave);
-      showToast('Skill berhasil disimpan!', 'success');
+      showToast(t('aiSkills.skillSaved'), 'success');
       showModal = false;
       await loadSkills();
     } catch (e) {
-      showToast(`Gagal menyimpan skill: ${errorText(e)}`, 'error');
+      showToast(t('aiSkills.saveFailed', { error: errorText(e) }), 'error');
     } finally {
       isSaving = false;
     }
@@ -117,30 +118,30 @@
 
   async function handleDelete(skill: CustomSkill) {
     if (skill.is_builtin) {
-      showToast('Skill bawaan sistem (builtin) tidak dapat dihapus', 'error');
+      showToast(t('aiSkills.builtinCannotDelete'), 'error');
       return;
     }
 
     const ok = await confirmModal(
-      `Hapus skill "@${skill.name}"?`,
-      'Hapus Custom Skill',
+      t('aiSkills.deleteConfirm', { name: skill.name }),
+      t('aiSkills.deleteTitle'),
       true,
-      'Hapus',
-      'Batal'
+      t('common.delete'),
+      t('common.cancel')
     );
     if (!ok) return;
 
     try {
       await aiDeleteSkill(skill.id);
-      showToast(`Skill @${skill.name} berhasil dihapus`, 'success');
+      showToast(t('aiSkills.skillDeleted', { name: skill.name }), 'success');
       await loadSkills();
     } catch (e) {
-      showToast(`Gagal menghapus skill: ${errorText(e)}`, 'error');
+      showToast(t('aiSkills.deleteFailed', { error: errorText(e) }), 'error');
     }
   }
 </script>
 
-<div class="p-6 max-w-6xl mx-auto space-y-6">
+<div class="max-w-5xl mx-auto space-y-6">
   <PageHeader
     title="Custom Skills Catalog (@skills)"
     subtitle="Skill modular yang disuntikkan secara otomatis ke Master AI Router saat trigger dipanggil dalam terminal atau floating chat."

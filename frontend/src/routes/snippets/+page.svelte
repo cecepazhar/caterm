@@ -190,12 +190,12 @@
         command: newSnippet.cmd.trim(),
         tags: parsedTags
       });
-      showToast(editingId ? 'Snippet diperbarui!' : 'Snippet berhasil disimpan!', 'success');
+      showToast(editingId ? t('snippets.snippetUpdated') : t('snippets.snippetSaved'), 'success');
       window.dispatchEvent(new CustomEvent('caterm:snippets-updated'));
       await loadData();
     } catch (err) {
       console.error('Failed to save snippet:', err);
-      showToast('Gagal menyimpan snippet', 'error');
+      showToast(t('snippets.saveFailed'), 'error');
     }
 
     resetModal();
@@ -203,21 +203,21 @@
 
   async function removeSnippet(id: string, label: string) {
     const confirmed = await confirmModal(
-      `Hapus snippet "${label}"?`,
-      'Hapus Snippet',
+      t('snippets.deleteConfirm', { name: label }),
+      t('snippets.deleteTitle'),
       true,
-      'Hapus',
-      'Batal'
+      t('common.delete'),
+      t('common.cancel')
     );
     if (confirmed) {
       try {
         await deleteSnippetApi(id);
         snippets = snippets.filter(s => s.id !== id);
-        showToast(`Snippet "${label}" dihapus!`, 'success');
+        showToast(t('snippets.deletedToast', { name: label }), 'success');
         window.dispatchEvent(new CustomEvent('caterm:snippets-updated'));
       } catch (err) {
         console.error('Failed to delete snippet:', err);
-        showToast('Gagal menghapus snippet', 'error');
+        showToast(t('snippets.deleteFailed'), 'error');
       }
     }
   }
@@ -261,33 +261,37 @@
     subtitle={t('snippets.subtitle')}
   >
     {#snippet actions()}
-      <div class="flex items-center gap-2">
-        <Button
-          variant="secondary"
-          size="sm"
-          onclick={importSnippets}
-          title={t('snippets.import')}
-        >
-          📥 {t('snippets.import')}
-        </Button>
-        <Button
-          variant="secondary"
-          size="sm"
-          onclick={exportSnippets}
-          disabled={snippets.length === 0}
-          title={t('snippets.export')}
-        >
-          📤 {t('snippets.export')}
-        </Button>
-        <Button
-          variant="info"
-          size="sm"
-          onclick={() => { resetModal(); isAddModalOpen = true; }}
-        >
-          <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-          {t('snippets.addSnippet')}
-        </Button>
-      </div>
+      <Button
+        variant="secondary"
+        size="sm"
+        class="h-9 px-3 rounded-xl shrink-0 flex items-center gap-1.5"
+        onclick={importSnippets}
+        title={t('snippets.import')}
+      >
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+        <span>{t('snippets.import')}</span>
+      </Button>
+      <Button
+        variant="secondary"
+        size="sm"
+        class="h-9 px-3 rounded-xl shrink-0 flex items-center gap-1.5"
+        onclick={exportSnippets}
+        disabled={snippets.length === 0}
+        title={t('snippets.export')}
+      >
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+        <span>{t('snippets.export')}</span>
+      </Button>
+      <Button
+        variant="primary"
+        class="h-9 rounded-xl shrink-0 shadow-xs"
+        onclick={() => { resetModal(); isAddModalOpen = true; }}
+      >
+        <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v14m7-7H5" />
+        </svg>
+        {t('snippets.addSnippet')}
+      </Button>
     {/snippet}
   </PageHeader>
 
@@ -445,8 +449,10 @@
           size="sm"
           onclick={() => (creationStep = 2)}
           disabled={!newSnippet.cmd.trim()}
+          class="flex items-center gap-1.5"
         >
-          {t('common.next')} →
+          <span>{t('common.next')}</span>
+          <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
         </Button>
       </div>
     </div>
@@ -489,9 +495,10 @@
           variant="ghost"
           size="sm"
           onclick={() => (creationStep = 1)}
-          class="text-neutral-500"
+          class="text-neutral-500 flex items-center gap-1.5"
         >
-          ← {t('common.back')}
+          <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+          <span>{t('common.back')}</span>
         </Button>
         <div class="flex gap-2">
           <Button

@@ -12,6 +12,7 @@
   import { aiSettingsStore } from '$lib/stores/aiSettingsStore';
   import { showToast } from '$lib/stores/uiNotifications.svelte';
   import { errorText } from '$lib/errors';
+  import { t } from '$lib/i18n/index.svelte';
 
   let isOpen = $state(false);
   let promptInput = $state('');
@@ -115,7 +116,7 @@
         ...messages,
         {
           role: 'assistant',
-          text: `⚠️ Error executing prompt: ${errorText(err)}`
+          text: `[Error] Failed to execute prompt: ${errorText(err)}`
         }
       ];
       showToast(errorText(err), 'error');
@@ -210,7 +211,7 @@
             title="Minimize"
             aria-label="Minimize"
           >
-            ✕
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
           </Button>
         </div>
       </div>
@@ -260,7 +261,7 @@
         {#if isSending}
           <div class="flex items-center gap-2 text-neutral-400 text-xs py-2">
             <span class="w-2 h-2 rounded-full bg-sky-500 animate-ping"></span>
-            <span>Hana AI sedang berpikir...</span>
+            <span>{t('ai.thinking')}</span>
           </div>
         {/if}
       </div>
@@ -268,7 +269,7 @@
       <!-- Autocomplete Dropdown Popup -->
       {#if showSkillSuggestions && filteredSkills.length > 0}
         <div class="mx-3 mb-1 p-1 bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl shadow-xl max-h-40 overflow-y-auto text-xs z-30">
-          <div class="px-2 py-1 text-[10px] uppercase font-bold text-neutral-400">Pilih Custom Skill:</div>
+          <div class="px-2 py-1 text-[10px] uppercase font-bold text-neutral-400">{t('ai.selectSkill')}</div>
           {#each filteredSkills as s, idx}
             <Button
               type="button"

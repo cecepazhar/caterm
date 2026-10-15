@@ -141,7 +141,7 @@
   }
 </script>
 
-<div class="max-w-6xl mx-auto space-y-6">
+<div class="max-w-5xl mx-auto space-y-6">
   <PageHeader
     icon="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
     accent="indigo"
@@ -302,7 +302,7 @@
               onclick={() => removeRule(i)}
               class="text-rose-500 hover:text-rose-700 font-bold p-1 h-auto"
             >
-              ✕
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
             </Button>
           </div>
         {/each}

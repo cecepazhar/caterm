@@ -77,7 +77,7 @@
   }
 </script>
 
-<div class="max-w-6xl mx-auto space-y-6">
+<div class="max-w-5xl mx-auto space-y-6">
   <PageHeader
     icon="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
     accent="teal"
@@ -126,7 +126,7 @@
           <Input
             bind:value={searchQuery}
             placeholder="Search habits via FTS5..."
-            size="sm"
+            size="md"
             class="flex-1"
             onkeydown={(e) => { if (e.key === 'Enter') handleSearch(); }}
           />
@@ -135,7 +135,7 @@
             disabled={searching}
             loading={searching}
             variant="primary"
-            size="sm"
+            size="md"
             class="w-20"
           >
             Search
@@ -144,7 +144,7 @@
             <Button
               onclick={() => { searchQuery = ''; loadData(); }}
               variant="secondary"
-              size="sm"
+              size="md"
             >
               Clear
             </Button>
@@ -178,7 +178,7 @@
                 <tr class="hover:bg-neutral-50 dark:hover:bg-neutral-800/30 transition-colors">
                   <td class="px-4 py-3 font-mono font-medium text-neutral-900 dark:text-white flex items-center gap-1.5">
                     {#if h.is_pinned}
-                      <span class="text-amber-500 text-sm" title="Pinned to Top-K memory">★</span>
+                      <svg class="w-3.5 h-3.5 text-neutral-800 dark:text-neutral-200 fill-current" viewBox="0 0 24 24"><path d="M12 3.5l2.6 5.3 5.9.9-4.25 4.1 1 5.8L12 16.9l-5.25 2.7 1-5.8L3.5 9.7l5.9-.9z" /></svg>
                     {/if}
                     {h.key_tag}
                   </td>

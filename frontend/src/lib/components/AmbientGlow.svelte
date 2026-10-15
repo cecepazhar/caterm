@@ -1,6 +1,7 @@
 <script lang="ts">
   import { getAmbientStore } from '$lib/stores/ambient.svelte';
   import { getPro } from '$lib/stores/pro.svelte';
+  import { isDark } from '$lib/stores/theme.svelte';
 
   let { defaultAccent = '#ef4444' }: { defaultAccent?: string } = $props();
 
@@ -52,7 +53,7 @@
   const animationDuration = $derived(`${ambient.config.speedSec}s`);
 </script>
 
-{#if ambient.config.enabled && ambient.config.cardGlowEnabled && pro.isPro}
+{#if ambient.config.enabled && ambient.config.cardGlowEnabled && pro.isPro && isDark()}
   <div
     class="pointer-events-none absolute -inset-[2px] rounded-none rounded-tl-2xl md:rounded-none md:rounded-tl-xl z-0 overflow-visible transition-opacity duration-150 will-change-[filter,opacity]"
     style:opacity={currentOpacity}

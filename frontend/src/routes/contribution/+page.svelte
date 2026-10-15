@@ -38,7 +38,7 @@
     <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4 pt-2">
       <a href={KOFI_URL} target="_blank" rel="noopener">
         <Button variant="danger" size="md" class="bg-[#ff5e5b] hover:bg-[#e54d4a] shadow-lg shadow-rose-900/30">
-          <span aria-hidden="true">☕</span>
+          <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M18 8h1a4 4 0 0 1 0 8h-1M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8zM6 1v3M10 1v3M14 1v3" /></svg>
           <span class="ml-2">{t('contribution.donateVia')}</span>
         </Button>
       </a>

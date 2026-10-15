@@ -25,6 +25,7 @@
   import { saveInvestigation } from '$lib/api/investigations';
   import { showToast } from '$lib/stores/uiNotifications.svelte';
   import { errorText } from '$lib/errors';
+  import { t } from '$lib/i18n/index.svelte';
   import ProGate from '$lib/components/ProGate.svelte';
 
   let { hostId, onClose }: { hostId?: string; onClose: () => void } = $props();
@@ -77,7 +78,7 @@
   // Action Handlers
   async function startSecurityAudit() {
     if (!selectedHostId) {
-      showToast('Pilih host target terlebih dahulu', 'error');
+      showToast(t('audit.selectHostFirst'), 'error');
       return;
     }
     isRunningSecurity = true;
@@ -85,9 +86,9 @@
     try {
       const res = await runNetworkSecurityAudit(selectedHostId);
       securityReport = res;
-      showToast(`Audit keamanan selesai! Skor: ${res.summaryScore}%`, res.summaryScore > 70 ? 'success' : 'error');
+      showToast(t('audit.securityDone', { score: res.summaryScore }), res.summaryScore > 70 ? 'success' : 'error');
     } catch (e) {
-      showToast(`Audit gagal: ${errorText(e)}`, 'error');
+      showToast(t('audit.securityFailed', { error: errorText(e) }), 'error');
     } finally {
       isRunningSecurity = false;
     }
@@ -98,9 +99,9 @@
     isRunningSpeed = true;
     try {
       speedResult = await runNetworkSpeedTest(selectedHostId);
-      showToast(`Speed Test selesai: Down ${speedResult.downloadMbps} Mbps, Up ${speedResult.uploadMbps} Mbps`, 'success');
+      showToast(t('audit.speedDone', { down: speedResult.downloadMbps, up: speedResult.uploadMbps }), 'success');
     } catch (e) {
-      showToast(`Speed Test gagal: ${errorText(e)}`, 'error');
+      showToast(t('audit.speedFailed', { error: errorText(e) }), 'error');
     } finally {
       isRunningSpeed = false;
     }
@@ -111,9 +112,9 @@
     isRunningQos = true;
     try {
       qosResult = await runQosAudit(selectedHostId);
-      showToast(`QoS Audit selesai: Grade ${qosResult.bufferbloatGrade}`, 'success');
+      showToast(t('audit.qosDone', { grade: qosResult.bufferbloatGrade }), 'success');
     } catch (e) {
-      showToast(`QoS Audit gagal: ${errorText(e)}`, 'error');
+      showToast(t('audit.qosFailed', { error: errorText(e) }), 'error');
     } finally {
       isRunningQos = false;
     }
@@ -124,9 +125,9 @@
     isRunningBench = true;
     try {
       benchResult = await runServerBenchmark(selectedHostId);
-      showToast(`Server benchmark selesai! RAM: ${benchResult.ramBandwidthMbps} MB/s`, 'success');
+      showToast(t('audit.benchDone', { ram: benchResult.ramBandwidthMbps }), 'success');
     } catch (e) {
-      showToast(`Benchmark gagal: ${errorText(e)}`, 'error');
+      showToast(t('audit.benchFailed', { error: errorText(e) }), 'error');
     } finally {
       isRunningBench = false;
     }
@@ -138,11 +139,11 @@
     try {
       watchdogResult = await runThreatWatchdog(selectedHostId);
       showToast(
-        `Watchdog scan: ${watchdogResult.threatLevel}`,
+        t('audit.watchdogDone', { status: watchdogResult.threatLevel }),
         watchdogResult.threatLevel === 'CLEAN' ? 'success' : 'error'
       );
     } catch (e) {
-      showToast(`Watchdog scan gagal: ${errorText(e)}`, 'error');
+      showToast(t('audit.watchdogFailed', { error: errorText(e) }), 'error');
     } finally {
       isRunningWatchdog = false;
     }
@@ -161,9 +162,9 @@
         targets.push(['1.1.1.1', 'Cloudflare DNS'], ['8.8.8.8', 'Google DNS']);
       }
       meshResult = await runMeshLatencyMatrix(selectedHostId, targets);
-      showToast('Mesh Latency Matrix selesai diperbarui', 'success');
+      showToast(t('audit.meshDone'), 'success');
     } catch (e) {
-      showToast(`Mesh Latency Matrix gagal: ${errorText(e)}`, 'error');
+      showToast(t('audit.meshFailed', { error: errorText(e) }), 'error');
     } finally {
       isRunningMesh = false;
     }
@@ -174,9 +175,9 @@
     isRunningSubnet = true;
     try {
       subnetResult = await runSubnetSweep(selectedHostId, subnetCidr);
-      showToast(`Subnet Sweep selesai: Ditemukan ${subnetResult.activeHosts} host aktif`, 'success');
+      showToast(t('audit.subnetDone', { count: subnetResult.activeHosts }), 'success');
     } catch (e) {
-      showToast(`Subnet sweep gagal: ${errorText(e)}`, 'error');
+      showToast(t('audit.subnetFailed', { error: errorText(e) }), 'error');
     } finally {
       isRunningSubnet = false;
     }
@@ -187,9 +188,9 @@
     isRunningPmtud = true;
     try {
       pmtudResult = await runPmtudProbe(selectedHostId, pmtudTarget);
-      showToast(`PMTUD optimal MTU: ${pmtudResult.optimalMtu}`, 'success');
+      showToast(t('audit.pmtudDone', { mtu: pmtudResult.optimalMtu }), 'success');
     } catch (e) {
-      showToast(`PMTUD probe gagal: ${errorText(e)}`, 'error');
+      showToast(t('audit.pmtudFailed', { error: errorText(e) }), 'error');
     } finally {
       isRunningPmtud = false;
     }
@@ -199,9 +200,9 @@
     isRunningTls = true;
     try {
       tlsResult = await runTlsAudit(tlsHost, tlsPort);
-      showToast(`TLS Audit: ${tlsResult.status} (${tlsResult.daysRemaining} hari sisa)`, 'success');
+      showToast(t('audit.tlsDone', { status: tlsResult.status, days: tlsResult.daysRemaining }), 'success');
     } catch (e) {
-      showToast(`TLS Audit gagal: ${errorText(e)}`, 'error');
+      showToast(t('audit.tlsFailed', { error: errorText(e) }), 'error');
     } finally {
       isRunningTls = false;
     }
@@ -235,9 +236,9 @@ SSH Hardening Fail/Warn: ${securityReport.hardeningChecklist.filter((h) => h.sta
           2
         )
       });
-      showToast('Laporan berhasil disimpan ke Investigasi Insiden!', 'success');
+      showToast(t('audit.exportInvestigationSuccess'), 'success');
     } catch (e) {
-      showToast(`Gagal menyimpan investigasi: ${errorText(e)}`, 'error');
+      showToast(t('audit.exportInvestigationFailed', { error: errorText(e) }), 'error');
     } finally {
       isSavingIncident = false;
     }
@@ -272,7 +273,7 @@ SSH Hardening Fail/Warn: ${securityReport.hardeningChecklist.filter((h) => h.sta
           class="px-3 py-1.5 text-xs bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-lg text-neutral-900 dark:text-white focus:outline-none focus:border-sky-500"
         >
           <option value="">-- Pilih Host --</option>
-          <option value="local">🖥️ Mesin Lokal (Localhost CLI)</option>
+          <option value="local">Mesin Lokal (Localhost CLI)</option>
           {#each hosts as h}
             <option value={h.id}>{h.label || h.address} ({h.address})</option>
           {/each}
@@ -285,29 +286,37 @@ SSH Hardening Fail/Warn: ${securityReport.hardeningChecklist.filter((h) => h.sta
           variant={activeMainTab === 'security' ? 'primary' : 'ghost'}
           size="sm"
           onclick={() => (activeMainTab = 'security')}
+          class="flex items-center gap-1.5"
         >
-          🛡️ Security & Hole Hunter
+          <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <span>Security & Hole Hunter</span>
         </Button>
         <Button
           variant={activeMainTab === 'speed_qos' ? 'primary' : 'ghost'}
           size="sm"
           onclick={() => (activeMainTab = 'speed_qos')}
+          class="flex items-center gap-1.5"
         >
-          ⚡ Speed & QoS Bufferbloat
+          <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+          <span>Speed & QoS Bufferbloat</span>
         </Button>
         <Button
           variant={activeMainTab === 'benchmark' ? 'primary' : 'ghost'}
           size="sm"
           onclick={() => (activeMainTab = 'benchmark')}
+          class="flex items-center gap-1.5"
         >
-          🔥 Server Benchmark
+          <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3"/></svg>
+          <span>Server Benchmark</span>
         </Button>
         <Button
           variant={activeMainTab === 'mesh_tools' ? 'primary' : 'ghost'}
           size="sm"
           onclick={() => (activeMainTab = 'mesh_tools')}
+          class="flex items-center gap-1.5"
         >
-          🌐 Mesh Matrix & Tools Lab
+          <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+          <span>Mesh Matrix & Tools Lab</span>
         </Button>
       </div>
 
@@ -320,7 +329,7 @@ SSH Hardening Fail/Warn: ${securityReport.hardeningChecklist.filter((h) => h.sta
           loading={isSavingIncident}
         >
           <svg class="w-3.5 h-3.5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-          <span>{isSavingIncident ? 'Menyimpan...' : 'Ekspor ke Investigasi'}</span>
+          <span>{isSavingIncident ? t('audit.saving') : t('audit.exportInvestigation')}</span>
         </Button>
       {/if}
     </div>
@@ -333,7 +342,7 @@ SSH Hardening Fail/Warn: ${securityReport.hardeningChecklist.filter((h) => h.sta
           <div class="flex items-center justify-between">
             <div>
               <h3 class="text-sm font-bold text-neutral-900 dark:text-white">Security Exposure & Hole Hunter</h3>
-              <p class="text-xs text-neutral-500">Egress port leaks, listening sockets 0.0.0.0, reverse shell watchdog, dan SSH baseline hardening.</p>
+              <p class="text-xs text-neutral-500">{t('audit.securitySubtitle')}</p>
             </div>
             <div class="flex items-center gap-2">
               <Button
@@ -342,8 +351,9 @@ SSH Hardening Fail/Warn: ${securityReport.hardeningChecklist.filter((h) => h.sta
                 onclick={startThreatWatchdog}
                 disabled={isRunningWatchdog || !selectedHostId}
                 loading={isRunningWatchdog}
+                class="flex items-center gap-1.5"
               >
-                <span>🚨</span>
+                <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
                 <span>Threat Watchdog Scan</span>
               </Button>
               <Button
@@ -356,7 +366,7 @@ SSH Hardening Fail/Warn: ${securityReport.hardeningChecklist.filter((h) => h.sta
                 {#if !isRunningSecurity}
                   <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/></svg>
                 {/if}
-                <span>{isRunningSecurity ? 'Mengaudit...' : 'Jalankan Security Audit'}</span>
+                <span>{isRunningSecurity ? t('audit.auditing') : t('audit.runSecurity')}</span>
               </Button>
             </div>
           </div>
@@ -449,7 +459,7 @@ SSH Hardening Fail/Warn: ${securityReport.hardeningChecklist.filter((h) => h.sta
               </div>
             </div>
           {:else}
-            <div class="py-12 text-center text-neutral-400 text-xs">Tekan "Jalankan Security Audit" untuk memindai status keamanan host.</div>
+            <div class="py-12 text-center text-neutral-400 text-xs">{t('audit.securityPrompt')}</div>
           {/if}
         </div>
       {/if}
@@ -469,8 +479,10 @@ SSH Hardening Fail/Warn: ${securityReport.hardeningChecklist.filter((h) => h.sta
                 onclick={startSpeedTest}
                 disabled={isRunningSpeed || !selectedHostId}
                 loading={isRunningSpeed}
+                class="flex items-center gap-1.5"
               >
-                <span>🚀 {isRunningSpeed ? 'Testing Speed...' : 'Test Speedometer'}</span>
+                <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                <span>{isRunningSpeed ? 'Testing Speed...' : 'Test Speedometer'}</span>
               </Button>
               <Button
                 variant="primary"
@@ -478,8 +490,10 @@ SSH Hardening Fail/Warn: ${securityReport.hardeningChecklist.filter((h) => h.sta
                 onclick={startQosAudit}
                 disabled={isRunningQos || !selectedHostId}
                 loading={isRunningQos}
+                class="flex items-center gap-1.5"
               >
-                <span>📊 {isRunningQos ? 'Auditing QoS...' : 'Audit Bufferbloat'}</span>
+                <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+                <span>{isRunningQos ? 'Auditing QoS...' : 'Audit Bufferbloat'}</span>
               </Button>
             </div>
           </div>
@@ -561,8 +575,10 @@ SSH Hardening Fail/Warn: ${securityReport.hardeningChecklist.filter((h) => h.sta
                 onclick={startBenchmark}
                 disabled={isRunningBench || !selectedHostId}
                 loading={isRunningBench}
+                class="flex items-center gap-1.5"
               >
-                <span>🔥 {isRunningBench ? 'Benchmarking Hardware...' : 'Jalankan Server Benchmark'}</span>
+                <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3"/></svg>
+                <span>{isRunningBench ? 'Benchmarking Hardware...' : 'Jalankan Server Benchmark'}</span>
               </Button>
             </div>
 
@@ -633,8 +649,10 @@ SSH Hardening Fail/Warn: ${securityReport.hardeningChecklist.filter((h) => h.sta
                 onclick={startMeshMatrix}
                 disabled={isRunningMesh || !selectedHostId}
                 loading={isRunningMesh}
+                class="flex items-center gap-1.5"
               >
-                <span>🌐 {isRunningMesh ? 'Probing Fleet...' : 'Probe Mesh Matrix Armada'}</span>
+                <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                <span>{isRunningMesh ? 'Probing Fleet...' : 'Probe Mesh Matrix Armada'}</span>
               </Button>
             </div>
 
@@ -772,7 +790,7 @@ SSH Hardening Fail/Warn: ${securityReport.hardeningChecklist.filter((h) => h.sta
           size="sm"
           onclick={handleClose}
         >
-          Tutup
+          {t('common.close')}
         </Button>
       </div>
     {/snippet}

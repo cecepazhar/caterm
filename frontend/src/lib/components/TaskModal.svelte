@@ -164,7 +164,7 @@
                 : 'bg-neutral-50 dark:bg-neutral-900/50 border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-700'
             }`}
           >
-            <span class="text-xl">⚡</span>
+            <svg class="w-5 h-5 shrink-0 text-amber-500 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
             <div>
               <div class="text-xs font-bold text-neutral-900 dark:text-white flex items-center gap-1.5">
                 {t('tasks.typeSshScript')}
@@ -185,7 +185,7 @@
                 : 'bg-neutral-50 dark:bg-neutral-900/50 border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-700'
             }`}
           >
-            <span class="text-xl">📦</span>
+            <svg class="w-5 h-5 shrink-0 text-sky-500 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
             <div>
               <div class="text-xs font-bold text-neutral-900 dark:text-white flex items-center gap-1.5">
                 {t('tasks.typeSftpBackup')}
@@ -317,7 +317,8 @@
         <!-- SFTP Pull Backup Configuration -->
         <div class="space-y-4 p-4 rounded-xl bg-neutral-50 dark:bg-neutral-900/60 border border-neutral-200 dark:border-neutral-800">
           <div class="text-xs font-bold text-neutral-900 dark:text-white flex items-center gap-1.5">
-            <span>📦</span> {t('tasks.sftpPipelineTitle')}
+            <svg class="w-4 h-4 shrink-0 text-sky-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+            <span>{t('tasks.sftpPipelineTitle')}</span>
           </div>
 
           <!-- Step 1: Remote Pre-Command -->

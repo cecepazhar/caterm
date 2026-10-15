@@ -1001,7 +1001,10 @@
           onclick={() => (showProtocolSelector = !showProtocolSelector)}
           title="Koneksi Cepat VFS / Ganti Sumber"
         >
-          <span>⚡ Quick Connect</span>
+          <span class="flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+            Quick Connect
+          </span>
         </Button>
       </div>
 
@@ -1049,13 +1052,17 @@
   {#if errorMsg}
     <div class="bg-red-50 dark:bg-red-950/80 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-xs px-3 py-2 rounded flex justify-between items-center">
       <span>{errorMsg}</span>
-      <Button variant="ghost" size="icon" onclick={() => (errorMsg = '')} class="h-5 w-5 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-200" aria-label={t('sftp.dismiss')}>✕</Button>
+      <Button variant="ghost" size="icon" onclick={() => (errorMsg = '')} class="h-5 w-5 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-200" aria-label={t('sftp.dismiss')}>
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M6 18L18 6M6 6l12 12"/></svg>
+      </Button>
     </div>
   {/if}
   {#if successMsg}
     <div class="bg-emerald-50 dark:bg-emerald-950/80 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-xs px-3 py-2 rounded flex justify-between items-center">
       <span>{successMsg}</span>
-      <Button variant="ghost" size="icon" onclick={() => (successMsg = '')} class="h-5 w-5 text-emerald-500 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-200" aria-label={t('sftp.dismiss')}>✕</Button>
+      <Button variant="ghost" size="icon" onclick={() => (successMsg = '')} class="h-5 w-5 text-emerald-500 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-200" aria-label={t('sftp.dismiss')}>
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M6 18L18 6M6 6l12 12"/></svg>
+      </Button>
     </div>
   {/if}
 
@@ -1064,7 +1071,10 @@
     <div class="p-3.5 bg-neutral-50 dark:bg-[#1a1f26] border border-cyan-500/40 rounded-lg shadow-sm space-y-3 text-xs">
       <div class="flex items-center justify-between border-b border-neutral-200 dark:border-slate-800 pb-2">
         <div class="flex items-center gap-2">
-          <span class="font-bold text-neutral-900 dark:text-slate-100">⚡ Unified VFS Quick Connect</span>
+          <span class="font-bold text-neutral-900 dark:text-slate-100 flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+            Unified VFS Quick Connect
+          </span>
           <span class="text-neutral-500 dark:text-slate-400 text-[11px]">(SFTP, S3, WebDAV, FTP/FTPS)</span>
         </div>
         <Button
@@ -1074,7 +1084,7 @@
           class="h-6 w-6 text-neutral-400 hover:text-neutral-600 dark:hover:text-slate-200"
           aria-label="Close Quick Connect"
         >
-          ✕
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M6 18L18 6M6 6l12 12"/></svg>
         </Button>
       </div>
 
@@ -1291,8 +1301,8 @@
                   <tr
                     class={`cursor-pointer select-none transition ${
                       localSelectedPaths.has(item.path) || localLastSelected?.path === item.path
-                        ? 'bg-cyan-50 dark:bg-cyan-950/60 text-cyan-800 dark:text-cyan-200'
-                        : 'hover:bg-neutral-100 dark:hover:bg-slate-800/40 text-neutral-700 dark:text-slate-300'
+                        ? 'bg-neutral-200/70 dark:bg-neutral-800 text-neutral-900 dark:text-white'
+                        : 'hover:bg-neutral-100 dark:hover:bg-neutral-800/60 text-neutral-700 dark:text-neutral-300'
                     }`}
                     onclick={() => toggleLocalSelect(item)}
                     ondblclick={() => item.is_dir ? navigateLocal(item.path) : openEditorModal()}
@@ -1302,9 +1312,9 @@
                   >
                     <td class="py-1.5 px-3 flex items-center gap-2 truncate max-w-[200px]">
                       {#if item.is_dir}
-                        <span class="text-amber-500 dark:text-amber-400">📁</span>
+                        <svg class="w-4 h-4 shrink-0 text-neutral-500 dark:text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
                       {:else}
-                        <span class="text-neutral-400 dark:text-slate-400">📄</span>
+                        <svg class="w-4 h-4 shrink-0 text-neutral-400 dark:text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                       {/if}
                       <span class="truncate">{item.name}</span>
                     </td>
@@ -1434,7 +1444,7 @@
               title={t('sftp.closeSearch')}
               aria-label={t('sftp.closeSearch')}
             >
-              ✕
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M6 18L18 6M6 6l12 12"/></svg>
             </Button>
           </div>
           <div class="flex items-center gap-3 text-neutral-600 dark:text-slate-400">
@@ -1470,10 +1480,14 @@
                   tabindex="0"
                   onclick={() => jumpToSearchResult(result)}
                   onkeydown={(e) => e.key === "Enter" && jumpToSearchResult(result)}
-                  class="p-1.5 px-2 hover:bg-cyan-50 dark:hover:bg-cyan-950/40 cursor-pointer flex items-center justify-between gap-2"
+                  class="p-1.5 px-2 hover:bg-neutral-100 dark:hover:bg-neutral-800/60 cursor-pointer flex items-center justify-between gap-2"
                 >
                   <div class="flex items-center gap-1.5 truncate">
-                    <span>{result.is_dir ? "📁" : "📄"}</span>
+                    {#if result.is_dir}
+                      <svg class="w-3.5 h-3.5 shrink-0 text-neutral-500 dark:text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+                    {:else}
+                      <svg class="w-3.5 h-3.5 shrink-0 text-neutral-400 dark:text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    {/if}
                     <span class="font-medium text-neutral-800 dark:text-slate-200 truncate">{result.name}</span>
                     <span class="text-neutral-400 dark:text-slate-500 text-[10px] truncate">({result.path})</span>
                   </div>
@@ -1514,8 +1528,8 @@
                 <tr
                   class={`cursor-pointer select-none transition ${
                     remoteSelectedPaths.has(item.path) || remoteLastSelected?.path === item.path
-                      ? 'bg-cyan-50 dark:bg-cyan-950/60 text-cyan-800 dark:text-cyan-200'
-                      : 'hover:bg-neutral-100 dark:hover:bg-slate-800/40 text-neutral-700 dark:text-slate-300'
+                      ? 'bg-neutral-200/70 dark:bg-neutral-800 text-neutral-900 dark:text-white'
+                      : 'hover:bg-neutral-100 dark:hover:bg-neutral-800/60 text-neutral-700 dark:text-neutral-300'
                   }`}
                   onclick={() => toggleRemoteSelect(item)}
                   ondblclick={() => item.is_dir ? navigateRemote(item.path) : openEditorModal()}
@@ -1525,9 +1539,9 @@
                 >
                   <td class="py-1.5 px-3 flex items-center gap-2 truncate max-w-[200px]">
                     {#if item.is_dir}
-                      <span class="text-amber-500 dark:text-amber-400">📁</span>
+                      <svg class="w-4 h-4 shrink-0 text-neutral-500 dark:text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
                     {:else}
-                      <span class="text-neutral-400 dark:text-slate-400">📄</span>
+                      <svg class="w-4 h-4 shrink-0 text-neutral-400 dark:text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                     {/if}
                     <span class="truncate">{item.name}</span>
                   </td>
@@ -1638,7 +1652,7 @@
                   title={t('sftp.cancelTransfer')}
                   aria-label={t('sftp.cancelTransfer')}
                 >
-                  ✕
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M6 18L18 6M6 6l12 12"/></svg>
                 </Button>
               {/if}
             </div>
@@ -1905,7 +1919,10 @@
           class="w-full !justify-between text-left px-3 py-1.5 font-normal rounded-none"
           onclick={() => { closeCtxMenu(); handleCopyTransfer(); }}
         >
-          <span class="flex items-center gap-2"><span>📥</span> {t('sftp.ctxDownload')}</span>
+          <span class="flex items-center gap-2">
+            <svg class="w-4 h-4 shrink-0 text-neutral-500 dark:text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+            {t('sftp.ctxDownload')}
+          </span>
           <span class="text-[10px] text-neutral-400 font-mono">F5</span>
         </Button>
 
@@ -1916,7 +1933,10 @@
             class="w-full !justify-between text-left px-3 py-1.5 font-normal rounded-none"
             onclick={() => { closeCtxMenu(); openEditorModal(); }}
           >
-            <span class="flex items-center gap-2"><span>✏️</span> {t('sftp.ctxEditView')}</span>
+            <span class="flex items-center gap-2">
+              <svg class="w-4 h-4 shrink-0 text-neutral-500 dark:text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+              {t('sftp.ctxEditView')}
+            </span>
             <span class="text-[10px] text-neutral-400 font-mono">F4</span>
           </Button>
         {/if}
@@ -1927,7 +1947,10 @@
           class="w-full !justify-between text-left px-3 py-1.5 font-normal rounded-none"
           onclick={() => { closeCtxMenu(); openRenameModal(); }}
         >
-          <span class="flex items-center gap-2"><span>🏷️</span> {t('sftp.ctxRename')}</span>
+          <span class="flex items-center gap-2">
+            <svg class="w-4 h-4 shrink-0 text-neutral-500 dark:text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M7 7h.01M7 3h5a1.99 1.99 0 011.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V5a2 2 0 012-2z"/></svg>
+            {t('sftp.ctxRename')}
+          </span>
           <span class="text-[10px] text-neutral-400 font-mono">F2</span>
         </Button>
 
@@ -1937,7 +1960,10 @@
           class="w-full !justify-between text-left px-3 py-1.5 font-normal rounded-none border-0"
           onclick={() => { closeCtxMenu(); openDeleteModal(); }}
         >
-          <span class="flex items-center gap-2"><span>🗑️</span> {t('sftp.ctxDelete')}</span>
+          <span class="flex items-center gap-2">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+            {t('sftp.ctxDelete')}
+          </span>
           <span class="text-[10px] opacity-70 font-mono">Del</span>
         </Button>
 
@@ -1947,7 +1973,10 @@
           class="w-full !justify-between text-left px-3 py-1.5 font-normal rounded-none"
           onclick={() => { const item = ctxMenu!.item as SftpFileEntry; closeCtxMenu(); openChmodModal(item); }}
         >
-          <span class="flex items-center gap-2"><span>🔒</span> {t('sftp.ctxPermissions')}</span>
+          <span class="flex items-center gap-2">
+            <svg class="w-4 h-4 shrink-0 text-neutral-500 dark:text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+            {t('sftp.ctxPermissions')}
+          </span>
         </Button>
 
         <div class="my-1 border-t border-neutral-200 dark:border-white/10"></div>
@@ -1958,7 +1987,10 @@
           class="w-full !justify-between text-left px-3 py-1.5 font-normal rounded-none"
           onclick={() => { closeCtxMenu(); openNewFileModal('remote'); }}
         >
-          <span class="flex items-center gap-2"><span>📄</span> {t('sftp.ctxNewFile')}</span>
+          <span class="flex items-center gap-2">
+            <svg class="w-4 h-4 shrink-0 text-neutral-400 dark:text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            {t('sftp.ctxNewFile')}
+          </span>
         </Button>
 
         <Button
@@ -1967,7 +1999,10 @@
           class="w-full !justify-between text-left px-3 py-1.5 font-normal rounded-none"
           onclick={() => { closeCtxMenu(); openNewFolderModal('remote'); }}
         >
-          <span class="flex items-center gap-2"><span>📁</span> {t('sftp.ctxNewFolder')}</span>
+          <span class="flex items-center gap-2">
+            <svg class="w-4 h-4 shrink-0 text-neutral-500 dark:text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+            {t('sftp.ctxNewFolder')}
+          </span>
           <span class="text-[10px] text-neutral-400 font-mono">F7</span>
         </Button>
 
@@ -1982,7 +2017,10 @@
             notifySuccess(t('sftp.copiedPath', { path: item.path }));
           }}
         >
-          <span class="flex items-center gap-2"><span>📋</span> {t('sftp.ctxCopyPath')}</span>
+          <span class="flex items-center gap-2">
+            <svg class="w-4 h-4 shrink-0 text-neutral-500 dark:text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+            {t('sftp.ctxCopyPath')}
+          </span>
         </Button>
 
         <div class="my-1 border-t border-neutral-200 dark:border-white/10"></div>
@@ -1993,7 +2031,8 @@
           class="w-full !justify-start text-left px-3 py-1.5 font-normal rounded-none gap-2"
           onclick={() => { closeCtxMenu(); openCompressModal(); }}
         >
-          <span>🗜️</span> {t('sftp.ctxCompress')}
+          <svg class="w-4 h-4 shrink-0 text-neutral-500 dark:text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+          {t('sftp.ctxCompress')}
         </Button>
 
         {#if isArchive(ctxMenu.item.name)}
@@ -2003,7 +2042,8 @@
             class="w-full !justify-start text-left px-3 py-1.5 font-normal rounded-none gap-2"
             onclick={() => { const item = ctxMenu!.item as SftpFileEntry; closeCtxMenu(); openExtractHere(item); }}
           >
-            <span>📦</span> {t('sftp.ctxExtractHere')}
+            <svg class="w-4 h-4 shrink-0 text-neutral-500 dark:text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+            {t('sftp.ctxExtractHere')}
           </Button>
           <Button
             variant="ghost"
@@ -2011,7 +2051,8 @@
             class="w-full !justify-start text-left px-3 py-1.5 font-normal rounded-none gap-2"
             onclick={() => { const item = ctxMenu!.item as SftpFileEntry; closeCtxMenu(); openExtractTo(item); }}
           >
-            <span>📂</span> {t('sftp.ctxExtractTo')}
+            <svg class="w-4 h-4 shrink-0 text-neutral-500 dark:text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2v5a2 2 0 01-2 2z"/></svg>
+            {t('sftp.ctxExtractTo')}
           </Button>
         {/if}
 
@@ -2023,7 +2064,10 @@
           class="w-full !justify-between text-left px-3 py-1.5 font-normal rounded-none"
           onclick={() => { closeCtxMenu(); handleCopyTransfer(); }}
         >
-          <span class="flex items-center gap-2"><span>📤</span> {t('sftp.ctxUpload')}</span>
+          <span class="flex items-center gap-2">
+            <svg class="w-4 h-4 shrink-0 text-neutral-500 dark:text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+            {t('sftp.ctxUpload')}
+          </span>
           <span class="text-[10px] text-neutral-400 font-mono">F5</span>
         </Button>
 
@@ -2034,7 +2078,10 @@
             class="w-full !justify-between text-left px-3 py-1.5 font-normal rounded-none"
             onclick={() => { closeCtxMenu(); openEditorModal(); }}
           >
-            <span class="flex items-center gap-2"><span>✏️</span> {t('sftp.ctxEditView')}</span>
+            <span class="flex items-center gap-2">
+              <svg class="w-4 h-4 shrink-0 text-neutral-500 dark:text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+              {t('sftp.ctxEditView')}
+            </span>
             <span class="text-[10px] text-neutral-400 font-mono">F4</span>
           </Button>
         {/if}
@@ -2045,7 +2092,10 @@
           class="w-full !justify-between text-left px-3 py-1.5 font-normal rounded-none"
           onclick={() => { closeCtxMenu(); openRenameModal(); }}
         >
-          <span class="flex items-center gap-2"><span>🏷️</span> {t('sftp.ctxRename')}</span>
+          <span class="flex items-center gap-2">
+            <svg class="w-4 h-4 shrink-0 text-neutral-500 dark:text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M7 7h.01M7 3h5a1.99 1.99 0 011.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V5a2 2 0 012-2z"/></svg>
+            {t('sftp.ctxRename')}
+          </span>
           <span class="text-[10px] text-neutral-400 font-mono">F2</span>
         </Button>
 
@@ -2055,7 +2105,10 @@
           class="w-full !justify-between text-left px-3 py-1.5 font-normal rounded-none border-0"
           onclick={() => { closeCtxMenu(); openDeleteModal(); }}
         >
-          <span class="flex items-center gap-2"><span>🗑️</span> {t('sftp.ctxDelete')}</span>
+          <span class="flex items-center gap-2">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+            {t('sftp.ctxDelete')}
+          </span>
           <span class="text-[10px] opacity-70 font-mono">Del</span>
         </Button>
 
@@ -2067,7 +2120,10 @@
           class="w-full !justify-between text-left px-3 py-1.5 font-normal rounded-none"
           onclick={() => { closeCtxMenu(); openNewFileModal('local'); }}
         >
-          <span class="flex items-center gap-2"><span>📄</span> {t('sftp.ctxNewFile')}</span>
+          <span class="flex items-center gap-2">
+            <svg class="w-4 h-4 shrink-0 text-neutral-400 dark:text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            {t('sftp.ctxNewFile')}
+          </span>
         </Button>
 
         <Button
@@ -2076,7 +2132,10 @@
           class="w-full !justify-between text-left px-3 py-1.5 font-normal rounded-none"
           onclick={() => { closeCtxMenu(); openNewFolderModal('local'); }}
         >
-          <span class="flex items-center gap-2"><span>📁</span> {t('sftp.ctxNewFolder')}</span>
+          <span class="flex items-center gap-2">
+            <svg class="w-4 h-4 shrink-0 text-neutral-500 dark:text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+            {t('sftp.ctxNewFolder')}
+          </span>
           <span class="text-[10px] text-neutral-400 font-mono">F7</span>
         </Button>
 
@@ -2091,7 +2150,10 @@
             notifySuccess(t('sftp.copiedPath', { path: item.path }));
           }}
         >
-          <span class="flex items-center gap-2"><span>📋</span> {t('sftp.ctxCopyPath')}</span>
+          <span class="flex items-center gap-2">
+            <svg class="w-4 h-4 shrink-0 text-neutral-500 dark:text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+            {t('sftp.ctxCopyPath')}
+          </span>
         </Button>
       {/if}
     </div>

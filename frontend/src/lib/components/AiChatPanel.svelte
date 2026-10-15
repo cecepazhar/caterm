@@ -38,12 +38,10 @@
   let showConfirmClear = $state(false);
   let aiDisabledWarning = $state(false);
 
-  const initialGreeting = 'Halo! Saya Hana AI, asisten DevOps & Terminal CATerm. Pilih target host dan tanyakan perintah server atau otomatisasi infrastruktur Anda.';
-
   let messages = $state<AiChatMessage[]>([
     {
       role: 'assistant',
-      content: initialGreeting
+      content: t('aiChat.initialGreeting')
     }
   ]);
   let draft = $state('');
@@ -172,7 +170,7 @@
           ...messages,
           {
             role: 'assistant',
-            content: '⚠️ Modul AI saat ini berstatus nonaktif. Silakan pilih penyedia AI (OpenAI / Ollama / Custom API) di menu Pengaturan.'
+            content: 'Modul AI saat ini berstatus nonaktif. Silakan pilih penyedia AI (OpenAI / Ollama / Custom API) di menu Pengaturan.'
           }
         ];
       } else {
@@ -195,7 +193,7 @@
     messages = [
       {
         role: 'assistant',
-        content: initialGreeting
+        content: t('aiChat.initialGreeting')
       }
     ];
     proposedSteps = [];
@@ -203,7 +201,7 @@
     runs = [];
     showConfirmClear = false;
     aiDisabledWarning = false;
-    showToast('Riwayat percakapan berhasil dibersihkan', 'success');
+    showToast(t('aiChat.historyCleared'), 'success');
   }
 
   function handleKeydown(event: KeyboardEvent) {
@@ -245,15 +243,15 @@
           });
           window.dispatchEvent(new CustomEvent('caterm:hosts-updated'));
           runs[i] = { status: 'ok', output: `Host "${label}" (${username}@${address}:${port}) berhasil disimpan!` };
-          showToast(`Host "${label}" disimpan!`, 'success');
+          showToast(t('aiChat.hostSaved', { label }), 'success');
           return true;
         }
 
         if (action === 'delete_host' && params.id) {
           await deleteHost(params.id);
           window.dispatchEvent(new CustomEvent('caterm:hosts-updated'));
-          runs[i] = { status: 'ok', output: `Host berhasil dihapus!` };
-          showToast(`Host dihapus!`, 'success');
+          runs[i] = { status: 'ok', output: t('aiChat.hostDeleted') };
+          showToast(t('aiChat.hostDeleted'), 'success');
           return true;
         }
 
@@ -271,7 +269,7 @@
           });
           window.dispatchEvent(new CustomEvent('caterm:snippets-updated'));
           runs[i] = { status: 'ok', output: `Snippet "${snippetTitle}" berhasil disimpan!` };
-          showToast(`Snippet "${snippetTitle}" disimpan!`, 'success');
+          showToast(t('aiChat.snippetSaved', { title: snippetTitle }), 'success');
           return true;
         }
 
@@ -279,7 +277,7 @@
           await deleteSnippet(params.id);
           window.dispatchEvent(new CustomEvent('caterm:snippets-updated'));
           runs[i] = { status: 'ok', output: `Snippet berhasil dihapus!` };
-          showToast(`Snippet dihapus!`, 'success');
+          showToast(t('aiChat.snippetDeleted'), 'success');
           return true;
         }
 
@@ -297,7 +295,7 @@
 - Latency probe: ${auditReport.latencyProbe.avgLatencyMs.toFixed(1)} ms (${auditReport.latencyProbe.packetLossPct}% loss)
 - Rekomendasi: Periksa tab Investigasi / Audit Hub untuk detail lengkap.`;
           runs[i] = { status: 'ok', output: outputText };
-          showToast(`Security Audit Selesai! Skor: ${score}%`, score >= 70 ? 'success' : 'error');
+          showToast(t('aiChat.securityAuditFinished', { score }), score >= 70 ? 'success' : 'error');
           return true;
         }
 
@@ -316,7 +314,7 @@
           const activeSessions = getAllActiveSessions();
           if (activeSessions.length === 0) {
             runs[i] = { status: 'failed', output: 'Tidak ada sesi terminal aktif untuk dibroadcast.' };
-            showToast('Tidak ada sesi terminal aktif', 'error');
+            showToast(t('aiChat.noActiveTerminalSessions'), 'error');
             return false;
           }
           const openTabs = getTabs();
@@ -328,7 +326,7 @@
               status: 'ok',
               output: `Perintah "${cmdToRun}" berhasil disuntikkan ke ${injectedCount} terminal aktif.`
             };
-            showToast(`Broadcast terkirim ke ${injectedCount} terminal`, 'success');
+            showToast(t('aiChat.broadcastSent', { count: injectedCount }), 'success');
             return true;
           } else {
             // SSH / non-interactive execution per host in parallel
@@ -353,13 +351,13 @@
               status: allSuccess ? 'ok' : 'failed',
               output: summaryOut
             };
-            showToast(`Broadcast dieksekusi ke ${resList.length} server!`, allSuccess ? 'success' : 'error');
+            showToast(t('aiChat.broadcastExecuted', { count: resList.length }), allSuccess ? 'success' : 'error');
             return allSuccess;
           }
         }
       } catch (err) {
         runs[i] = { status: 'failed', output: errorText(err) };
-        showToast(`Aksi gagal: ${errorText(err)}`, 'error');
+        showToast(t('aiChat.actionFailed', { error: errorText(err) }), 'error');
         return false;
       }
     }
@@ -549,9 +547,9 @@
           bind:value={targetHostId}
           class="flex-1 min-w-0 bg-neutral-900 border border-neutral-700/70 rounded-lg px-2 py-1 text-[11px] text-white focus:outline-none focus:border-rose-500 cursor-pointer truncate"
         >
-          <option value={LOCAL_HOST_ID}>🖥️ Local Terminal (localhost)</option>
+          <option value={LOCAL_HOST_ID}>Local Terminal (localhost)</option>
           {#each hosts as host (host.id)}
-            <option value={host.id}>🌐 {host.label} ({host.username}@{host.address})</option>
+            <option value={host.id}>{host.label} ({host.username}@{host.address})</option>
           {/each}
         </select>
       </div>

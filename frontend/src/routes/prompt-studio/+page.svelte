@@ -627,7 +627,7 @@
           >
             {#each hosts as host}
             	<option value={host.id} class="bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white">
-            		{host.id === LOCAL_HOST_ID ? '🖥️ ' : ''}{host.label} ({host.username}@{host.address}{host.port > 0 ? `:${host.port}` : ''})
+            		{host.id === LOCAL_HOST_ID ? '[Local] ' : ''}{host.label} ({host.username}@{host.address}{host.port > 0 ? `:${host.port}` : ''})
             	</option>
             {/each}
           </select>

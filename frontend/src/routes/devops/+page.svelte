@@ -17,6 +17,7 @@
   } from '$lib/api/audit';
   import { listHosts, type HostRecord } from '$lib/api/hosts';
   import { showToast } from '$lib/stores/uiNotifications.svelte';
+  import { t } from '$lib/i18n/index.svelte';
   import { errorText } from '$lib/errors';
   import { PageHeader, Button, Input, Badge, Tabs } from '@cecepazhar/caui';
   import ProGate from '$lib/components/ProGate.svelte';
@@ -24,19 +25,6 @@
   let hosts = $state<HostRecord[]>([]);
   let selectedHostId = $state<string>('');
   let activeTab = $state<'speed_qos' | 'benchmark' | 'mesh' | 'network_tools'>('speed_qos');
-
-  interface DevOpsTabItem {
-    id: string;
-    label: string;
-    badge?: string | number;
-  }
-
-  let devopsTabs: DevOpsTabItem[] = [
-    { id: 'speed_qos', label: '⚡ Throughput & QoS' },
-    { id: 'benchmark', label: '🚀 Hardware Benchmark' },
-    { id: 'mesh', label: '🕸️ Mesh Matrix', badge: 'PRO' },
-    { id: 'network_tools', label: '🔍 PMTUD & Subnet' }
-  ];
 
   // Loading States
   let isRunningSpeed = $state(false);
@@ -79,9 +67,9 @@
     isRunningSpeed = true;
     try {
       speedResult = await runNetworkSpeedTest(selectedHostId);
-      showToast(`Speed Test selesai: Down ${speedResult.downloadMbps} Mbps, Up ${speedResult.uploadMbps} Mbps`, 'success');
+      showToast(t('devops.speedTestCompleted', { down: speedResult.downloadMbps, up: speedResult.uploadMbps }), 'success');
     } catch (e) {
-      showToast(`Speed Test gagal: ${errorText(e)}`, 'error');
+      showToast(t('devops.speedTestFailed', { error: errorText(e) }), 'error');
     } finally {
       isRunningSpeed = false;
     }
@@ -92,9 +80,9 @@
     isRunningQos = true;
     try {
       qosResult = await runQosAudit(selectedHostId);
-      showToast(`QoS Audit selesai: Grade ${qosResult.bufferbloatGrade}`, 'success');
+      showToast(t('devops.qosCompleted', { grade: qosResult.bufferbloatGrade }), 'success');
     } catch (e) {
-      showToast(`QoS Audit gagal: ${errorText(e)}`, 'error');
+      showToast(t('devops.qosFailed', { error: errorText(e) }), 'error');
     } finally {
       isRunningQos = false;
     }
@@ -105,9 +93,9 @@
     isRunningBench = true;
     try {
       benchResult = await runServerBenchmark(selectedHostId);
-      showToast(`Benchmark selesai! RAM: ${benchResult.ramBandwidthMbps} MB/s, Disk: ${benchResult.diskWriteMbps1m} MB/s`, 'success');
+      showToast(t('devops.benchmarkCompleted', { ram: benchResult.ramBandwidthMbps, disk: benchResult.diskWriteMbps1m }), 'success');
     } catch (e) {
-      showToast(`Benchmark gagal: ${errorText(e)}`, 'error');
+      showToast(t('devops.benchmarkFailed', { error: errorText(e) }), 'error');
     } finally {
       isRunningBench = false;
     }
@@ -115,16 +103,16 @@
 
   async function startMeshMatrix() {
     if (hosts.length === 0) {
-      showToast('Perlu minimal 1 host untuk menguji mesh matrix', 'error');
+      showToast(t('devops.meshNeedHost'), 'error');
       return;
     }
     isRunningMesh = true;
     try {
       const targetHosts: [string, string][] = hosts.map((h) => [h.id, h.label]);
       meshResult = await runMeshLatencyMatrix(selectedHostId || 'local', targetHosts);
-      showToast('Mesh Latency Matrix selesai dihitung!', 'success');
+      showToast(t('devops.meshCompleted'), 'success');
     } catch (e) {
-      showToast(`Mesh Matrix gagal: ${errorText(e)}`, 'error');
+      showToast(t('devops.meshFailed', { error: errorText(e) }), 'error');
     } finally {
       isRunningMesh = false;
     }
@@ -135,9 +123,9 @@
     isRunningSubnet = true;
     try {
       subnetResult = await runSubnetSweep(selectedHostId, subnetCidr);
-      showToast(`Subnet Sweep selesai: ${subnetResult.activeHosts} host aktif`, 'success');
+      showToast(t('devops.subnetSweepCompleted', { count: subnetResult.activeHosts }), 'success');
     } catch (e) {
-      showToast(`Subnet Sweep gagal: ${errorText(e)}`, 'error');
+      showToast(t('devops.subnetSweepFailed', { error: errorText(e) }), 'error');
     } finally {
       isRunningSubnet = false;
     }
@@ -148,16 +136,16 @@
     isRunningPmtud = true;
     try {
       pmtudResult = await runPmtudProbe(selectedHostId, pmtudTarget);
-      showToast(`PMTUD Selesai! Optimal MTU: ${pmtudResult.optimalMtu}`, 'success');
+      showToast(t('devops.pmtudCompleted', { mtu: pmtudResult.optimalMtu }), 'success');
     } catch (e) {
-      showToast(`PMTUD gagal: ${errorText(e)}`, 'error');
+      showToast(t('devops.pmtudFailed', { error: errorText(e) }), 'error');
     } finally {
       isRunningPmtud = false;
     }
   }
 </script>
 
-<div class="p-6 max-w-7xl mx-auto space-y-6">
+<div class="max-w-5xl mx-auto space-y-6">
   <!-- HEADER -->
   <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
     <div class="flex items-center gap-3">
@@ -188,8 +176,31 @@
   </div>
 
   <!-- NAVIGATION TABS -->
+  {#snippet speedIcon()}
+    <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+  {/snippet}
+  {#snippet benchIcon()}
+    <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3"/></svg>
+  {/snippet}
+  {#snippet meshIcon()}
+    <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+  {/snippet}
+  {#snippet searchIcon()}
+    <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+  {/snippet}
+
   <div class="border-b border-neutral-200 dark:border-neutral-800 pb-2">
-    <Tabs items={devopsTabs} bind:value={activeTab} variant="pills" size="sm" />
+    <Tabs
+      items={[
+        { id: 'speed_qos', label: 'Throughput & QoS', icon: speedIcon },
+        { id: 'benchmark', label: 'Hardware Benchmark', icon: benchIcon },
+        { id: 'mesh', label: 'Mesh Matrix', badge: 'PRO', icon: meshIcon },
+        { id: 'network_tools', label: 'PMTUD & Subnet', icon: searchIcon }
+      ]}
+      bind:value={activeTab}
+      variant="pills"
+      size="sm"
+    />
   </div>
 
   <!-- TAB 1: SPEED TEST & QOS -->
@@ -207,8 +218,10 @@
             onclick={startSpeedTest}
             disabled={isRunningSpeed || !selectedHostId}
             loading={isRunningSpeed}
+            class="flex items-center gap-1.5"
           >
-            ⚡ Jalankan Speed Test
+            <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+            <span>Jalankan Speed Test</span>
           </Button>
           <Button
             variant="secondary"
@@ -216,8 +229,10 @@
             onclick={startQosAudit}
             disabled={isRunningQos || !selectedHostId}
             loading={isRunningQos}
+            class="flex items-center gap-1.5"
           >
-            📊 Audit Bufferbloat QoS
+            <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+            <span>Audit Bufferbloat QoS</span>
           </Button>
         </div>
       </div>
@@ -286,8 +301,10 @@
           onclick={startServerBenchmark}
           disabled={isRunningBench || !selectedHostId}
           loading={isRunningBench}
+          class="flex items-center gap-1.5"
         >
-          🚀 Jalankan Server Benchmark
+          <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3"/></svg>
+          <span>Jalankan Server Benchmark</span>
         </Button>
       </div>
 

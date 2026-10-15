@@ -814,8 +814,8 @@
             size="icon"
             onclick={() => (showDiagnosticModal = false)}
             class="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 font-bold text-lg !p-1"
-            title="Tutup"
-            aria-label="Tutup"
+            title={t('common.close')}
+            aria-label={t('common.close')}
           >
             &times;
           </Button>

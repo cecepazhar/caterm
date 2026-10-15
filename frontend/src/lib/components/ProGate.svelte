@@ -34,7 +34,7 @@
     <!-- Dark Overlay with Gold Lock Guard -->
     <div class="absolute inset-0 z-20 flex flex-col items-center justify-center p-6 text-center bg-black/60 backdrop-blur-md">
       <div class="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-2xl shadow-lg mb-3 shadow-amber-500/5 animate-pulse">
-        <span role="img" aria-label="Locked">🔒</span>
+        <svg class="w-6 h-6 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
       </div>
 
       <h3 class="text-base font-bold text-white tracking-tight mb-1">

@@ -122,7 +122,7 @@
           >
             <span class="w-3 h-3 rounded-full border border-black/30" style="background-color: {b.hex};"></span>
             <span>{b.name}</span>
-            {#if selectedAccent === b.hex}<span class="text-[10px] text-white">✓</span>{/if}
+            {#if selectedAccent === b.hex}<svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>{/if}
           </Button>
         {/each}
       </div>
@@ -180,8 +180,8 @@
             <Badge variant="neutral">NEUTRAL 200</Badge>
             <Badge variant="success">● ONLINE</Badge>
             <Badge variant="warning">▲ HIGH LOAD</Badge>
-            <Badge variant="danger">✕ CRITICAL</Badge>
-            <Badge variant="brand">★ PRO ACTIVE</Badge>
+            <Badge variant="danger">CRITICAL</Badge>
+            <Badge variant="brand">PRO ACTIVE</Badge>
           </div>
           <div class="flex items-center gap-2 pt-2">
             <Badge variant="brand" size="xs">ED25519-ZK</Badge>
