@@ -2,7 +2,7 @@
   import { onMount, onDestroy } from 'svelte';
   import { invoke } from '@tauri-apps/api/core';
   import TotpBadge from '$lib/components/TotpBadge.svelte';
-  import { PageHeader, Button, Input, Modal } from '@cecepazhar/caui';
+  import { PageHeader, Button, Input, SearchInput, Modal } from '@cecepazhar/caui';
   import { showToast, confirmModal } from '$lib/stores/uiNotifications.svelte';
   import { t } from '$lib/i18n/index.svelte';
 
@@ -148,14 +148,14 @@
   <!-- Standard Page Header -->
   <PageHeader
     icon={['M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z']}
-    accent="sky"
+    accent="neutral"
     title={t('totp.title')}
     subtitle={t('totp.subtitle')}
   >
     {#snippet actions()}
       <Button
         variant="primary"
-        class="h-9 rounded-xl shrink-0 shadow-xs"
+        class="h-9 px-3.5 rounded-xl shrink-0 shadow-xs"
         onclick={openAddModal}
       >
         <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -168,18 +168,12 @@
 
   <!-- Search & Stats Bar -->
   <div class="flex items-center justify-between gap-3">
-    <div class="relative flex-1 max-w-md">
-      <Input
+    <div class="flex-1 max-w-md">
+      <SearchInput
         bind:value={searchQuery}
         placeholder={t('totp.searchPlaceholder')}
-        size="sm"
-      >
-        {#snippet leadingIcon()}
-          <svg class="w-4 h-4 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-        {/snippet}
-      </Input>
+        size="md"
+      />
     </div>
     <span class="text-xs font-medium text-neutral-500 shrink-0">
       {filteredEntries.length} {t('totp.title')}
@@ -189,7 +183,7 @@
   <!-- Cards Grid -->
   {#if filteredEntries.length === 0}
     <div class="text-center py-16 px-4 bg-white dark:bg-neutral-900/40 rounded-2xl border border-neutral-200 dark:border-neutral-800 space-y-3">
-      <div class="w-12 h-12 rounded-full bg-sky-500/10 text-sky-500 flex items-center justify-center mx-auto border border-sky-500/20">
+      <div class="w-12 h-12 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 flex items-center justify-center mx-auto border border-neutral-200 dark:border-neutral-700">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
         </svg>

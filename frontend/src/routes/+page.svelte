@@ -15,7 +15,7 @@
   import { getTabs } from '$lib/stores/sessionTabs.svelte';
   import { monitorState } from '$lib/stores/monitorStore.svelte';
   import { t, intlLocale } from '$lib/i18n/index.svelte';
-  import { PageHeader, Button, Input, Badge, Modal } from '@cecepazhar/caui';
+  import { PageHeader, Button, Input, SearchInput, Badge, Modal } from '@cecepazhar/caui';
 
   let hosts = $state<HostRecord[]>([]);
   let groups = $state<GroupRecord[]>([]);
@@ -489,7 +489,38 @@
       .sort((a, b) => Number(isFavorite(b.id)) - Number(isFavorite(a.id)) || comparators[sortBy](a, b));
   });
 
-  const activeIndex = $derived(filteredHosts.length === 0 ? -1 : Math.min(focusedIndex, filteredHosts.length - 1));
+  // Selected group: null = root / all folders view, '__ungrouped__' = only hosts without group, or string = group ID
+  let selectedGroupId = $state<string | null>(null);
+
+  const selectedGroup = $derived(
+    selectedGroupId && selectedGroupId !== '__ungrouped__' ? groups.find((g) => g.id === selectedGroupId) : null
+  );
+
+  const ungroupedHosts = $derived(
+    filteredHosts.filter((h) => getGroupsForHost(h.id).length === 0)
+  );
+
+  const displayedHosts = $derived.by(() => {
+    // If searching, search across all filtered hosts regardless of group
+    if (searchQuery.trim()) {
+      return filteredHosts;
+    }
+    // If ungrouped view selected
+    if (selectedGroupId === '__ungrouped__') {
+      return ungroupedHosts;
+    }
+    // If specific group selected
+    if (selectedGroupId && selectedGroup) {
+      return filteredHosts.filter((h) => Array.isArray(selectedGroup.hostIds) && selectedGroup.hostIds.includes(h.id));
+    }
+    // Root view: show ungrouped hosts (or all if no groups exist)
+    if (groups.length === 0) {
+      return filteredHosts;
+    }
+    return ungroupedHosts;
+  });
+
+  const activeIndex = $derived(displayedHosts.length === 0 ? -1 : Math.min(focusedIndex, displayedHosts.length - 1));
   const filtersActive = $derived(starredOnly || connectedOnly);
 
   // --- Card status ------------------------------------------------------------------------------
@@ -572,15 +603,15 @@
     const target = e.target instanceof Element ? e.target : null;
     const typing = target?.closest('input, textarea, select, [contenteditable="true"]');
     if (typing && target !== searchInput) return;
-    if (filteredHosts.length === 0) return;
+    if (displayedHosts.length === 0) return;
 
     if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
       e.preventDefault();
       const step = e.key === 'ArrowDown' ? 1 : -1;
-      focusedIndex = Math.max(0, Math.min(filteredHosts.length - 1, activeIndex + step));
-      document.getElementById(`host-card-${filteredHosts[focusedIndex]?.id}`)?.scrollIntoView({ block: 'nearest' });
+      focusedIndex = Math.max(0, Math.min(displayedHosts.length - 1, activeIndex + step));
+      document.getElementById(`host-card-${displayedHosts[focusedIndex]?.id}`)?.scrollIntoView({ block: 'nearest' });
     } else if (e.key === 'Enter' && activeIndex >= 0) {
-      const host = filteredHosts[activeIndex];
+      const host = displayedHosts[activeIndex];
       if (!host) return;
       e.preventDefault();
       if (e.shiftKey) detailHost = host;
@@ -605,7 +636,7 @@
 <div class="max-w-5xl mx-auto space-y-6">
 	<PageHeader
 		icon={['M4 17l6-5-6-5', 'M12 19h8']}
-		accent="sky"
+		accent="neutral"
 		title={t('hosts.title')}
 		subtitle={t('hosts.subtitle', { count: hosts.length, groups: groupCount })}
 	>
@@ -622,30 +653,25 @@
 			</Button>
 			<Button
 				variant="primary"
-				class="h-9 rounded-xl shrink-0 shadow-xs"
+				class="h-9 px-3.5 rounded-xl shrink-0 shadow-xs"
 				onclick={openAddModal}
 			>
-				<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v14m7-7H5" /></svg>
+				<svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v14m7-7H5" /></svg>
 				{t('hosts.addHost')}
 			</Button>
 		{/snippet}
 	</PageHeader>
 
-	<!-- Search and filter -->
+	<!-- Search and filter toolbar (Both exactly h-9 / 36px) -->
 	<div class="flex items-center gap-2">
     <div class="flex-1">
-      <Input
+      <SearchInput
         bind:ref={searchInput}
         bind:value={searchQuery}
         oninput={() => (focusedIndex = 0)}
         placeholder={t('hosts.searchPlaceholder')}
-        ariaLabel={t('hosts.searchPlaceholder')}
-        size="lg"
-      >
-        {#snippet leadingIcon()}
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-        {/snippet}
-      </Input>
+        size="md"
+      />
     </div>
 
     <div class="relative" data-filter-menu>
@@ -653,13 +679,13 @@
         variant={filterOpen || filtersActive ? 'secondary' : 'outline'}
         size="icon"
         onclick={() => (filterOpen = !filterOpen)}
-        class="relative h-11 w-11 shrink-0"
+        class="relative h-9 w-9 rounded-xl shrink-0"
         title={t('hosts.filterHosts')}
         aria-label={t('hosts.filterHosts')}
       >
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 5h18l-7 8.5V19l-4 2v-7.5z" /></svg>
         {#if filtersActive}
-          <span class="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-sky-500"></span>
+          <span class="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-neutral-900 dark:bg-white"></span>
         {/if}
       </Button>
       {#if filterOpen}
@@ -678,9 +704,45 @@
     </div>
   </div>
 
+  <!-- Group Navigation Pills / Tabs (Quick group filter + Folder switch) -->
+  {#if groups.length > 0 && !searchQuery.trim()}
+    <div class="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none text-xs">
+      <Button
+        variant={selectedGroupId === null ? 'primary' : 'ghost'}
+        size="sm"
+        class="h-7 px-3 rounded-lg text-xs font-medium shrink-0"
+        onclick={() => (selectedGroupId = null)}
+      >
+        <span>{t('hosts.allFolders')}</span>
+        <span class="ml-1.5 opacity-60 font-mono text-[10px]">{hosts.length}</span>
+      </Button>
+      <Button
+        variant={selectedGroupId === '__ungrouped__' ? 'primary' : 'ghost'}
+        size="sm"
+        class="h-7 px-3 rounded-lg text-xs font-medium shrink-0"
+        onclick={() => (selectedGroupId = '__ungrouped__')}
+      >
+        <span>{t('hosts.ungrouped')}</span>
+        <span class="ml-1.5 opacity-60 font-mono text-[10px]">{ungroupedHosts.length}</span>
+      </Button>
+      <div class="w-[1px] h-4 bg-neutral-200 dark:bg-neutral-800 shrink-0 mx-1"></div>
+      {#each groups as grp (grp.id)}
+        <Button
+          variant={selectedGroupId === grp.id ? 'primary' : 'ghost'}
+          size="sm"
+          class="h-7 px-2.5 rounded-lg text-xs font-medium shrink-0 flex items-center gap-1.5"
+          onclick={() => (selectedGroupId = grp.id)}
+        >
+          <svg class="w-3.5 h-3.5 opacity-70 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+          <span class="truncate max-w-[120px]">{grp.name}</span>
+          <span class="opacity-60 font-mono text-[10px]">{grp.hostIds?.length || 0}</span>
+        </Button>
+      {/each}
+    </div>
+  {/if}
+
   <!-- Keyboard hints + sort -->
-  <div class="mt-3 flex items-center gap-4 text-[11px] text-neutral-500 dark:text-neutral-400">
-    <!-- Keyboard hints are noise on touch-only phones. -->
+  <div class="flex items-center gap-4 text-[11px] text-neutral-500 dark:text-neutral-400">
     <span class="hidden md:flex items-center gap-1.5"><kbd class={kbdClass}>↑↓</kbd> {t('hosts.selectHint')}</span>
     <span class="hidden md:flex items-center gap-1.5"><kbd class={kbdClass}>↵</kbd> {t('hosts.connectHint')}</span>
     <span class="hidden md:flex items-center gap-1.5"><kbd class={kbdClass}>⇧↵</kbd> {t('hosts.detailsHint')}</span>
@@ -688,7 +750,7 @@
       {t('hosts.sortBy')}
       <select
         bind:value={sortBy}
-        class="bg-transparent text-neutral-700 dark:text-neutral-200 font-medium focus:outline-none cursor-pointer"
+        class="h-7 px-2 bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg text-neutral-700 dark:text-neutral-200 text-xs font-medium focus:outline-none cursor-pointer"
       >
         <option value="name">{t('hosts.sortName')}</option>
         <option value="lastUsed">{t('hosts.sortLastUsed')}</option>
@@ -697,17 +759,17 @@
     </label>
   </div>
 
-  <!-- Bulk actions: only present once at least one host is ticked, so the page stays quiet
-       when you are not doing a multi-host operation. -->
+  <!-- Bulk actions -->
   {#if selectedIds.length > 0}
-    <div class="mt-4 flex flex-wrap items-center gap-3 p-3 rounded-lg bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-900">
-      <span class="text-sm font-medium text-sky-800 dark:text-sky-300">
+    <div class="flex flex-wrap items-center gap-3 p-3 rounded-xl bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800">
+      <span class="text-sm font-medium text-neutral-900 dark:text-white">
         {t('hosts.hostsSelected', { count: selectedIds.length })}
       </span>
       <div class="flex items-center gap-2 ml-auto">
         <Button
           variant="primary"
           size="sm"
+          class="h-8 text-xs"
           onclick={connectSelected}
         >
           {t('hosts.connectAll')}
@@ -715,6 +777,7 @@
         <Button
           variant="danger"
           size="sm"
+          class="h-8 text-xs"
           onclick={deleteSelected}
         >
           {t('common.delete')}
@@ -722,6 +785,7 @@
         <Button
           variant="ghost"
           size="sm"
+          class="h-8 text-xs"
           onclick={clearSelection}
         >
           {t('hosts.deselect')}
@@ -730,9 +794,91 @@
     </div>
   {/if}
 
+  <!-- Group drilldown banner / breadcrumb -->
+  {#if selectedGroupId !== null && !searchQuery.trim()}
+    <div class="flex items-center justify-between p-3 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/40 shadow-xs">
+      <div class="flex items-center gap-2.5">
+        <Button
+          variant="secondary"
+          size="sm"
+          class="h-8 px-2.5 rounded-lg flex items-center gap-1.5 text-xs"
+          onclick={() => (selectedGroupId = null)}
+        >
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+          <span>{t('hosts.allFolders')}</span>
+        </Button>
+        <span class="text-neutral-300 dark:text-neutral-700">/</span>
+        <div class="flex items-center gap-2">
+          <svg class="w-4 h-4 text-neutral-600 dark:text-neutral-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+          <span class="font-bold text-sm text-neutral-900 dark:text-white">
+            {selectedGroupId === '__ungrouped__' ? t('hosts.ungrouped') : selectedGroup?.name}
+          </span>
+          <span class="text-[11px] px-2 py-0.5 rounded-full border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 font-mono">
+            {displayedHosts.length} hosts
+          </span>
+        </div>
+      </div>
+      {#if selectedGroupId !== '__ungrouped__' && selectedGroup}
+        <a
+          href="/groups"
+          class="text-xs text-neutral-500 hover:text-neutral-900 dark:hover:text-white transition-colors"
+        >
+          {t('common.manage') || 'Manage'} →
+        </a>
+      {/if}
+    </div>
+  {/if}
+
+  <!-- Root View: Work Groups Folders Grid -->
+  {#if selectedGroupId === null && groups.length > 0 && !searchQuery.trim()}
+    <div class="space-y-3">
+      <div class="flex items-center justify-between">
+        <h3 class="text-xs font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
+          {t('hosts.workGroups')} ({groups.length})
+        </h3>
+        <a href="/groups" class="text-xs text-neutral-500 hover:text-neutral-900 dark:hover:text-white transition-colors">
+          {t('common.manage') || 'Manage'} →
+        </a>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+        {#each groups as grp (grp.id)}
+          <div
+            role="button"
+            tabindex="0"
+            onclick={() => (selectedGroupId = grp.id)}
+            onkeydown={(e) => e.key === 'Enter' && (selectedGroupId = grp.id)}
+            class="group p-3.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900/40 hover:border-neutral-400 dark:hover:border-neutral-600 transition-all cursor-pointer flex items-center justify-between gap-3 shadow-xs"
+          >
+            <div class="flex items-center gap-3 min-w-0">
+              <div class="w-9 h-9 rounded-lg bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 flex items-center justify-center shrink-0 text-neutral-700 dark:text-neutral-300 group-hover:scale-105 transition-transform">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+              </div>
+              <div class="min-w-0">
+                <h4 class="font-semibold text-xs text-neutral-900 dark:text-white truncate">{grp.name}</h4>
+                <p class="text-[11px] text-neutral-500 dark:text-neutral-400 mt-0.5 font-mono">
+                  {grp.hostIds?.length || 0} hosts
+                </p>
+              </div>
+            </div>
+            <svg class="w-3.5 h-3.5 text-neutral-400 group-hover:text-neutral-900 dark:group-hover:text-white transition-colors shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </div>
+        {/each}
+      </div>
+    </div>
+  {/if}
+
+  <!-- Section header for hosts list -->
+  {#if selectedGroupId === null && groups.length > 0 && !searchQuery.trim() && ungroupedHosts.length > 0}
+    <div class="flex items-center justify-between pt-2">
+      <h3 class="text-xs font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
+        {t('hosts.ungrouped')} ({ungroupedHosts.length})
+      </h3>
+    </div>
+  {/if}
+
   <!-- Host cards -->
   {#if hosts.length === 0}
-    <div class="mt-6 p-12 border border-dashed border-neutral-300 dark:border-neutral-800 rounded-xl text-center flex flex-col items-center justify-center">
+    <div class="p-12 border border-dashed border-neutral-300 dark:border-neutral-800 rounded-xl text-center flex flex-col items-center justify-center">
       <div class="w-12 h-12 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center text-neutral-400 dark:text-neutral-500 mb-4">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 17l6-5-6-5M12 19h8" /></svg>
       </div>
@@ -741,26 +887,41 @@
       <Button
         variant="primary"
         size="md"
+        class="h-9 px-4 rounded-xl"
         onclick={openAddModal}
       >
-        + {t('hosts.addHost')}
+        <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v14m7-7H5" /></svg>
+        {t('hosts.addHost')}
       </Button>
     </div>
-  {:else if filteredHosts.length === 0}
-    <div class="mt-6 p-10 border border-dashed border-neutral-300 dark:border-neutral-800 rounded-xl text-center">
-      <p class="text-sm text-neutral-500 dark:text-neutral-400">{t('hosts.emptyTitleNoMatch')}</p>
-      <Button
-        variant="ghost"
-        size="sm"
-        class="mt-3 text-sky-600 dark:text-sky-400"
-        onclick={() => { searchQuery = ''; starredOnly = false; connectedOnly = false; }}
-      >
-        {t('hosts.clearFilters')}
-      </Button>
+  {:else if displayedHosts.length === 0}
+    <div class="p-10 border border-dashed border-neutral-300 dark:border-neutral-800 rounded-xl text-center space-y-3">
+      <p class="text-sm text-neutral-500 dark:text-neutral-400">
+        {selectedGroupId ? t('hosts.noHostsInGroup') : t('hosts.emptyTitleNoMatch')}
+      </p>
+      {#if selectedGroupId}
+        <Button
+          variant="secondary"
+          size="sm"
+          class="h-8 text-xs"
+          onclick={() => (selectedGroupId = null)}
+        >
+          {t('hosts.allFolders')}
+        </Button>
+      {:else}
+        <Button
+          variant="ghost"
+          size="sm"
+          class="h-8 text-xs"
+          onclick={() => { searchQuery = ''; starredOnly = false; connectedOnly = false; }}
+        >
+          {t('hosts.clearFilters')}
+        </Button>
+      {/if}
     </div>
   {:else}
-    <div class="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-3" role="listbox" aria-label={t('hosts.title')}>
-      {#each filteredHosts as host, i (host.id)}
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-3" role="listbox" aria-label={t('hosts.title')}>
+      {#each displayedHosts as host, i (host.id)}
         {@const status = hostStatus(host)}
         {@const os = osName(host)}
         {@const focused = i === activeIndex}
@@ -771,7 +932,7 @@
           tabindex="-1"
           onpointerdown={() => (focusedIndex = i)}
           ondblclick={(e) => { if (!(e.target as HTMLElement).closest('button, a')) void openSession(host.id); }}
-          class="group rounded-xl border p-4 transition-colors bg-white dark:bg-neutral-900/40 {isSelected(host.id) ? 'border-sky-500 ring-1 ring-sky-500/40' : focused ? 'border-neutral-900 dark:border-neutral-200' : 'border-neutral-200 dark:border-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-700'}"
+          class="group rounded-xl border p-4 transition-colors bg-white dark:bg-neutral-900/40 {isSelected(host.id) ? 'border-neutral-900 dark:border-white ring-1 ring-neutral-900/40 dark:ring-white/40' : focused ? 'border-neutral-900 dark:border-neutral-200' : 'border-neutral-200 dark:border-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-700'}"
         >
           <!-- Identity -->
           <div class="flex items-start gap-3">
@@ -783,10 +944,9 @@
                 <p class="font-semibold text-neutral-900 dark:text-white truncate">{host.label}</p>
                 {#each getGroupsForHost(host.id) as grp}
                   <span
-                    class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-medium shrink-0"
-                    style="background-color: {grp.color ? grp.color + '20' : 'rgba(2, 132, 199, 0.15)'}; color: {grp.color || '#0284c7'}"
+                    class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 shrink-0"
                   >
-                    <span class="w-1.5 h-1.5 rounded-full shrink-0" style="background-color: {grp.color || '#0284c7'}"></span>
+                    <span class="w-1.5 h-1.5 rounded-full bg-neutral-400 dark:bg-neutral-500"></span>
                     <span>{grp.name}</span>
                   </span>
                 {/each}
@@ -805,13 +965,11 @@
                   aria-label={isRevealed(host.id) ? "Hide User & IP" : "Show User & IP"}
                 >
                   {#if isRevealed(host.id)}
-                    <!-- Eye Open Icon -->
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                     </svg>
                   {:else}
-                    <!-- Eye Closed / Slashed Icon -->
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
                     </svg>
@@ -886,7 +1044,7 @@
                   <Button variant="ghost" size="sm" class="w-full !justify-start text-left rounded-none px-3 py-1.5 font-normal" onclick={() => { openMenuId = null; toggleSelected(host.id); }}>
                     {isSelected(host.id) ? t('hosts.deselect') : t('hosts.selectForBatch')}
                   </Button>
-                  <Button variant="ghost" size="sm" class="w-full !justify-start text-left rounded-none px-3 py-1.5 font-normal text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300" onclick={() => { openMenuId = null; handleClearHostKey(host); }}>
+                  <Button variant="ghost" size="sm" class="w-full !justify-start text-left rounded-none px-3 py-1.5 font-normal text-neutral-700 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white" onclick={() => { openMenuId = null; handleClearHostKey(host); }}>
                     <svg class="w-3.5 h-3.5 mr-2 inline-block shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" /></svg>
                     {t('hosts.clearHostKey')}
                   </Button>
@@ -901,7 +1059,7 @@
               class="h-8 px-2.5 flex items-center gap-1.5 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 hover:bg-neutral-200/70 dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-300 text-xs font-medium transition-colors"
               title="Security Exposure & Threat Audit"
             >
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
               <span>Security</span>
             </a>
 
@@ -910,18 +1068,18 @@
               class="h-8 px-2.5 flex items-center gap-1.5 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 hover:bg-neutral-200/70 dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-300 text-xs font-medium transition-colors"
               title="DevOps Lab, Bench & QoS"
             >
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
               <span>Lab</span>
             </a>
 
             <Button
               variant="primary"
               size="sm"
-              class="h-8 px-3 rounded-lg font-semibold shadow-none"
+              class="h-8 px-3 rounded-lg text-xs font-semibold shadow-none"
               onclick={() => openSession(host.id)}
               title={t('hosts.connectTo', { name: host.label })}
             >
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 7l5 5-5 5M13 17h6" /></svg>
+              <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 7l5 5-5 5M13 17h6" /></svg>
               {t('common.connect')}
             </Button>
           </div>

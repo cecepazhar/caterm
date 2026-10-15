@@ -12,7 +12,7 @@
   } from '$lib/api/tasks';
   import { listHosts, type HostRecord } from '$lib/api/hosts';
   import { t } from '$lib/i18n/index.svelte';
-  import { PageHeader, Button, Input, Badge, Modal, SegmentedControl } from '@cecepazhar/caui';
+  import { PageHeader, Button, Input, SearchInput, Badge, Modal, SegmentedControl } from '@cecepazhar/caui';
   import { showToast, confirmModal } from '$lib/stores/uiNotifications.svelte';
 
   interface TaskFilterOption {
@@ -218,7 +218,7 @@
 <div class="max-w-5xl mx-auto space-y-6">
   <PageHeader
     icon={['M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z']}
-    accent="indigo"
+    accent="neutral"
     title={t('tasks.title')}
     subtitle={t('tasks.subtitle')}
   >
@@ -226,7 +226,7 @@
       <Button
         type="button"
         variant="primary"
-        class="h-9 rounded-xl shrink-0 shadow-xs"
+        class="h-9 px-3.5 rounded-xl shrink-0 shadow-xs"
         onclick={openAddModal}
       >
         <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -245,11 +245,10 @@
 
     <!-- Search Input -->
     <div class="w-full sm:w-64">
-      <Input
-        type="text"
+      <SearchInput
         bind:value={searchQuery}
         placeholder={t('tasks.searchPlaceholder')}
-        size="sm"
+        size="md"
       />
     </div>
   </div>
@@ -257,7 +256,7 @@
   <!-- Tasks Grid -->
   {#if filteredTasks.length === 0}
     <div class="text-center py-16 px-4 bg-white dark:bg-neutral-900/40 rounded-2xl border border-neutral-200 dark:border-neutral-800 space-y-3">
-      <div class="w-12 h-12 rounded-full bg-indigo-500/10 text-indigo-500 flex items-center justify-center mx-auto border border-indigo-500/20">
+      <div class="w-12 h-12 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 flex items-center justify-center mx-auto border border-neutral-200 dark:border-neutral-700">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>

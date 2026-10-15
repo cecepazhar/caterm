@@ -6,7 +6,7 @@
   import { writeTextFile } from '@tauri-apps/plugin-fs';
   import { showToast } from '$lib/stores/uiNotifications.svelte';
   import { t, intlLocale } from '$lib/i18n/index.svelte';
-  import { PageHeader, Button, Input, Badge } from '@cecepazhar/caui';
+  import { PageHeader, Button, Input, SearchInput, Badge } from '@cecepazhar/caui';
 
   interface CommandLog {
     id: string;
@@ -247,7 +247,7 @@
 <div class="max-w-5xl mx-auto space-y-6">
   <PageHeader
     icon={['M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z']}
-    accent="sky"
+    accent="neutral"
     title={t('commandLogs.title')}
     subtitle={t('commandLogs.subtitle')}
   >
@@ -336,11 +336,10 @@
   <!-- Search & Filter Controls -->
   <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
     <div class="sm:col-span-2 lg:col-span-1">
-      <Input
-        type="text"
+      <SearchInput
         bind:value={searchQuery}
         placeholder={t('commandLogs.searchPlaceholder')}
-        size="sm"
+        size="md"
       />
     </div>
     <div>
@@ -348,13 +347,13 @@
         type="text"
         bind:value={hostFilter}
         placeholder={t('commandLogs.hostIdPlaceholder')}
-        size="sm"
+        size="md"
       />
     </div>
     <div>
       <select
         bind:value={eventFilter}
-        class="w-full px-3 py-2 bg-neutral-50 dark:bg-[#2D2D2D] rounded-lg border border-neutral-300 dark:border-neutral-700 text-xs focus:outline-none focus:border-purple-500 transition-colors"
+        class="w-full h-9 px-3 bg-neutral-50 dark:bg-neutral-900 rounded-lg border border-neutral-300 dark:border-neutral-700 text-xs focus:outline-none focus:border-neutral-900 dark:focus:border-white transition-colors"
       >
         <option value="">{t('commandLogs.allEvents')}</option>
         <option value="AI_AUTOMATION">{t('commandLogs.events.AI_AUTOMATION')}</option>
