@@ -33,6 +33,9 @@
   let selectedIds = $state<string[]>([]);
   let detailHost = $state<HostRecord | null>(null);
 
+  // Quick status filter pills
+  let statusFilter = $state<'all' | 'online' | 'offline'>('all');
+
   const isSelected = (id: string) => selectedIds.includes(id);
 
   function toggleSelected(id: string) {
@@ -40,6 +43,15 @@
   }
 
   function clearSelection() {
+    selectedIds = [];
+  }
+
+  /** Select every visible host in one click. */
+  function selectAllVisible() {
+    selectedIds = displayedHosts.map((h) => h.id);
+  }
+
+  function deselectAll() {
     selectedIds = [];
   }
 
@@ -486,6 +498,11 @@
       .filter((h) => matchesSearch(h, q))
       .filter((h) => !starredOnly || isFavorite(h.id))
       .filter((h) => !connectedOnly || sessionCount(h.id) > 0)
+      .filter((h) => {
+        if (statusFilter === 'online') return sessionCount(h.id) > 0;
+        if (statusFilter === 'offline') return sessionCount(h.id) === 0;
+        return true;
+      })
       .sort((a, b) => Number(isFavorite(b.id)) - Number(isFavorite(a.id)) || comparators[sortBy](a, b));
   });
 
@@ -743,9 +760,62 @@
 
   <!-- Keyboard hints + sort -->
   <div class="flex items-center gap-4 text-[11px] text-neutral-500 dark:text-neutral-400">
-    <span class="hidden md:flex items-center gap-1.5"><kbd class={kbdClass}>↑↓</kbd> {t('hosts.selectHint')}</span>
-    <span class="hidden md:flex items-center gap-1.5"><kbd class={kbdClass}>↵</kbd> {t('hosts.connectHint')}</span>
-    <span class="hidden md:flex items-center gap-1.5"><kbd class={kbdClass}>⇧↵</kbd> {t('hosts.detailsHint')}</span>
+    <div class="flex items-center gap-1.5 shrink-0">
+      <span class="hidden md:flex items-center gap-1.5"><kbd class={kbdClass}>↑↓</kbd> {t('hosts.selectHint')}</span>
+      <span class="hidden md:flex items-center gap-1.5"><kbd class={kbdClass}>↵</kbd> {t('hosts.connectHint')}</span>
+      <span class="hidden md:flex items-center gap-1.5"><kbd class={kbdClass}>⇧↵</kbd> {t('hosts.detailsHint')}</span>
+    </div>
+
+    <!-- Quick Status Filter Pills -->
+    <div class="flex items-center gap-1 shrink-0">
+      <Button
+        variant={statusFilter === 'all' ? 'primary' : 'ghost'}
+        size="sm"
+        class="h-6 px-2 rounded-md text-[11px]"
+        onclick={() => (statusFilter = 'all')}
+      >
+        All
+      </Button>
+      <Button
+        variant={statusFilter === 'online' ? 'primary' : 'ghost'}
+        size="sm"
+        class="h-6 px-2 rounded-md text-[11px]"
+        onclick={() => (statusFilter = 'online')}
+      >
+        Online
+      </Button>
+      <Button
+        variant={statusFilter === 'offline' ? 'primary' : 'ghost'}
+        size="sm"
+        class="h-6 px-2 rounded-md text-[11px]"
+        onclick={() => (statusFilter = 'offline')}
+      >
+        Offline
+      </Button>
+    </div>
+
+    <!-- Quick Batch Select -->
+    <div class="flex items-center gap-1 shrink-0">
+      <Button
+        variant="ghost"
+        size="sm"
+        class="h-6 px-2 rounded-md text-[11px] hidden md:inline-flex"
+        onclick={selectAllVisible}
+      >
+        Select All
+      </Button>
+      {#if selectedIds.length > 0}
+        <Button
+          variant="ghost"
+          size="sm"
+          class="h-6 px-2 rounded-md text-[11px]"
+          onclick={deselectAll}
+        >
+          Clear ({selectedIds.length})
+        </Button>
+      {/if}
+    </div>
+
     <label class="ml-auto flex items-center gap-1.5">
       {t('hosts.sortBy')}
       <select

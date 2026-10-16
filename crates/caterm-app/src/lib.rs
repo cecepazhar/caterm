@@ -86,6 +86,14 @@ pub fn run() {
 }
 
 pub fn run_with_start(start: std::time::Instant) {
+    #[cfg(target_os = "linux")]
+    {
+        // Set GLib prgname and application name so Wayland/X11 compositors
+        // (GNOME Shell, Mutter, KDE KWin) match the window to caterm.desktop / CATerm.desktop
+        webkit2gtk::glib::set_prgname(Some("caterm"));
+        webkit2gtk::glib::set_application_name("CATerm");
+    }
+
     // As early as possible, before any other thread can panic: opt-in, local-first crash
     // reporting (caterm-crash-reporting-spec-v1.md). Zero telemetry by default — this only
     // ever writes a scrubbed dump to disk; nothing is sent until the user reviews and approves

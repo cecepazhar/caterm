@@ -426,6 +426,29 @@
     fetchLocalFiles();
   }
 
+  /** Splits an absolute or `~`-prefixed path into clickable breadcrumb segments. */
+  function localBreadcrumbs(): string[] {
+    if (!localPath || localPath === '~') return [];
+    return localPath.split('/').filter(Boolean);
+  }
+
+  function navigateToBreadcrumbLocal(index: number) {
+    const parts = localBreadcrumbs();
+    const target = parts.slice(0, index + 1).join('/');
+    navigateLocal('/' + target);
+  }
+
+  function navigateToBreadcrumbRemote(index: number) {
+    const parts = remotePath.split('/').filter(Boolean);
+    const target = parts.slice(0, index + 1).join('/');
+    navigateRemote('/' + target);
+  }
+
+  function remoteBreadcrumbs(): string[] {
+    if (!remotePath || remotePath === '/') return [];
+    return remotePath.split('/').filter(Boolean);
+  }
+
   // --- REMOTE SFTP LOGIC ---
   async function fetchRemoteFiles() {
     if (!currentHostId) return;
@@ -1277,6 +1300,30 @@
           </Button>
         </div>
 
+        <!-- Local Interactive Breadcrumbs -->
+        {#if localBreadcrumbs().length > 0}
+          <div class="px-3 py-1 bg-neutral-50 dark:bg-slate-900/60 border-b border-neutral-200 dark:border-slate-800/80 flex items-center gap-1 overflow-x-auto text-[11px] font-mono scrollbar-none">
+            <button
+              type="button"
+              onclick={() => navigateLocal('/')}
+              class="hover:text-rose-500 text-neutral-400 dark:text-slate-500 transition-colors shrink-0"
+              title="Root"
+            >
+              /
+            </button>
+            {#each localBreadcrumbs() as seg, idx}
+              <span class="text-neutral-300 dark:text-slate-600 shrink-0 select-none">/</span>
+              <button
+                type="button"
+                onclick={() => navigateToBreadcrumbLocal(idx)}
+                class="hover:text-rose-400 hover:underline text-neutral-600 dark:text-slate-300 transition-colors shrink-0 max-w-[140px] truncate"
+              >
+                {seg}
+              </button>
+            {/each}
+          </div>
+        {/if}
+
         <!-- Local File Table -->
         <div class="flex-1 overflow-auto text-xs font-mono" oncontextmenu={(e) => e.preventDefault()}>
           <table class="w-full border-collapse">
@@ -1415,6 +1462,30 @@
           {t('sftp.search')}
         </Button>
       </div>
+
+      <!-- Remote Interactive Breadcrumbs -->
+      {#if remoteBreadcrumbs().length > 0}
+        <div class="px-3 py-1 bg-neutral-50 dark:bg-slate-900/60 border-b border-neutral-200 dark:border-slate-800/80 flex items-center gap-1 overflow-x-auto text-[11px] font-mono scrollbar-none">
+          <button
+            type="button"
+            onclick={() => navigateRemote('/')}
+            class="hover:text-cyan-500 text-neutral-400 dark:text-slate-500 transition-colors shrink-0"
+            title="Root"
+          >
+            /
+          </button>
+          {#each remoteBreadcrumbs() as seg, idx}
+            <span class="text-neutral-300 dark:text-slate-600 shrink-0 select-none">/</span>
+            <button
+              type="button"
+              onclick={() => navigateToBreadcrumbRemote(idx)}
+              class="hover:text-cyan-400 hover:underline text-neutral-600 dark:text-slate-300 transition-colors shrink-0 max-w-[140px] truncate"
+            >
+              {seg}
+            </button>
+          {/each}
+        </div>
+      {/if}
 
       <!-- Remote Search & Filter Drawer -->
       {#if showRemoteSearch}
