@@ -536,14 +536,14 @@
         {/each}
       </div>
       <p class="text-[11px] text-neutral-500 mt-1">
-        Resource pada menu yang dicentang dapat dimasukkan ke dalam grup kerja ini.
+        {t('groups.categoryHint')}
       </p>
     </div>
 
     <!-- Linked Hosts (if hosts category enabled) -->
     {#if formSelectedCategories.includes('hosts')}
       <div>
-        <span class="block font-medium text-neutral-700 dark:text-neutral-300 mb-1">Pilih Server Host untuk Grup Ini:</span>
+        <span class="block font-medium text-neutral-700 dark:text-neutral-300 mb-1">{t('groups.selectHosts')}</span>
         <div class="space-y-1 max-h-36 overflow-y-auto p-2 bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg">
           {#each availableHosts as h}
             <label class="flex items-center gap-2 p-1.5 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-md cursor-pointer text-neutral-700 dark:text-neutral-300 select-none">

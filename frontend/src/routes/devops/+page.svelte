@@ -147,33 +147,29 @@
 
 <div class="max-w-5xl mx-auto space-y-6">
   <!-- HEADER -->
-  <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-    <div class="flex items-center gap-3">
-      <div class="w-10 h-10 rounded-xl bg-neutral-900 border border-neutral-800 flex items-center justify-center text-[var(--ca-brand,#ef4444)] shrink-0">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-      </div>
-      <div>
-        <h1 class="text-xl font-bold text-white tracking-tight">DevOps</h1>
-        <p class="text-xs text-neutral-400 mt-0.5">Benchmark komputasi server, throughput kecepatan jaringan & bufferbloat QoS, serta mesh latency matrix multi-node.</p>
-      </div>
-    </div>
-    <div class="flex items-center gap-3">
+  <PageHeader
+    icon={['M13 10V3L4 14h7v7l9-11h-7z']}
+    accent="neutral"
+    title={t('devops.title')}
+    subtitle={t('devops.subtitle')}
+  >
+    {#snippet actions()}
       <!-- Host Selector -->
-      <div class="flex items-center gap-2 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl px-3 py-1.5 shadow-xs">
-        <label for="host-select-devops" class="text-xs font-semibold text-neutral-500 uppercase">Target Host:</label>
+      <div class="flex items-center gap-2 bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl px-3 h-9 shadow-xs">
+        <label for="host-select-devops" class="text-xs font-semibold text-neutral-500 uppercase">{t('devops.targetHost')}:</label>
         <select
           id="host-select-devops"
           bind:value={selectedHostId}
           class="bg-transparent text-xs font-bold text-neutral-900 dark:text-white focus:outline-none cursor-pointer"
         >
-          <option value="local">Localhost (Mesin Ini)</option>
+          <option value="local">{t('devops.localhost')}</option>
           {#each hosts as h}
             <option value={h.id}>{h.label} ({h.address})</option>
           {/each}
         </select>
       </div>
-    </div>
-  </div>
+    {/snippet}
+  </PageHeader>
 
   <!-- NAVIGATION TABS -->
   {#snippet speedIcon()}
@@ -192,10 +188,10 @@
   <div class="border-b border-neutral-200 dark:border-neutral-800 pb-2">
     <Tabs
       items={[
-        { id: 'speed_qos', label: 'Throughput & QoS', icon: speedIcon },
-        { id: 'benchmark', label: 'Hardware Benchmark', icon: benchIcon },
-        { id: 'mesh', label: 'Mesh Matrix', badge: 'PRO', icon: meshIcon },
-        { id: 'network_tools', label: 'PMTUD & Subnet', icon: searchIcon }
+        { id: 'speed_qos', label: t('devops.tabSpeedQos'), icon: speedIcon },
+        { id: 'benchmark', label: t('devops.tabBenchmark'), icon: benchIcon },
+        { id: 'mesh', label: t('devops.tabMesh'), badge: 'PRO', icon: meshIcon },
+        { id: 'network_tools', label: t('devops.tabNetworkTools'), icon: searchIcon }
       ]}
       bind:value={activeTab}
       variant="pills"
@@ -206,10 +202,10 @@
   <!-- TAB 1: SPEED TEST & QOS -->
   {#if activeTab === 'speed_qos'}
     <div class="space-y-6">
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-white dark:bg-neutral-900/60 border border-neutral-200 dark:border-neutral-800">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl bg-white dark:bg-neutral-900/60 border border-neutral-200 dark:border-neutral-800">
         <div>
-          <h3 class="text-sm font-bold text-neutral-900 dark:text-white">Throughput & QoS Bufferbloat Auditor</h3>
-          <p class="text-xs text-neutral-500">Mengukur bandwidth download/upload real-time dan degradasi latensi di bawah beban (Bufferbloat Grade A+ hingga F).</p>
+          <h3 class="text-sm font-bold text-neutral-900 dark:text-white">{t('devops.tabSpeedQos')}</h3>
+          <p class="text-xs text-neutral-500">{t('devops.speedDesc')}</p>
         </div>
         <div class="flex items-center gap-2">
           <Button
@@ -218,10 +214,10 @@
             onclick={startSpeedTest}
             disabled={isRunningSpeed || !selectedHostId}
             loading={isRunningSpeed}
-            class="flex items-center gap-1.5"
+            class="h-8 px-3 rounded-lg text-xs font-semibold flex items-center gap-1.5"
           >
             <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-            <span>Jalankan Speed Test</span>
+            <span>{t('devops.runSpeedTest')}</span>
           </Button>
           <Button
             variant="secondary"
@@ -229,27 +225,27 @@
             onclick={startQosAudit}
             disabled={isRunningQos || !selectedHostId}
             loading={isRunningQos}
-            class="flex items-center gap-1.5"
+            class="h-8 px-3 rounded-lg text-xs font-semibold flex items-center gap-1.5"
           >
             <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
-            <span>Audit Bufferbloat QoS</span>
+            <span>{t('devops.bufferbloat')}</span>
           </Button>
         </div>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <!-- Speed Results -->
-        <div class="p-6 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900/60 space-y-4">
+        <div class="p-6 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900/60 space-y-4">
           <h4 class="text-xs font-bold uppercase tracking-wider text-neutral-500">Bandwidth Throughput</h4>
           {#if speedResult}
             <div class="grid grid-cols-2 gap-4">
-              <div class="p-4 rounded-xl bg-sky-500/10 border border-sky-500/20">
+              <div class="p-4 rounded-xl bg-neutral-100 dark:bg-neutral-800/40 border border-neutral-200 dark:border-neutral-700">
                 <span class="text-xs text-neutral-400">Download</span>
-                <div class="text-3xl font-black text-sky-600 dark:text-sky-400 mt-1">{speedResult.downloadMbps} <span class="text-xs font-normal">Mbps</span></div>
+                <div class="text-3xl font-black text-neutral-900 dark:text-white mt-1">{speedResult.downloadMbps} <span class="text-xs font-normal text-neutral-400">Mbps</span></div>
               </div>
-              <div class="p-4 rounded-xl bg-indigo-500/10 border border-indigo-500/20">
+              <div class="p-4 rounded-xl bg-neutral-100 dark:bg-neutral-800/40 border border-neutral-200 dark:border-neutral-700">
                 <span class="text-xs text-neutral-400">Upload</span>
-                <div class="text-3xl font-black text-indigo-600 dark:text-indigo-400 mt-1">{speedResult.uploadMbps} <span class="text-xs font-normal">Mbps</span></div>
+                <div class="text-3xl font-black text-neutral-900 dark:text-white mt-1">{speedResult.uploadMbps} <span class="text-xs font-normal text-neutral-400">Mbps</span></div>
               </div>
             </div>
             <div class="text-xs text-neutral-500 font-mono space-y-1">
@@ -257,20 +253,20 @@
               <div>Target: {speedResult.serverTarget} ({speedResult.status})</div>
             </div>
           {:else}
-            <div class="py-12 text-center text-neutral-400 text-xs">Tekan "Jalankan Speed Test" untuk menguji bandwidth target.</div>
+            <div class="py-12 text-center text-neutral-400 text-xs">{t('devops.speedPressRun')}</div>
           {/if}
         </div>
 
         <!-- QoS Bufferbloat -->
-        <div class="p-6 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900/60 space-y-4">
-          <h4 class="text-xs font-bold uppercase tracking-wider text-neutral-500">Bufferbloat QoS Rating</h4>
+        <div class="p-6 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900/60 space-y-4">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-neutral-500">{t('devops.bufferbloat')}</h4>
           {#if qosResult}
             <div class="flex items-center gap-4 p-4 rounded-xl bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-200 dark:border-neutral-700">
-              <div class="w-16 h-16 rounded-2xl flex items-center justify-center font-black text-2xl {qosResult.bufferbloatGrade.startsWith('A') ? 'bg-emerald-500/20 text-emerald-500' : qosResult.bufferbloatGrade.startsWith('B') ? 'bg-sky-500/20 text-sky-500' : 'bg-rose-500/20 text-rose-500'}">
+              <div class="w-16 h-16 rounded-xl flex items-center justify-center font-black text-2xl bg-neutral-100 dark:bg-neutral-800 text-neutral-900 dark:text-white border border-neutral-200 dark:border-neutral-700">
                 {qosResult.bufferbloatGrade}
               </div>
               <div>
-                <span class="text-xs text-neutral-400">Degradasi Latensi Saat Beban Penuh:</span>
+                <span class="text-xs text-neutral-400">{t('devops.degradeLabel')}</span>
                 <div class="text-sm font-bold text-neutral-900 dark:text-white mt-0.5">+{qosResult.deltaLoadMs} ms delay</div>
                 <p class="text-xs text-neutral-500 mt-1">{qosResult.recommendation}</p>
               </div>
@@ -280,7 +276,7 @@
               <div class="p-2.5 rounded-lg bg-neutral-100 dark:bg-neutral-800/40">Loaded Ping: <strong>{qosResult.downloadLoadLatencyMs} ms</strong></div>
             </div>
           {:else}
-            <div class="py-12 text-center text-neutral-400 text-xs">Tekan "Audit Bufferbloat QoS" untuk mendiagnosis bufferbloat antrian router.</div>
+            <div class="py-12 text-center text-neutral-400 text-xs">{t('devops.pressQos')}</div>
           {/if}
         </div>
       </div>
@@ -290,10 +286,10 @@
   <!-- TAB 2: SERVER HARDWARE BENCHMARK -->
   {#if activeTab === 'benchmark'}
     <div class="space-y-6">
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-white dark:bg-neutral-900/60 border border-neutral-200 dark:border-neutral-800">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl bg-white dark:bg-neutral-900/60 border border-neutral-200 dark:border-neutral-800">
         <div>
-          <h3 class="text-sm font-bold text-neutral-900 dark:text-white">Server Hardware Benchmark Suite</h3>
-          <p class="text-xs text-neutral-500">Benchmark komputasi multi-core CPU, throughput baca/tulis RAM, dan sequential & random I/O write speed.</p>
+          <h3 class="text-sm font-bold text-neutral-900 dark:text-white">{t('devops.benchmarkTitle')}</h3>
+          <p class="text-xs text-neutral-500">{t('devops.benchmarkDesc')}</p>
         </div>
         <Button
           variant="primary"
@@ -301,10 +297,10 @@
           onclick={startServerBenchmark}
           disabled={isRunningBench || !selectedHostId}
           loading={isRunningBench}
-          class="flex items-center gap-1.5"
+          class="h-8 px-3 rounded-lg text-xs font-semibold flex items-center gap-1.5"
         >
           <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3"/></svg>
-          <span>Jalankan Server Benchmark</span>
+          <span>{t('devops.runBenchmark')}</span>
         </Button>
       </div>
 
@@ -395,7 +391,7 @@
               </table>
             </div>
           {:else}
-            <div class="py-8 text-center text-neutral-400 text-xs">Tekan "Compute Mesh Matrix" untuk menghitung matriks latensi antar host.</div>
+            <div class="py-8 text-center text-neutral-400 text-xs">{t('devops.meshPressRun')}</div>
           {/if}
         </div>
       </ProGate>
@@ -407,22 +403,23 @@
     <div class="space-y-6">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <!-- Subnet CIDR Sweeper -->
-        <div class="p-5 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900/60 space-y-3">
+        <div class="p-5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900/60 space-y-3">
           <div>
-            <span class="text-xs font-bold text-neutral-900 dark:text-white uppercase tracking-wider">Subnet CIDR Sweeper</span>
-            <p class="text-xs text-neutral-500 mt-0.5">Pemindaian host aktif dan port umum dalam blok CIDR jaringan lokal.</p>
+            <span class="text-xs font-bold text-neutral-900 dark:text-white uppercase tracking-wider">{t('devops.subnetTitle')}</span>
+            <p class="text-xs text-neutral-500 mt-0.5">{t('devops.subnetDesc')}</p>
           </div>
           <div class="flex gap-2">
             <div class="flex-1">
               <Input
                 bind:value={subnetCidr}
                 placeholder="192.168.1.0/24"
-                size="sm"
+                size="md"
               />
             </div>
             <Button
               variant="primary"
               size="sm"
+              class="h-9 px-3 text-xs"
               onclick={startSubnetSweep}
               disabled={isRunningSubnet || !selectedHostId}
               loading={isRunningSubnet}
@@ -431,12 +428,12 @@
             </Button>
           </div>
           {#if subnetResult}
-            <div class="text-xs text-neutral-500">Ditemukan <strong>{subnetResult.activeHosts}</strong> host aktif:</div>
+            <div class="text-xs text-neutral-500">Found <strong>{subnetResult.activeHosts}</strong> active hosts:</div>
             <div class="max-h-48 overflow-y-auto space-y-1 font-mono text-xs">
               {#each subnetResult.hosts as h}
                 <div class="p-2 rounded-lg bg-neutral-50 dark:bg-neutral-800 flex justify-between border border-neutral-100 dark:border-neutral-700/60">
-                  <span class="font-bold">{h.ip}</span>
-                  <span class="text-[11px] text-sky-500">Open: {h.openPorts.join(', ') || 'ICMP Only'}</span>
+                  <span class="font-bold text-neutral-900 dark:text-white">{h.ip}</span>
+                  <span class="text-[11px] text-neutral-400">Open: {h.openPorts.join(', ') || 'ICMP Only'}</span>
                 </div>
               {/each}
             </div>
@@ -444,22 +441,23 @@
         </div>
 
         <!-- PMTUD Probe -->
-        <div class="p-5 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900/60 space-y-3">
+        <div class="p-5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900/60 space-y-3">
           <div>
-            <span class="text-xs font-bold text-neutral-900 dark:text-white uppercase tracking-wider">Path MTU Discovery (PMTUD)</span>
-            <p class="text-xs text-neutral-500 mt-0.5">Uji batas ukuran paket maksimal tanpa fragmentasi untuk mencegah paket drop.</p>
+            <span class="text-xs font-bold text-neutral-900 dark:text-white uppercase tracking-wider">{t('devops.pmtudTitle')}</span>
+            <p class="text-xs text-neutral-500 mt-0.5">{t('devops.pmtudDesc')}</p>
           </div>
           <div class="flex gap-2">
             <div class="flex-1">
               <Input
                 bind:value={pmtudTarget}
                 placeholder="1.1.1.1"
-                size="sm"
+                size="md"
               />
             </div>
             <Button
               variant="primary"
               size="sm"
+              class="h-9 px-3 text-xs"
               onclick={startPmtudProbe}
               disabled={isRunningPmtud || !selectedHostId}
               loading={isRunningPmtud}
