@@ -538,7 +538,7 @@
 {/if}
 
 {#if !isUnlocked}
-  <LockScreen onUnlocked={() => { isUnlocked = true; void onVaultUnlocked(); }} />
+  <LockScreen onUnlocked={() => { isUnlocked = true; setTimeout(() => { void onVaultUnlocked(); }, 50); }} />
 {:else}
 <!-- Shell: one title bar across the full width, then sidebar + content panel. Title bar and
      sidebar share the app background with no dividers; the content sits on a raised panel with

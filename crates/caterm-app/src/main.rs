@@ -24,6 +24,10 @@
 static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
 
 fn main() {
+    if std::env::args().any(|arg| arg == "--version" || arg == "-V") {
+        println!("caterm {}", env!("CARGO_PKG_VERSION"));
+        return;
+    }
     let start = std::time::Instant::now();
     caterm_app_lib::run_with_start(start);
 }

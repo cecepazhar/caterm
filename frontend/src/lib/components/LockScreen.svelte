@@ -231,7 +231,15 @@
       } else {
         showToast(t('lock.unlocked'), 'success');
       }
-      onUnlocked();
+      // Yield so the success toast paints before the overlay unmounts on the next tick.
+      await new Promise((r) => setTimeout(r, 300));
+      isLoading = false;
+      await new Promise((r) => setTimeout(r, 100));
+      try {
+        onUnlocked();
+      } catch (unlockErr) {
+        console.error('Failed to execute onUnlocked:', unlockErr);
+      }
     } catch (err: any) {
       if (!isSetup) {
         failedAttempts += 1;
@@ -580,7 +588,7 @@
       {/if}
 
       <div class="flex items-center justify-between text-xs text-neutral-500 pt-4 border-t border-neutral-200 dark:border-neutral-900">
-        {#if !isSetup}
+        {#if !isLoading && !isLockedOut && !isSetup}
           <Button
             type="button"
             variant="ghost"
