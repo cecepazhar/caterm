@@ -127,11 +127,11 @@ fn parse_cron_5_part(expr: &str, now: DateTime<Utc>) -> Result<DateTime<Utc>, St
         return Err("Cron must have 5 fields (min hour dom month dow)".to_string());
     }
 
-    let min_part = parts[0];
-    let hour_part = parts[1];
-    let _dom_part = parts[2];
-    let _mon_part = parts[3];
-    let _dow_part = parts[4];
+    let min_part = parts.first().copied().unwrap_or("*");
+    let hour_part = parts.get(1).copied().unwrap_or("*");
+    let _dom_part = parts.get(2).copied().unwrap_or("*");
+    let _mon_part = parts.get(3).copied().unwrap_or("*");
+    let _dow_part = parts.get(4).copied().unwrap_or("*");
 
     // Simple matching for common forms:
     // e.g. "0 2 * * *" (Every day at 02:00 UTC/Local)

@@ -124,6 +124,7 @@ pub fn run_with_start(start: std::time::Instant) {
         let _ = app.get_webview_window("main").map(|w| w.set_focus());
     }));
 
+    #[allow(clippy::expect_used, clippy::disallowed_methods)]
     builder
         .setup(move |app| {
             #[cfg(target_os = "android")]

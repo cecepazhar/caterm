@@ -87,7 +87,7 @@
   let commandHistory = $state<string[]>([]);
   let userSnippets = $state<SnippetRecord[]>([]);
   let suggestions = $state<AutocompleteItem[]>([]);
-  let selectedSuggestionIndex = $state(0);
+  let selectedSuggestionIndex = $state(-1);
 
   // AI Diagnostic State
   let showDiagnosticModal = $state(false);
@@ -180,7 +180,7 @@
   function updateSuggestions(input: string) {
     if (!autocompleteEnabled || !input.trim() || isAlternateScreen()) {
       suggestions = [];
-      selectedSuggestionIndex = 0;
+      selectedSuggestionIndex = -1;
       return;
     }
 
@@ -239,7 +239,7 @@
     }
 
     suggestions = results;
-    selectedSuggestionIndex = 0;
+    selectedSuggestionIndex = -1;
     if (results.length > 0) {
       updateCursorPosition();
       requestAnimationFrame(updateCursorPosition);
@@ -274,13 +274,13 @@
     void sshWrite(session.sessionId, erasePty + replacementText).catch(() => {});
     currentInputLine = replacementText;
     suggestions = [];
-    selectedSuggestionIndex = 0;
+    selectedSuggestionIndex = -1;
     term.focus();
   }
 
   function dismissSuggestions() {
     suggestions = [];
-    selectedSuggestionIndex = 0;
+    selectedSuggestionIndex = -1;
   }
 
   function injectCommand(cmd: string) {
@@ -500,7 +500,14 @@
         return false;
       }
       if (suggestions.length > 0 && !isAlternateScreen()) {
-        if (event.key === 'Tab' || event.key === 'Enter') {
+        if (event.key === 'Enter') {
+          // Non-intrusive: unless the user explicitly navigated the list with
+          // ArrowDown/ArrowUp (selectedSuggestionIndex >= 0), Enter must reach the
+          // PTY so the typed command runs as-is.
+          if (selectedSuggestionIndex < 0) {
+            dismissSuggestions();
+            return true;
+          }
           if (event.type === 'keydown') {
             event.preventDefault();
             event.stopPropagation();
@@ -509,11 +516,23 @@
           }
           return false;
         }
+        if (event.key === 'Tab') {
+          if (event.type === 'keydown') {
+            event.preventDefault();
+            event.stopPropagation();
+            // Tab accepts the first suggestion when the user hasn't navigated.
+            const picked =
+              selectedSuggestionIndex < 0 ? suggestions[0] : suggestions[selectedSuggestionIndex];
+            if (picked) applySuggestion(picked);
+          }
+          return false;
+        }
         if (event.key === 'ArrowDown') {
           if (event.type === 'keydown') {
             event.preventDefault();
             event.stopPropagation();
-            selectedSuggestionIndex = (selectedSuggestionIndex + 1) % suggestions.length;
+            selectedSuggestionIndex =
+              selectedSuggestionIndex < 0 ? 0 : (selectedSuggestionIndex + 1) % suggestions.length;
           }
           return false;
         }
@@ -522,7 +541,9 @@
             event.preventDefault();
             event.stopPropagation();
             selectedSuggestionIndex =
-              (selectedSuggestionIndex - 1 + suggestions.length) % suggestions.length;
+              selectedSuggestionIndex < 0
+                ? suggestions.length - 1
+                : (selectedSuggestionIndex - 1 + suggestions.length) % suggestions.length;
           }
           return false;
         }
@@ -577,7 +598,10 @@
       if (isAlternateScreen()) {
         // Don't track command-line state or keep suggestions alive while a full-screen program
         // (vim, less, top, ...) owns the terminal — see attachCustomKeyEventHandler above.
-        if (suggestions.length > 0) suggestions = [];
+        if (suggestions.length > 0) {
+          suggestions = [];
+          selectedSuggestionIndex = -1;
+        }
         return;
       }
 
@@ -589,6 +613,7 @@
         }
         currentInputLine = '';
         suggestions = [];
+        selectedSuggestionIndex = -1;
       } else if (data === '\x7f' || data === '\x08') {
         // Backspace
         currentInputLine = currentInputLine.slice(0, -1);
@@ -598,6 +623,7 @@
         // Ctrl+C
         currentInputLine = '';
         suggestions = [];
+        selectedSuggestionIndex = -1;
       } else if (!data.includes('\x1b') && data >= ' ') {
         currentInputLine += data;
         updateSuggestions(currentInputLine);
@@ -726,7 +752,13 @@
       <Button
         variant="ghost"
         size="sm"
-        onclick={() => { autocompleteEnabled = !autocompleteEnabled; if (!autocompleteEnabled) suggestions = []; }}
+        onclick={() => {
+          autocompleteEnabled = !autocompleteEnabled;
+          if (!autocompleteEnabled) {
+            suggestions = [];
+            selectedSuggestionIndex = -1;
+          }
+        }}
         class="!px-1.5 !py-0.5 rounded text-[10px] font-sans font-semibold transition-colors flex items-center gap-1 {autocompleteEnabled ? 'bg-sky-500/15 dark:bg-sky-500/20 text-sky-700 dark:text-sky-400 border border-sky-500/30' : 'bg-neutral-200 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400 border border-transparent'}"
         title={t('terminal.toggleAutocompleteTitle')}
         aria-label={t('terminal.toggleAutocomplete')}

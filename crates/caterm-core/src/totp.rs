@@ -202,10 +202,15 @@ pub fn generate_totp_at_timestamp(
         )));
     }
 
-    let binary = ((hmac_result[offset] as u32 & 0x7f) << 24)
-        | ((hmac_result[offset + 1] as u32 & 0xff) << 16)
-        | ((hmac_result[offset + 2] as u32 & 0xff) << 8)
-        | (hmac_result[offset + 3] as u32 & 0xff);
+    let b0 = *hmac_result.get(offset).unwrap_or(&0) as u32;
+    let b1 = *hmac_result.get(offset + 1).unwrap_or(&0) as u32;
+    let b2 = *hmac_result.get(offset + 2).unwrap_or(&0) as u32;
+    let b3 = *hmac_result.get(offset + 3).unwrap_or(&0) as u32;
+
+    let binary = ((b0 & 0x7f) << 24)
+        | ((b1 & 0xff) << 16)
+        | ((b2 & 0xff) << 8)
+        | (b3 & 0xff);
 
     let divisor = 10_u32.pow(digits);
     let otp = binary % divisor;

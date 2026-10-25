@@ -5,7 +5,7 @@
 
   let {
     suggestions = [],
-    selectedIndex = 0,
+    selectedIndex = -1,
     cursorX = 20,
     cursorY = 60,
     cursorTop = 42,

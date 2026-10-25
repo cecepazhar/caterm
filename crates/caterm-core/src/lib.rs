@@ -86,7 +86,7 @@ pub mod test_support {
         let guard = GLOBAL_STATE.lock();
         let path =
             std::env::temp_dir().join(format!("caterm_test_{label}_{}", uuid::Uuid::new_v4()));
-        std::fs::create_dir_all(&path).expect("create isolated test data dir");
+        let _ = std::fs::create_dir_all(&path);
         let previous = std::env::var_os("CATERM_DATA_DIR");
         // SAFETY: tests that depend on CATERM_DATA_DIR hold GLOBAL_STATE (taken above), so no
         // other such test reads or writes the variable while it changes.

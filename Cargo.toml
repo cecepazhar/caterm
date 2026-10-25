@@ -32,3 +32,6 @@ strip = true
 
 [profile.dev]
 panic = "unwind"
+
+[profile.dev.package.argon2]
+opt-level = 3
