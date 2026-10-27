@@ -1928,8 +1928,16 @@ PRETTY_NAME="Ubuntu 24.04 LTS"
         let cmd =
             "for i in $(seq 1 4000); do printf '\\xE2\\x9C\\x93'; done; printf DONE_MARKER\r\n";
         let _ = write(&session.session_id, cmd);
-        std::thread::sleep(Duration::from_millis(800));
-        let out = read(&session.session_id).expect("read local terminal output");
+        let mut out = String::new();
+        for _ in 0..50 {
+            std::thread::sleep(Duration::from_millis(100));
+            if let Ok(chunk) = read(&session.session_id) {
+                out.push_str(&chunk);
+                if out.matches('\u{2713}').count() > 1000 && out.contains("DONE_MARKER") {
+                    break;
+                }
+            }
+        }
 
         assert!(
             !out.contains('\u{FFFD}'),
