@@ -244,22 +244,22 @@
 <div class="relative inline-block text-left {className}" bind:this={dropdownRef}>
   <!-- Sleek Icon-Only "Workspaces" Trigger Button -->
   <Button
-    variant={isOpen ? 'info' : 'outline'}
+    variant="ghost"
     size="icon"
     onclick={(e) => {
       e.stopPropagation();
       isOpen = !isOpen;
     }}
-    class="relative p-1.5 {isOpen
-      ? 'bg-sky-600/15 text-sky-600 dark:text-sky-400 border-sky-500/30'
-      : 'bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-300 border-neutral-300 dark:border-neutral-800 hover:text-neutral-900 dark:hover:text-white hover:border-neutral-400 dark:hover:border-neutral-700'}"
+    class="relative {isOpen
+      ? 'bg-neutral-200 dark:bg-neutral-800 text-neutral-900 dark:text-white'
+      : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'}"
     title={t('workspaces.manage')}
     aria-label={t('workspaces.manage')}
     aria-expanded={isOpen}
     aria-haspopup="true"
   >
     <!-- Bookmark / Workspace Icon -->
-    <svg class="w-4 h-4 text-sky-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path
         stroke-linecap="round"
         stroke-linejoin="round"
@@ -269,7 +269,7 @@
     </svg>
     {#if workspaces.length > 0}
       <span
-        class="absolute -top-1 -right-1 px-1 min-w-[14px] h-3.5 rounded-full text-[9px] font-mono font-bold bg-sky-500 text-white flex items-center justify-center shadow-xs"
+        class="absolute -top-1 -right-1 px-1 min-w-[14px] h-3.5 rounded-full text-[9px] font-mono font-bold bg-neutral-600 dark:bg-neutral-700 text-white flex items-center justify-center shadow-xs"
       >
         {workspaces.length}
       </span>
@@ -288,7 +288,7 @@
         class="px-3.5 py-2.5 border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 flex items-center justify-between"
       >
         <div class="flex items-center gap-1.5">
-          <svg class="w-4 h-4 text-sky-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-4 h-4 text-neutral-500 dark:text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
               stroke-linecap="round"
               stroke-linejoin="round"

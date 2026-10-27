@@ -47,7 +47,6 @@
   import { getPalette, openPalette, closePalette } from '$lib/stores/commandPalette.svelte';
   import AmbientGlow from '$lib/components/AmbientGlow.svelte';
   import BottomNav from '$lib/components/BottomNav.svelte';
-  import FloatingAiAssistant from '$lib/components/FloatingAiAssistant.svelte';
   import AllMenusSheet from '$lib/components/AllMenusSheet.svelte';
   import { getAmbientStore } from '$lib/stores/ambient.svelte';
   import { getPro } from '$lib/stores/pro.svelte';
@@ -667,6 +666,24 @@
       <!-- 2. Workspaces Icon Menu -->
       <WorkspaceMenu />
 
+      <!-- 3. Hana AI Chat Sidebar Trigger Button -->
+      <Button
+        variant="ghost"
+        size="icon"
+        onclick={handleAiToggle}
+        class="relative transition-colors {aiChat.open ? 'bg-neutral-200 dark:bg-neutral-800 text-neutral-900 dark:text-white' : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'}"
+        title="Hana AI Assistant"
+        aria-label="Hana AI Assistant"
+      >
+        <!-- Cute Robot / Bot Icon -->
+        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 3.104v1.896m4.5-1.896v1.896M5.25 7.5h13.5A2.25 2.25 0 0121 9.75v8.25a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 18.25V9.75A2.25 2.25 0 015.25 7.5zm3.75 4.5h.008v.008H9v-.008zm6 0h.008v.008H15v-.008zm-6.75 4.5h7.5" />
+        </svg>
+        {#if aiChat.open}
+          <span class="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+        {/if}
+      </Button>
+
       <!-- Unified Header Preferences: Theme, Language, Split View & Panels in 1 Elegant Icon -->
       <HeaderQuickControls
         layout={view.layout}
@@ -914,11 +931,6 @@
     </div>
   </div>
 </div>
-
-<!-- Floating Smart Assistant: Hana AI with Routing & Custom Skills Autocomplete -->
-{#if isUnlocked && !aiChat.open}
-  <FloatingAiAssistant />
-{/if}
 
 <!-- Mobile Bottom Navigation Bar & All Menus Grid Sheet -->
 <BottomNav onOpenAll={() => (allMenusSheetOpen = true)} />
