@@ -44,6 +44,38 @@ fn now() -> i64 {
     chrono::Utc::now().timestamp()
 }
 
+// ── Offline License Helpers ─────────────────────────────────────────────────────
+
+fn save_local_license(key: &str, product: &str, tier: &str, expires_at: i64) -> Result<(), CatermError> {
+    use crate::license_local::{LocalLicense, save_license};
+    let lic = LocalLicense {
+        key: key.to_string(),
+        product: product.to_string(),
+        tier: tier.to_string(),
+        expires_at,
+    };
+    save_license("caterm", &lic).map_err(|e| pro_err(&format!("LICENSE_SAVE_ERROR: {}", e)))
+}
+
+fn load_local_license() -> Option<crate::license_local::LocalLicense> {
+    crate::license_local::load_license("caterm").ok().flatten()
+}
+
+fn is_local_license_valid() -> bool {
+    load_local_license().map_or(false, |lic| crate::license_local::is_license_valid(&lic))
+}
+
+pub fn export_license_key() -> Result<String, CatermError> {
+    load_local_license()
+        .map(|lic| lic.key)
+        .ok_or_else(|| pro_err("NO_LICENSE_EXPORT"))
+}
+
+pub fn import_license_key(key: &str) -> Result<(), CatermError> {
+    activate_license_key(key)?;
+    Ok(())
+}
+
 /// `CATERM_PRO_API_BASE` at runtime (local GCC during development), else at build time, else
 /// the product domain. Pointing it elsewhere cannot fake Pro: tokens still have to verify
 /// against the compiled-in public key.
@@ -975,6 +1007,9 @@ pub fn commit_pending() -> Result<bool, CatermError> {
 
 /// # Infallible: returns false when status check fails or unentitled.
 pub fn is_pro() -> bool {
+    // Check local offline license first
+    if is_local_license_valid() { return true; }
+    // Fallback to server status
     status()
         .map(|s| match s.entitlement {
             Entitlement::Valid { ref tier, .. } => tier == "pro" || tier == "team",
@@ -1149,19 +1184,49 @@ pub fn activate_license_key(key: &str) -> Result<ProStatus, CatermError> {
         return Err(pro_err("INVALID_LICENSE_KEY"));
     }
 
-    let is_founder = clean_key.contains("FOUNDER") || clean_key.contains("CECEP");
-    let is_lifetime = clean_key.starts_with("CATERM-LIFE-") || is_founder;
-    let is_valid = is_lifetime || clean_key.starts_with("CATERM-PRO-") || clean_key.len() >= 12;
-
-    if !is_valid {
-        return Err(pro_err("INVALID_LICENSE_KEY_FORMAT"));
+    // New license format: CA[PRODUCT][TIER]-[RAND6]-[CK] (e.g., CATB99-A1B2C3-7)
+    let parts: Vec<&str> = clean_key.split('-').collect();
+    if parts.len() != 3 { return Err(pro_err("INVALID_LICENSE_KEY_FORMAT")); }
+    let prefix_tier = parts[0];
+    let rand_part = parts[1];
+    let ck_str = parts[2];
+    if prefix_tier.len() != 6 { return Err(pro_err("INVALID_LICENSE_KEY_FORMAT")); }
+    if rand_part.len() != 6 { return Err(pro_err("INVALID_LICENSE_KEY_FORMAT")); }
+    if ck_str.len() != 1 { return Err(pro_err("INVALID_LICENSE_KEY_FORMAT")); }
+    if !prefix_tier.starts_with("CA") { return Err(pro_err("INVALID_LICENSE_KEY")); }
+    let product = &prefix_tier[2..4];
+    let tier = &prefix_tier[4..6];
+    let allowed = ["TM","MK","CD","SH","TB","PS","UI","AA","CF","CB"];
+    if !allowed.contains(&product) { return Err(pro_err("UNKNOWN_PRODUCT")); }
+    if tier.parse::<u8>().is_err() { return Err(pro_err("INVALID_TIER")); }
+    if !rand_part.chars().all(|c| c.is_ascii_alphanumeric()) { return Err(pro_err("INVALID_RANDOM_PART")); }
+    // Compute checksum (mod‑10)
+    let mut sum: u32 = 0;
+    for ch in clean_key[..clean_key.len()-2].chars() { // exclude last '-' and checksum digit
+        let val = if ch.is_ascii_digit() {
+            (ch as u8 - b'0') as u32
+        } else if ch.is_ascii_uppercase() {
+            (ch as u8 - b'A' + 10) as u32
+        } else {
+            0
+        };
+        sum += val;
     }
-
-    let plan_name = if is_lifetime {
-        "founder_lifetime"
-    } else {
-        "pro_annual"
+    let expected_ck = ((10 - (sum % 10)) % 10) as u8;
+    let provided_ck = ck_str.parse::<u8>().map_err(|_| pro_err("INVALID_CHECKSUM"))?;
+    if expected_ck != provided_ck { return Err(pro_err("INVALID_CHECKSUM")); }
+    // Parse product/tier for license creation
+    let is_lifetime = tier == "99";
+    let plan_name = if is_lifetime { "founder_lifetime" } else { "pro_annual" };
+    // Calculate expires_at (0 = lifetime)
+    let expires_at = if is_lifetime { 0 } else {
+        let now = chrono::Utc::now().timestamp();
+        let months: i64 = tier.parse::<i64>().unwrap_or(12);
+        now + months * 30 * 86400
     };
+    // Save to local offline storage
+    let _ = save_local_license(&clean_key, product, tier, expires_at);
+
     let account = json!({
         "id": "usr_caterm_founder",
         "email": "cecep.azhtech@gmail.com",

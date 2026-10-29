@@ -1,0 +1,5 @@
+EOF
+
+# Read current file
+CURRENT=$(sed -n '1138,1215p' $HOME/Product/caterm/crates/caterm-core/src/pro.rs)
+echo "$CURRENT"
