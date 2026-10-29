@@ -1238,7 +1238,7 @@ pub fn activate_license_key(key: &str) -> Result<ProStatus, CatermError> {
         "license_key": clean_key,
         "tier": "pro",
         "plan": plan_name,
-        "source": if is_founder { "founder" } else { "direct" },
+        "source": if product == "CD" { "founder" } else { "direct" },
         "seats": 7,
         "features": [
             "cloud_sync",

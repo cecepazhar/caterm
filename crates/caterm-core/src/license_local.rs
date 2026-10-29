@@ -4,7 +4,7 @@
 //! This module persists it locally so every subsequent `is_pro()` check
 //! works without network.
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 

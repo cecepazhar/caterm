@@ -84,10 +84,12 @@ function nextSeq(hostId: string): number {
 /** Always opens a *new* session. Returns the new tab's id so the caller can focus it. */
 export function openTab(host: HostRecord, group?: string, groupColor?: string): string {
   counter += 1;
+  const seq = nextSeq(host.id);
   const tab: SessionTab = {
     id: `tab-${host.id}-${counter}`,
     host,
-    seq: nextSeq(host.id),
+    seq,
+    title: defaultLabel(seq),
     group: group?.trim() || undefined,
     groupColor: groupColor?.trim() || undefined
   };
@@ -193,5 +195,11 @@ export function closeAllTabs() {
 /** What the tab strip shows: plain label for the first, numbered for additional sessions. */
 export function tabLabel(tab: SessionTab): string {
   if (tab.title) return tab.title;
-  return tab.seq > 1 ? `${tab.host.label} (${tab.seq})` : tab.host.label;
+  // Default to "Term N" when no custom title is set
+  return `Term ${tab.seq}`;
+}
+
+/** Generate a default display name for a new tab based on its sequence number. */
+export function defaultLabel(seq: number): string {
+  return `Term ${seq}`;
 }
