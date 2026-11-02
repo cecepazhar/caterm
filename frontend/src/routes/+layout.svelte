@@ -266,7 +266,38 @@
   let { children } = $props();
 
   let isUnlocked = $state(false);
+  let tabStripEl = $state<HTMLDivElement | null>(null);
+  let showLeftFade = $state(false);
+  let showRightFade = $state(false);
+
+  function checkTabOverflow() {
+    if (!tabStripEl) return;
+    showLeftFade = tabStripEl.scrollLeft > 4;
+    showRightFade = tabStripEl.scrollLeft + tabStripEl.clientWidth < tabStripEl.scrollWidth - 4;
+  }
+
   let sessionTabs = $derived(getTabs());
+
+  let lastOpenedSessionId = $state<string | null>(null);
+
+  $effect(() => {
+    checkTabOverflow();
+    window.addEventListener('resize', checkTabOverflow);
+    return () => window.removeEventListener('resize', checkTabOverflow);
+  });
+
+  // Keep the active tab scrolled into view when switching or opening
+  $effect(() => {
+    const currentId = view.selectedTabId;
+    if (currentId && currentId !== lastOpenedSessionId && tabStripEl) {
+      lastOpenedSessionId = currentId;
+      setTimeout(() => {
+        const activeEl = tabStripEl?.querySelector('[aria-selected="true"], .shadow-2xs');
+        activeEl?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+        checkTabOverflow();
+      }, 50);
+    }
+  });
 
   // Terminal workspace controls render in this one header rather than a second bar owned by
   // the /session route, so the layout reads the same shared state the route does.
@@ -571,84 +602,101 @@
         </svg>
       </Button>
 
-      <div class="flex gap-1 text-xs items-center overflow-x-auto scrollbar-none min-w-0 flex-1" data-tauri-drag-region>
-        <!-- Where you are, like a breadcrumb. Hidden while a terminal is showing: there the
-             session tabs are the context. -->
-        {#if !page.url.pathname.startsWith('/session')}
-          <span class="px-2 py-1 text-xs font-semibold shrink-0 hidden sm:flex items-center gap-1.5 text-neutral-900 dark:text-white" data-tauri-drag-region>
-            <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d={currentSection.path} />
-            </svg>
-            {currentSection.label}
-          </span>
+      <div class="relative flex items-center min-w-0 max-w-full" data-tauri-drag-region>
+        <!-- Left fade indicator -->
+        {#if showLeftFade}
+          <div class="absolute left-0 top-0 bottom-0 w-4 bg-gradient-to-r from-neutral-100 dark:from-[#0e0e0e] to-transparent z-10 pointer-events-none"></div>
         {/if}
-        {#each sessionTabs as tab (tab.id)}
-          <!-- Hidden on phones: the Session route renders its own full-width tab switcher
-               there, and two competing strips in a 375px row leaves both unusable. -->
-          <div
-            role="group"
-            aria-label={t('shell.sessionTabAria', { label: tabLabel(tab) })}
-            oncontextmenu={(e) => openTabMenu(e, tab.id)}
-            class="hidden sm:flex items-center rounded-md shrink-0 transition-all border {isSessionTabActive(tab.id) ? 'bg-neutral-200 dark:bg-neutral-800 text-neutral-900 dark:text-white border-neutral-300 dark:border-neutral-700 shadow-2xs' : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200/70 dark:hover:bg-neutral-800/60 border-transparent'}"
-          >
-            {#if renamingTabId === tab.id}
-              <span class="py-0.5 pl-2 pr-1 flex items-center gap-1.5">
-                <span class="w-1.5 h-1.5 rounded-full shrink-0" style="background-color: {tab.groupColor || '#10b981'}"></span>
-                <input
-                  use:focusAndSelect
-                  bind:value={renameDraft}
-                  maxlength="40"
-                  aria-label={t('shell.renameTab')}
-                  onkeydown={(e) => {
-                    if (e.key === 'Enter') commitRename();
-                    else if (e.key === 'Escape') { e.stopPropagation(); renamingTabId = null; }
-                  }}
-                  onblur={commitRename}
-                  class="w-28 md:w-36 px-1 py-0.5 rounded bg-white dark:bg-neutral-950 border border-sky-500 text-xs text-neutral-900 dark:text-white focus:outline-none"
-                />
-              </span>
-            {:else}
-              <a
-                href="/session"
-                onclick={() => setSelectedTabId(tab.id)}
-                ondblclick={() => startRename(tab.id)}
-                class="py-1 pl-2 pr-1 flex items-center gap-1.5 truncate max-w-[120px] md:max-w-[170px]"
-                title={tab.group ? `[${tab.group}] ` + t('shell.tabTitle', { label: tabLabel(tab), address: tab.host.address }) : t('shell.tabTitle', { label: tabLabel(tab), address: tab.host.address })}
-              >
-                <span class="w-1.5 h-1.5 rounded-full shrink-0" style="background-color: {tab.groupColor || '#10b981'}"></span>
-                <span class="truncate">{tabLabel(tab)}</span>
-                {#if tab.group}
-                  <span
-                    class="px-1 py-0.1 rounded text-[9px] font-medium shrink-0 leading-tight"
-                    style="background-color: {tab.groupColor ? tab.groupColor + '25' : 'rgba(2, 132, 199, 0.15)'}; color: {tab.groupColor || '#0284c7'}"
-                  >
-                    {tab.group}
-                  </span>
-                {/if}
-              </a>
-            {/if}
-            <Button
-              variant="ghost"
-              size="icon"
-              onclick={() => closeSessionTab(tab.id)}
-              class="!p-0.5 mr-1 rounded hover:!bg-neutral-300 dark:hover:!bg-neutral-700 hover:!text-rose-600 dark:hover:!text-rose-400"
-              title={t('shell.closeSessionNamed', { label: tabLabel(tab) })}
-              aria-label={t('shell.closeSessionNamed', { label: tabLabel(tab) })}
-            >
-              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" stroke-linecap="round" d="M6 18L18 6M6 6l12 12"></path></svg>
-            </Button>
-          </div>
-        {/each}
 
-        <!-- New session (+) button: directly attached right next to the last tab -->
-        <a
-          href="/"
-          class="p-1 rounded shrink-0 text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-200/70 dark:hover:bg-neutral-800 transition-colors"
-          title={t('shell.newSessionTitle')}
-          aria-label={t('shell.newSession')}
+        <div
+          bind:this={tabStripEl}
+          onscroll={checkTabOverflow}
+          class="flex gap-1 text-xs items-center overflow-x-auto scrollbar-none min-w-0 max-w-full py-0.5"
+          data-tauri-drag-region
         >
-          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-        </a>
+          <!-- Where you are, like a breadcrumb. Hidden while a terminal is showing: there the
+               session tabs are the context. -->
+          {#if !page.url.pathname.startsWith('/session')}
+            <span class="px-2 py-1 text-xs font-semibold shrink-0 hidden sm:flex items-center gap-1.5 text-neutral-900 dark:text-white mr-1" data-tauri-drag-region>
+              <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d={currentSection.path} />
+              </svg>
+              {currentSection.label}
+            </span>
+          {/if}
+          {#each sessionTabs as tab (tab.id)}
+            <!-- Hidden on phones: the Session route renders its own full-width tab switcher
+                 there, and two competing strips in a 375px row leaves both unusable. -->
+            <div
+              role="group"
+              aria-label={t('shell.sessionTabAria', { label: tabLabel(tab) })}
+              oncontextmenu={(e) => openTabMenu(e, tab.id)}
+              class="hidden sm:flex items-center rounded-md shrink-0 transition-all border {isSessionTabActive(tab.id) ? 'bg-neutral-200 dark:bg-neutral-800 text-neutral-900 dark:text-white border-neutral-300 dark:border-neutral-700 shadow-2xs' : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200/70 dark:hover:bg-neutral-800/60 border-transparent'}"
+            >
+              {#if renamingTabId === tab.id}
+                <span class="py-0.5 pl-2 pr-1 flex items-center gap-1.5">
+                  <span class="w-1.5 h-1.5 rounded-full shrink-0" style="background-color: {tab.groupColor || '#10b981'}"></span>
+                  <input
+                    use:focusAndSelect
+                    bind:value={renameDraft}
+                    maxlength="40"
+                    aria-label={t('shell.renameTab')}
+                    onkeydown={(e) => {
+                      if (e.key === 'Enter') commitRename();
+                      else if (e.key === 'Escape') { e.stopPropagation(); renamingTabId = null; }
+                    }}
+                    onblur={commitRename}
+                    class="w-28 md:w-36 px-1 py-0.5 rounded bg-white dark:bg-neutral-950 border border-sky-500 text-xs text-neutral-900 dark:text-white focus:outline-none"
+                  />
+                </span>
+              {:else}
+                <a
+                  href="/session"
+                  onclick={() => setSelectedTabId(tab.id)}
+                  ondblclick={() => startRename(tab.id)}
+                  class="py-1 pl-2 pr-1 flex items-center gap-1.5 truncate max-w-[100px] sm:max-w-[140px]"
+                  title={tab.group ? `[${tab.group}] ` + t('shell.tabTitle', { label: tabLabel(tab), address: tab.host.address }) : t('shell.tabTitle', { label: tabLabel(tab), address: tab.host.address })}
+                >
+                  <span class="w-1.5 h-1.5 rounded-full shrink-0" style="background-color: {tab.groupColor || '#10b981'}"></span>
+                  <span class="truncate max-w-[100px] sm:max-w-[140px]">{tabLabel(tab)}</span>
+                  {#if tab.group}
+                    <span
+                      class="px-1 py-0.1 rounded text-[9px] font-medium shrink-0 leading-tight"
+                      style="background-color: {tab.groupColor ? tab.groupColor + '25' : 'rgba(2, 132, 199, 0.15)'}; color: {tab.groupColor || '#0284c7'}"
+                    >
+                      {tab.group}
+                    </span>
+                  {/if}
+                </a>
+              {/if}
+              <Button
+                variant="ghost"
+                size="icon"
+                onclick={() => closeSessionTab(tab.id)}
+                class="!p-0.5 mr-1 rounded hover:!bg-neutral-300 dark:hover:!bg-neutral-700 hover:!text-rose-600 dark:hover:!text-rose-400"
+                title={t('shell.closeSessionNamed', { label: tabLabel(tab) })}
+                aria-label={t('shell.closeSessionNamed', { label: tabLabel(tab) })}
+              >
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" stroke-linecap="round" d="M6 18L18 6M6 6l12 12"></path></svg>
+              </Button>
+            </div>
+          {/each}
+
+          <!-- New session (+) button: directly attached next to the last tab -->
+          <a
+            href="/"
+            class="p-1 rounded shrink-0 text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-200/70 dark:hover:bg-neutral-800 transition-colors"
+            title={t('shell.newSessionTitle')}
+            aria-label={t('shell.newSession')}
+          >
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+          </a>
+        </div>
+
+        <!-- Right fade indicator -->
+        {#if showRightFade}
+          <div class="absolute right-0 top-0 bottom-0 w-4 bg-gradient-to-l from-neutral-100 dark:from-[#0e0e0e] to-transparent z-10 pointer-events-none"></div>
+        {/if}
       </div>
 
       <!-- Draggable blank space spanning remaining left area -->

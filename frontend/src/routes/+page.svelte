@@ -16,9 +16,10 @@
   import { monitorState } from '$lib/stores/monitorStore.svelte';
   import { t, intlLocale } from '$lib/i18n/index.svelte';
   import { PageHeader, Button, Input, SearchInput, Badge, Modal } from '@cecepazhar/caui';
+  import { getCachedHosts, getCachedGroups, setCachedHosts, setCachedGroups, loadHostsAndGroupsCached } from '$lib/stores/hostStore.svelte';
 
-  let hosts = $state<HostRecord[]>([]);
-  let groups = $state<GroupRecord[]>([]);
+  let hosts = $state<HostRecord[]>(getCachedHosts());
+  let groups = $state<GroupRecord[]>(getCachedGroups());
   let vaultKeys = $state<KeyRecord[]>([]);
   let searchQuery = $state('');
   let isAddModalOpen = $state(false);
@@ -84,10 +85,10 @@
       }
     }
     clearSelection();
-    await refreshHosts();
+    await refreshHosts(true);
 
     if (failed.length > 0) {
-      showToast(t('hosts.deleteFailedList', { names: failed.join(', ') }), 'error');
+      showToast(t('hosts.deleteFailedList', { names: failed.join(', ')}), 'error');
     } else {
       showToast(t('hosts.hostDeleted'), 'success');
     }
@@ -112,7 +113,8 @@
 
   onMount(() => {
     void (async () => {
-      await refreshHosts();
+      // Background revalidation without clearing or flickering UI
+      await refreshHosts(true);
       try {
         unlistenOsDetected = await listen<{ hostId: string; os: string }>('host:os_detected', (event) => {
           const { hostId, os } = event.payload;
@@ -162,11 +164,26 @@
     }
   });
 
-  async function refreshHosts() {
+  let lastHostsUpdate = $state(0);
+
+  async function refreshHosts(force = false) {
+    const now = Date.now();
+    if (!force && now - lastHostsUpdate < 5000) {
+      return;
+    }
+    lastHostsUpdate = now;
     try {
-      hosts = await listHosts();
+      if (force) {
+        const { hosts: freshHosts, groups: freshGroups } = await loadHostsAndGroupsCached(true);
+        if (freshHosts.length) hosts = freshHosts;
+        groups = freshGroups;
+        setCachedHosts(freshHosts);
+        setCachedGroups(freshGroups);
+      } else {
+        hosts = getCachedHosts();
+        groups = getCachedGroups();
+      }
       vaultKeys = await listKeys();
-      groups = await listGroups();
       groupCount = groups.length;
     } catch (e: any) {
       errorMsg = String(e);
@@ -393,7 +410,7 @@
       await saveHost(input);
       isAddModalOpen = false;
       showToast(editingId ? t('hosts.hostUpdated') : t('hosts.hostAdded'), 'success');
-      await refreshHosts();
+      await refreshHosts(true);
     } catch (err: any) {
       errorMsg = typeof err === 'string' ? err : (err?.message || t('hosts.saveFailed'));
       showToast(errorMsg, 'error');
@@ -408,7 +425,7 @@
       try {
         await deleteHost(id);
         showToast(t('hosts.hostDeleted'), 'success');
-        await refreshHosts();
+        await refreshHosts(true);
       } catch (err: any) {
         showToast(err?.message || 'Failed to delete host', 'error');
       }
@@ -429,7 +446,7 @@
       };
       await saveHost(input);
       showToast(t('hosts.hostCloned', { name: host.label }), 'success');
-      await refreshHosts();
+      await refreshHosts(true);
     } catch (err: any) {
       showToast(err?.message || 'Failed to clone host', 'error');
     }
