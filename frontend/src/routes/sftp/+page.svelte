@@ -15,6 +15,7 @@
     sftpUpload,
     sftpDownload,
     sftpCancel,
+    sftpStat,
     sftpCompress,
     sftpExtract,
     searchRemoteFiles,
@@ -38,10 +39,13 @@
   import ProGate from '$lib/components/ProGate.svelte';
   import PageContainer from '$lib/components/PageContainer.svelte';
   import { PageHeader, Button, Input, Badge, Modal } from '@cecepazhar/caui';
+  import { confirmModal } from '$lib/stores/uiNotifications.svelte';
   import { t, intlLocale } from '$lib/i18n/index.svelte';
 
   interface TransferItem {
     id: string;
+    /** Host the transfer was queued for; the queue must never use whichever host is selected later. */
+    hostId: string;
     source: string;
     target: string;
     direction: 'upload' | 'download';
@@ -167,7 +171,7 @@
   let deleteTarget = $state<{ pane: 'local' | 'remote'; paths: string[] } | null>(null);
 
   let showEditorModal = $state(false);
-  let editorItem = $state<{ pane: 'local' | 'remote'; path: string; name: string } | null>(null);
+  let editorItem = $state<{ pane: 'local' | 'remote'; path: string; name: string; hostId: string; mtime: number; size: number } | null>(null);
   let editorContent = $state('');
   let isEditorSaving = $state(false);
   let isEditorLoading = $state(false);
@@ -522,13 +526,15 @@
   function enqueueTransfer(
     direction: 'upload' | 'download',
     source: string,
-    target: string
+    target: string,
+    hostId: string = currentHostId
   ) {
     const id = `tx_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     transfers = [
       ...transfers,
       {
         id,
+        hostId,
         direction,
         source,
         target,
@@ -541,48 +547,69 @@
     runTransferQueue();
   }
 
-  async function runTransferQueue() {
-    if (isQueueRunning) return;
-    isQueueRunning = true;
+  function patchTransfer(id: string, patch: Partial<TransferItem>) {
+    const idx = transfers.findIndex((t) => t.id === id);
+    if (idx !== -1) Object.assign(transfers[idx], patch);
+  }
 
-    while (true) {
-      const nextIndex = transfers.findIndex((t) => t.status === 'queued');
-      if (nextIndex === -1) break;
+  // Up to MAX_PARALLEL_TRANSFERS run at once; each uses its own SSH connection on the backend,
+  // so they don't serialize behind one another (or block directory listing).
+  const MAX_PARALLEL_TRANSFERS = 3;
+  let activeWorkers = 0;
 
-      const item = transfers[nextIndex];
-      transfers[nextIndex].status = 'active';
-
-      try {
-        if (item.direction === 'upload') {
-          await sftpUpload(currentHostId, item.source, item.target, item.id);
-        } else {
-          await sftpDownload(currentHostId, item.source, item.target, item.id);
+  function runTransferQueue() {
+    while (activeWorkers < MAX_PARALLEL_TRANSFERS) {
+      const item = transfers.find((t) => t.status === 'queued');
+      if (!item) break;
+      activeWorkers++;
+      isQueueRunning = true;
+      patchTransfer(item.id, { status: 'active' });
+      void runOneTransfer(item).finally(() => {
+        activeWorkers--;
+        if (transfers.some((t) => t.status === 'queued')) {
+          runTransferQueue();
+        } else if (activeWorkers === 0) {
+          isQueueRunning = false;
+          void Promise.all([fetchLocalFiles(), fetchRemoteFiles()]);
         }
-        transfers[nextIndex].status = 'completed';
-        transfers[nextIndex].bytesTransferred = transfers[nextIndex].totalBytes;
-      } catch (err: any) {
-        const msg = String(err?.message || err);
-        if (msg.includes('cancelled')) {
-          transfers[nextIndex].status = 'cancelled';
-        } else {
-          transfers[nextIndex].status = 'failed';
-          transfers[nextIndex].error = msg;
-        }
+      });
+    }
+  }
+
+  async function runOneTransfer(item: TransferItem) {
+    // Look the item up by id after every await: the list can be cleared or cancelled from the
+    // UI while a transfer is running, which shifts indexes.
+    const { id, hostId } = item;
+    try {
+      if (item.direction === 'upload') {
+        await sftpUpload(hostId, item.source, item.target, id);
+      } else {
+        await sftpDownload(hostId, item.source, item.target, id);
+      }
+      const done = transfers.find((t) => t.id === id);
+      patchTransfer(id, { status: 'completed', bytesTransferred: done?.totalBytes ?? 0 });
+    } catch (err: any) {
+      const msg = String(err?.message || err);
+      if (msg.includes('cancelled')) {
+        patchTransfer(id, { status: 'cancelled' });
+      } else {
+        patchTransfer(id, { status: 'failed', error: msg });
       }
     }
-
-    isQueueRunning = false;
-    // Refresh both panes
-    await Promise.all([fetchLocalFiles(), fetchRemoteFiles()]);
   }
 
   async function cancelQueueItem(id: string) {
+    const item = transfers.find((t) => t.id === id);
+    if (!item) return;
+    // Not started yet: nothing on the backend to cancel, and a backend cancel token set now
+    // would be lost. Just take it out of the queue.
+    if (item.status === 'queued') {
+      patchTransfer(id, { status: 'cancelled' });
+      return;
+    }
     try {
       await sftpCancel(id);
-      const idx = transfers.findIndex((t) => t.id === id);
-      if (idx !== -1 && transfers[idx].status === 'active') {
-        transfers[idx].status = 'cancelled';
-      }
+      if (item.status === 'active') patchTransfer(id, { status: 'cancelled' });
     } catch (e: any) {
       errorMsg = t('sftp.errCancel', { error: e?.message || String(e) });
     }
@@ -593,32 +620,90 @@
   }
 
   // --- ACTIONS (F5: Transfer, F6: Move, F7: Mkdir, F8: Delete, F2: Rename, F4: Edit) ---
-  function handleCopyTransfer() {
-    if (activePane === 'local') {
-      // Upload selected local files to remote current dir
-      if (localSelectedPaths.size === 0 && localLastSelected) {
-        localSelectedPaths.add(localLastSelected.path);
-      }
-      for (const p of localSelectedPaths) {
-        const name = p.split('/').pop() || 'file';
-        const remoteTarget = joinPath(remotePath, name);
-        enqueueTransfer('upload', p, remoteTarget);
-      }
-      notifySuccess(t('sftp.queuedUpload', { count: localSelectedPaths.size }));
-      localSelectedPaths = new Set();
-    } else {
-      // Download selected remote files to local current dir
-      if (remoteSelectedPaths.size === 0 && remoteLastSelected) {
-        remoteSelectedPaths.add(remoteLastSelected.path);
-      }
-      for (const p of remoteSelectedPaths) {
-        const name = p.split('/').pop() || 'file';
-        const localTarget = joinPath(localPath, name);
-        enqueueTransfer('download', p, localTarget);
-      }
-      notifySuccess(t('sftp.queuedDownload', { count: remoteSelectedPaths.size }));
-      remoteSelectedPaths = new Set();
+  /**
+   * Expands one selected entry into file transfers. Folders are walked recursively and their
+   * directories created on the destination first; symlinks inside a remote folder are skipped
+   * (following them can loop, e.g. `current -> .`).
+   */
+  async function collectTransfers(
+    direction: 'upload' | 'download',
+    src: string,
+    dest: string,
+    isDir: boolean,
+    hostId: string,
+    out: Array<[string, string]>,
+    skipped: { links: number },
+    depth = 0
+  ): Promise<void> {
+    if (!isDir) {
+      out.push([src, dest]);
+      return;
     }
+    if (depth > 32) throw new Error(t('sftp.errTooDeep', { path: src }));
+    if (direction === 'upload') {
+      await mkdirRemoteDir(hostId, dest).catch(() => {}); // already exists is fine
+      for (const e of await localListDir(src)) {
+        if (e.is_symlink) { skipped.links++; continue; }
+        await collectTransfers(direction, e.path, joinPath(dest, e.name), e.is_dir, hostId, out, skipped, depth + 1);
+      }
+    } else {
+      await localMkdir(dest).catch(() => {});
+      for (const e of await listRemoteDir(hostId, src)) {
+        if (e.is_symlink) { skipped.links++; continue; }
+        await collectTransfers(direction, e.path, joinPath(dest, e.name), e.is_dir, hostId, out, skipped, depth + 1);
+      }
+    }
+  }
+
+  async function handleCopyTransfer() {
+    const upload = activePane === 'local';
+    const selected = upload ? localSelectedPaths : remoteSelectedPaths;
+    const lastSelected = upload ? localLastSelected : remoteLastSelected;
+    if (selected.size === 0 && lastSelected) selected.add(lastSelected.path);
+    if (selected.size === 0) return;
+
+    const hostId = currentHostId;
+    const sourceList: Array<LocalFileEntry | SftpFileEntry> = upload ? localFiles : remoteFiles;
+    const destList: Array<LocalFileEntry | SftpFileEntry> = upload ? remoteFiles : localFiles;
+    const destDir = upload ? remotePath : localPath;
+    const items = [...selected].map((p) => {
+      const name = p.split(/[\\/]/).pop() || 'file';
+      const entry = sourceList.find((e) => e.path === p);
+      return { path: p, name, isDir: entry?.is_dir ?? false };
+    });
+    if (upload) localSelectedPaths = new Set(); else remoteSelectedPaths = new Set();
+
+    // Ask once before overwriting anything already at the destination.
+    const existing = new Set(destList.map((e) => e.name));
+    const conflicts = items.filter((i) => existing.has(i.name)).map((i) => i.name);
+    let skipNames = new Set<string>();
+    if (conflicts.length > 0) {
+      const overwrite = await confirmModal(
+        t('sftp.overwriteConfirm', { count: conflicts.length, names: conflicts.slice(0, 5).join(', ') + (conflicts.length > 5 ? ', …' : '') }),
+        t('sftp.overwriteTitle'),
+        true,
+        t('sftp.overwrite'),
+        t('sftp.skipExisting')
+      );
+      if (!overwrite) skipNames = new Set(conflicts);
+    }
+
+    const jobs: Array<[string, string]> = [];
+    const skipped = { links: 0 };
+    try {
+      for (const item of items) {
+        if (skipNames.has(item.name)) continue;
+        await collectTransfers(upload ? 'upload' : 'download', item.path, joinPath(destDir, item.name), item.isDir, hostId, jobs, skipped);
+      }
+    } catch (e: any) {
+      errorMsg = t('sftp.errExpand', { error: e?.message || String(e) });
+      return;
+    }
+    for (const [src, dest] of jobs) enqueueTransfer(upload ? 'upload' : 'download', src, dest, hostId);
+    notifySuccess(
+      t(upload ? 'sftp.queuedUpload' : 'sftp.queuedDownload', { count: jobs.length }) +
+        (skipped.links > 0 ? ' ' + t('sftp.skippedLinks', { count: skipped.links }) : '')
+    );
   }
 
   function openNewFolderModal(pane: 'local' | 'remote') {
@@ -776,19 +861,36 @@
       import('$lib/components/RemoteFileEditor.svelte').then((mod) => (RemoteFileEditor = mod.default));
     }
 
-    editorItem = { pane: isLocal ? 'local' : 'remote', path: target.path, name: target.name };
+    editorItem = { pane: isLocal ? 'local' : 'remote', path: target.path, name: target.name, hostId: currentHostId, mtime: target.mtime, size: target.size };
     showEditorModal = true;
     isEditorLoading = true;
     editorContent = '';
 
     try {
+      if (target.size > 5 * 1024 * 1024) {
+        throw new Error(t('sftp.errEditorTooLarge', { mb: 5 }));
+      }
       let bytes: number[] = [];
       if (isLocal) {
         bytes = await localReadFile(target.path);
       } else {
         bytes = await readRemoteFile(currentHostId, target.path);
       }
-      editorContent = new TextDecoder('utf-8').decode(new Uint8Array(bytes));
+      // The editor only round-trips UTF-8 text safely. Saving a binary file through a lossy
+      // decode would silently corrupt it, and a huge one would be copied through IPC as a JSON
+      // number array, so refuse both up front.
+      const MAX_EDITABLE_BYTES = 5 * 1024 * 1024;
+      if (bytes.length > MAX_EDITABLE_BYTES) {
+        throw new Error(t('sftp.errEditorTooLarge', { mb: 5 }));
+      }
+      try {
+        editorContent = new TextDecoder('utf-8', { fatal: true }).decode(new Uint8Array(bytes));
+      } catch {
+        throw new Error(t('sftp.errEditorNotText'));
+      }
+      if (editorContent.includes('\u0000')) {
+        throw new Error(t('sftp.errEditorNotText'));
+      }
     } catch (e: any) {
       errorMsg = t('sftp.errRead', { error: e?.message || String(e) });
       showEditorModal = false;
@@ -807,7 +909,20 @@
         notifySuccess(t('sftp.savedLocal', { name: editorItem.name }));
         await fetchLocalFiles();
       } else {
-        await writeRemoteFile(currentHostId, editorItem.path, bytes);
+        // Someone else changed the file on the server since it was opened: don't silently
+        // overwrite their edit.
+        const current = await sftpStat(editorItem.hostId, editorItem.path).catch(() => null);
+        if (current && (current.mtime !== editorItem.mtime || current.size !== editorItem.size)) {
+          const overwrite = await confirmModal(
+            t('sftp.editorConflict', { name: editorItem.name }),
+            t('sftp.editorConflictTitle'),
+            true,
+            t('sftp.overwrite'),
+            t('common.cancel')
+          );
+          if (!overwrite) return;
+        }
+        await writeRemoteFile(editorItem.hostId, editorItem.path, bytes);
         notifySuccess(t('sftp.savedRemote', { name: editorItem.name }));
         await fetchRemoteFiles();
       }

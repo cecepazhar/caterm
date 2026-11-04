@@ -38,7 +38,6 @@ pub mod network_audit;
 pub mod paths;
 pub mod prefs;
 pub mod pro;
-pub mod license_local;
 pub mod s3;
 pub mod scheduler;
 pub mod scp;

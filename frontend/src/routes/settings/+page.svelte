@@ -38,6 +38,7 @@
     Alert
   } from '@cecepazhar/caui';
   import AmbientSettingsCard from '$lib/components/AmbientSettingsCard.svelte';
+  import { AUTO_LOCK_CHOICES, getAutoLockMinutes, setAutoLockMinutes } from '$lib/stores/autoLock.svelte';
 
   // Shared surface classes so every tab reads the same in light and dark mode.
   const CARD = 'bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6 shadow-sm dark:shadow-none text-neutral-900 dark:text-white';
@@ -953,6 +954,21 @@
     <Card class="space-y-4" variant="primary" size="lg">
       <h2 class="text-lg font-semibold text-neutral-900 dark:text-white">{t('settings.security.title')}</h2>
       <p class="{MUTED} text-sm">{t('settings.security.subtitle')}</p>
+
+      <div class="max-w-md space-y-1.5 pt-2">
+        <label for="auto-lock-minutes" class="block text-sm font-medium text-neutral-900 dark:text-white">{t('settings.security.autoLock')}</label>
+        <select
+          id="auto-lock-minutes"
+          class="w-full rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-sm px-3 py-2"
+          value={getAutoLockMinutes()}
+          onchange={(e) => setAutoLockMinutes(Number((e.currentTarget as HTMLSelectElement).value))}
+        >
+          {#each AUTO_LOCK_CHOICES as m (m)}
+            <option value={m}>{m === 0 ? t('settings.security.autoLockNever') : t('settings.security.autoLockMinutes', { n: m })}</option>
+          {/each}
+        </select>
+        <p class="text-xs {MUTED}">{t('settings.security.autoLockHint')}</p>
+      </div>
 
       <form onsubmit={handleChangeMasterPassword} class="max-w-md space-y-4 pt-2">
         <p class="text-xs {MUTED}">{t('settings.security.rekeyNote')}</p>

@@ -46,6 +46,7 @@ struct SshOutputEvent {
 #[serde(rename_all = "camelCase")]
 struct SshClosedEvent {
     session_id: String,
+    unexpected: bool,
 }
 
 #[derive(Clone, Serialize)]
@@ -64,8 +65,17 @@ fn install_ssh_event_bridge(app: &tauri::AppHandle) {
         caterm_core::ssh::SshEvent::Output { session_id, data } => {
             let _ = handle.emit("ssh://output", SshOutputEvent { session_id, data });
         }
-        caterm_core::ssh::SshEvent::Closed { session_id } => {
-            let _ = handle.emit("ssh://closed", SshClosedEvent { session_id });
+        caterm_core::ssh::SshEvent::Closed {
+            session_id,
+            unexpected,
+        } => {
+            let _ = handle.emit(
+                "ssh://closed",
+                SshClosedEvent {
+                    session_id,
+                    unexpected,
+                },
+            );
         }
         caterm_core::ssh::SshEvent::OsDetected { host_id, os } => {
             let _ = handle.emit("host:os_detected", HostOsDetectedEvent { host_id, os });

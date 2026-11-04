@@ -6,6 +6,8 @@
   import { WebglAddon } from '@xterm/addon-webgl';
   import { CanvasAddon } from '@xterm/addon-canvas';
   import { WebLinksAddon } from '@xterm/addon-web-links';
+  import { Unicode11Addon } from '@xterm/addon-unicode11';
+  import { SearchAddon } from '@xterm/addon-search';
   import { openExternalUrl } from '$lib/utils/url';
   import '@xterm/xterm/css/xterm.css';
   import type { UnlistenFn } from '@tauri-apps/api/event';
@@ -25,6 +27,7 @@
   import { getTheme, terminalTheme } from '$lib/stores/theme.svelte';
   import { LINUX_COMMANDS, commandDescription, type AutocompleteItem } from '$lib/data/terminalCommands';
   import { t } from '$lib/i18n/index.svelte';
+  import { getPerformancePrefs } from '$lib/api/performance';
   import TerminalAutocomplete from '$lib/components/TerminalAutocomplete.svelte';
   import { terminalKeyAction } from '$lib/shortcuts';
   import { getTerminalPrefs, stepTerminalFontSize, setTerminalFontSize, DEFAULT_FONT_SIZE } from '$lib/stores/terminalPrefs.svelte';
@@ -98,6 +101,40 @@
   // Security Sentinel State (Blast Shield & Paste Sentinel)
   let showBlastModal = $state(false);
   let pendingBlastCommand = $state('');
+  // Terminal input is processed strictly in order: an Enter waiting on the Blast Shield check
+  // (or on the user's answer in its modal) holds back everything typed after it.
+  let inputChain: Promise<void> = Promise.resolve();
+  let blastDecision: (() => void) | null = null;
+  // Set while waiting for the user to confirm a connection to a Production host.
+  let prodConfirm = $state<((ok: boolean) => void) | null>(null);
+  let reconnectNow: () => void = () => {};
+  // Find-in-output bar (Ctrl+Shift+F).
+  let searchAddon: SearchAddon | null = null;
+  let showSearch = $state(false);
+  let searchQuery = $state('');
+  let searchMiss = $state(false);
+  let searchInput: HTMLInputElement | undefined = $state();
+
+  function openSearch() {
+    showSearch = true;
+    queueMicrotask(() => searchInput?.select());
+  }
+
+  function closeSearch() {
+    showSearch = false;
+    searchMiss = false;
+    searchAddon?.clearDecorations();
+    term?.clearSelection();
+    term?.focus();
+  }
+
+  function runSearch(backwards: boolean) {
+    if (!searchAddon || !searchQuery) return;
+    const found = backwards ? searchAddon.findPrevious(searchQuery) : searchAddon.findNext(searchQuery);
+    searchMiss = !found;
+  }
+  /** Queues input through the same ordered path as typing (Blast Shield, audit, broadcast). */
+  let submitInput: (data: string) => void = () => {};
   let pendingBlastRisk = $state<BlastShieldRisk | null>(null);
 
   let showPasteModal = $state(false);
@@ -283,9 +320,14 @@
     selectedSuggestionIndex = -1;
   }
 
+  // Snippets and AI-proposed commands go through the typing path line by line, so each line
+  // gets the Blast Shield check and its own audit-log entry instead of bypassing both.
   function injectCommand(cmd: string) {
     if (!session) return;
-    void sshWrite(session.sessionId, cmd + '\r').catch(() => {});
+    for (const line of cmd.replace(/\r\n/g, '\n').replace(/\n+$/, '').split('\n')) {
+      if (line) submitInput(line);
+      submitInput('\r');
+    }
   }
 
   function writeRaw(data: string) {
@@ -332,7 +374,9 @@
       fontFamily: 'Menlo, Monaco, "Courier New", monospace',
       fontSize: terminalPrefs.fontSize,
       cursorBlink: true,
-      scrollback: 1000,
+      // Needed for the Unicode 11 width tables (emoji / CJK take two cells).
+      allowProposedApi: true,
+      scrollback: 10000,
       linkHandler: {
         activate: (_event, text) => {
           void openExternalUrl(text);
@@ -340,6 +384,14 @@
       }
     });
     term = terminal;
+    // Settings → Performance → scrollback (stored by the backend). It used to be saved but
+    // never applied: every pane was hardcoded to 1000 lines.
+    void getPerformancePrefs()
+      .then((prefs) => {
+        const lines = Number(prefs.scrollbackLines);
+        if (!disposed && Number.isFinite(lines) && lines >= 100) terminal.options.scrollback = Math.min(lines, 200_000);
+      })
+      .catch(() => {});
 
     // Web links detector for clickable URLs in terminal output
     const webLinks = new WebLinksAddon((_event, uri) => {
@@ -347,21 +399,35 @@
     });
     terminal.loadAddon(webLinks);
 
+    // Unicode 11 character widths, so emoji and CJK line up instead of overlapping.
+    terminal.loadAddon(new Unicode11Addon());
+    terminal.unicode.activeVersion = '11';
+    const search = new SearchAddon();
+    terminal.loadAddon(search);
+    searchAddon = search;
+
     // Paste Sentinel: intercept clipboard paste into the terminal
-    const handlePaste = async (e: ClipboardEvent) => {
+    const handlePaste = (e: ClipboardEvent) => {
       const text = e.clipboardData?.getData('text');
       if (!text) return;
-      try {
-        const check = await checkPasteSentinel(text);
-        if (check.containsSecret) {
-          e.preventDefault();
-          e.stopPropagation();
-          pendingPasteResult = check;
-          showPasteModal = true;
+      // Stop the paste right now, synchronously: once this handler returns, xterm's own paste
+      // listener would already have sent the text to the shell. The text is re-pasted below
+      // only after the sentinel has looked at it.
+      e.preventDefault();
+      e.stopPropagation();
+      void (async () => {
+        try {
+          const check = await checkPasteSentinel(text);
+          if (check.containsSecret) {
+            pendingPasteResult = check;
+            showPasteModal = true;
+            return;
+          }
+        } catch {
+          // Sentinel unavailable (community build): fall through and paste normally.
         }
-      } catch {
-        // Continue standard paste if check fails
-      }
+        terminal.paste(text);
+      })();
     };
 
     terminalContainer.addEventListener('paste', handlePaste, true);
@@ -429,10 +495,18 @@
         );
 
         keepUnlisten(
-          await onSshClosed(({ sessionId }) => {
+          await onSshClosed(({ sessionId, unexpected }) => {
             if (disposed || !session || sessionId !== session.sessionId) return;
             status = 'offline';
-            terminal.write(`\r\n\x1b[33m${t('terminal.closedByRemote')}\x1b[0m\r\n`);
+            clearActiveSession(session.sessionId);
+            session = null;
+            if (unexpected) {
+              terminal.write(`\r\n\x1b[33m${t('terminal.connectionLost')}\x1b[0m\r\n`);
+              scheduleReconnect();
+            } else {
+              terminal.write(`\r\n\x1b[33m${t('terminal.closedByRemote')}\x1b[0m\r\n`);
+              terminal.write(`\x1b[2m${t('terminal.pressEnterToReconnect')}\x1b[0m\r\n`);
+            }
           })
         );
       } catch (err) {
@@ -445,15 +519,32 @@
         return;
       }
 
+      if (host.options?.environment === 'production') {
+        terminal.write(`\r\n\x1b[1;31m${t('terminal.prodWarning')}\x1b[0m\r\n`);
+        const ok = await new Promise<boolean>((resolve) => (prodConfirm = resolve));
+        prodConfirm = null;
+        if (disposed) return;
+        if (!ok) {
+          status = 'offline';
+          terminal.write(`\r\n\x1b[33m${t('terminal.prodCancelled')}\x1b[0m\r\n`);
+          return;
+        }
+      }
+      await openSession();
+    })();
+
+    async function openSession(): Promise<boolean> {
+      status = 'connecting';
       try {
         const opened = await sshConnect(host.id);
         if (disposed) {
           void sshDisconnect(opened.sessionId).catch(() => {});
-          return;
+          return false;
         }
 
         session = opened;
         status = 'connected';
+        reconnectAttempt = 0;
         registerSessionPane({
           sessionId: opened.sessionId,
           label: paneLabel,
@@ -468,12 +559,44 @@
 
         for (const chunk of early.get(opened.sessionId) ?? []) terminal.write(chunk);
         early.clear();
+        return true;
       } catch (err) {
-        if (disposed) return;
+        if (disposed) return false;
         status = 'offline';
         terminal.write(`\r\n\x1b[31m${t('terminal.sshFailed')}: ${errorMessage(err)}\x1b[0m\r\n`);
+        return false;
       }
-    })();
+    }
+
+    // Auto-reconnect after an unexpected drop: exponential backoff (1, 2, 4, 8, 16 s), then
+    // give up and leave "press Enter to reconnect" to the user.
+    const MAX_RECONNECT_ATTEMPTS = 5;
+    let reconnectAttempt = 0;
+    let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+    function scheduleReconnect() {
+      if (disposed || reconnectTimer) return;
+      if (reconnectAttempt >= MAX_RECONNECT_ATTEMPTS) {
+        terminal.write(`\r\n\x1b[31m${t('terminal.reconnectGaveUp')}\x1b[0m\r\n`);
+        terminal.write(`\x1b[2m${t('terminal.pressEnterToReconnect')}\x1b[0m\r\n`);
+        return;
+      }
+      reconnectAttempt += 1;
+      const delayMs = 1000 * 2 ** (reconnectAttempt - 1);
+      status = 'connecting';
+      terminal.write(
+        `\x1b[33m${t('terminal.reconnecting', { attempt: reconnectAttempt, max: MAX_RECONNECT_ATTEMPTS, sec: delayMs / 1000 })}\x1b[0m\r\n`
+      );
+      reconnectTimer = setTimeout(async () => {
+        reconnectTimer = null;
+        if (disposed) return;
+        if (!(await openSession())) scheduleReconnect();
+      }, delayMs);
+    }
+    reconnectNow = () => {
+      if (session || reconnectTimer || status === 'connecting') return;
+      reconnectAttempt = 0;
+      void openSession();
+    };
 
     // Intercept keystrokes for copy/paste, font size and autocomplete. App-wide shortcuts
     // (tabs, palette, …) never get here: the layout catches them in the capture phase.
@@ -486,7 +609,9 @@
           return false;
         }
         event.preventDefault();
-        if (action === 'copy') {
+        if (action === 'find') {
+          openSearch();
+        } else if (action === 'copy') {
           const text = terminal.getSelection();
           terminal.clearSelection();
           void copyText(text).then(() => terminal.focus());
@@ -559,32 +684,39 @@
       return true;
     });
 
-    terminal.onData((data) => {
-      // Intercept Enter to run Blast Shield safety checks on complete commands
+    async function handleTerminalInput(data: string) {
+      // Offline pane: Enter reconnects instead of being sent nowhere.
+      if (!session) {
+        if (data === '\r') reconnectNow();
+        return;
+      }
+      // Enter on a non-empty line: run the Blast Shield safety check before it reaches the shell.
       if (data === '\r' || data === '\n') {
         const fullCmd = currentInputLine.trim();
         if (fullCmd) {
-          void (async () => {
-            try {
-              const res = await checkCommandBlastShield(fullCmd);
-              if (res.isDestructive && res.risk) {
-                pendingBlastCommand = fullCmd;
-                pendingBlastRisk = res.risk;
-                showBlastModal = true;
-                return;
-              }
-            } catch {
-              // Ignore blast shield check error in community/fallback mode
+          try {
+            const res = await checkCommandBlastShield(fullCmd);
+            if (res.isDestructive && res.risk) {
+              pendingBlastCommand = fullCmd;
+              pendingBlastRisk = res.risk;
+              showBlastModal = true;
+              // Hold all further input until the user answers; confirm/cancel send the
+              // Enter or Ctrl+C themselves.
+              await new Promise<void>((resolve) => (blastDecision = resolve));
+              return;
             }
-
-            dispatchPtyData(data);
-          })();
-          return;
+          } catch {
+            // Ignore blast shield check error in community/fallback mode
+          }
         }
       }
-
       dispatchPtyData(data);
-    });
+    }
+
+    submitInput = (data: string) => {
+      inputChain = inputChain.then(() => handleTerminalInput(data)).catch(() => {});
+    };
+    terminal.onData((data) => submitInput(data));
 
     function dispatchPtyData(data: string) {
       // Send keystroke to the real Rust SSH PTY backend
@@ -667,6 +799,8 @@
 
     return () => {
       disposed = true;
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+      prodConfirm?.(false);
       terminalContainer?.removeEventListener('paste', handlePaste, true);
       for (const unlisten of unlisteners) unlisten();
       unlisteners.length = 0;
@@ -689,6 +823,8 @@
     }
     pendingBlastCommand = '';
     pendingBlastRisk = null;
+    blastDecision?.();
+    blastDecision = null;
   }
 
   function cancelBlastCommand() {
@@ -700,21 +836,24 @@
     currentInputLine = '';
     pendingBlastCommand = '';
     pendingBlastRisk = null;
+    blastDecision?.();
+    blastDecision = null;
+  }
+
+  function pasteIntoTerminal(text: string) {
+    if (term) term.paste(text);
+    else if (session) void sshWrite(session.sessionId, text).catch(() => {});
   }
 
   function handlePasteSanitized(text: string) {
     showPasteModal = false;
-    if (session && text) {
-      void sshWrite(session.sessionId, text).catch(() => {});
-    }
+    if (text) pasteIntoTerminal(text);
     pendingPasteResult = null;
   }
 
   function handlePasteOriginal(text: string) {
     showPasteModal = false;
-    if (session && text) {
-      void sshWrite(session.sessionId, text).catch(() => {});
-    }
+    if (text) pasteIntoTerminal(text);
     pendingPasteResult = null;
   }
 
@@ -804,6 +943,38 @@
 
   <!-- Terminal canvas container -->
   <div bind:this={terminalContainer} class="flex-1 p-1 overflow-hidden outline-none relative"></div>
+
+  {#if showSearch}
+    <div class="absolute top-9 right-3 z-20 flex items-center gap-1.5 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white/95 dark:bg-neutral-900/95 shadow px-2 py-1">
+      <input
+        bind:this={searchInput}
+        bind:value={searchQuery}
+        class="w-56 bg-transparent text-xs font-mono outline-none text-neutral-800 dark:text-neutral-200"
+        placeholder={t('terminal.searchPlaceholder')}
+        aria-label={t('terminal.searchPlaceholder')}
+        oninput={() => runSearch(false)}
+        onkeydown={(e) => {
+          if (e.key === 'Enter') { e.preventDefault(); runSearch(e.shiftKey); }
+          else if (e.key === 'Escape') { e.preventDefault(); closeSearch(); }
+        }}
+      />
+      {#if searchMiss && searchQuery}
+        <span class="text-[10px] text-rose-500">{t('terminal.searchNoMatch')}</span>
+      {/if}
+      <button type="button" class="text-xs px-1 text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200" onclick={() => runSearch(true)} aria-label="previous">↑</button>
+      <button type="button" class="text-xs px-1 text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200" onclick={() => runSearch(false)} aria-label="next">↓</button>
+      <button type="button" class="text-xs px-1 text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200" onclick={closeSearch} aria-label="close">✕</button>
+    </div>
+  {/if}
+
+  {#if prodConfirm}
+    <div class="absolute inset-x-0 bottom-0 z-20 m-2 p-3 rounded-md border border-rose-500/50 bg-rose-50 dark:bg-rose-950/80 text-xs flex flex-wrap items-center gap-2">
+      <span class="font-bold text-rose-700 dark:text-rose-300">PRODUCTION</span>
+      <span class="flex-1 min-w-0 text-rose-800 dark:text-rose-200">{t('terminal.prodConfirmText', { name: host.label })}</span>
+      <Button variant="secondary" size="sm" onclick={() => prodConfirm?.(false)}>{t('common.cancel')}</Button>
+      <Button variant="primary" size="sm" onclick={() => prodConfirm?.(true)}>{t('terminal.prodConfirmConnect')}</Button>
+    </div>
+  {/if}
 
   <!-- Smart Autocomplete Overlay -->
   {#if autocompleteEnabled && suggestions.length > 0}

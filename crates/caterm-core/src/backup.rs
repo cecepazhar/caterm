@@ -135,6 +135,7 @@ pub fn apply_backup_payload(payload: VaultBackupPayload) -> Result<usize, Caterm
                 tags: item.host.tags,
                 os: item.host.os,
                 protocol: Some(item.host.protocol),
+                options: Some(item.host.options),
                 secret: item.secret,
             })?;
             imported_count += 1;
@@ -151,6 +152,7 @@ pub fn apply_backup_payload(payload: VaultBackupPayload) -> Result<usize, Caterm
                 tags: host.tags,
                 os: host.os,
                 protocol: Some(host.protocol),
+                options: Some(host.options),
                 secret: None,
             })?;
             imported_count += 1;
@@ -344,6 +346,7 @@ mod tests {
                 tags: vec![],
                 os: None,
                 protocol: crate::store::ConnectionProtocol::Ssh,
+                options: Default::default(),
                 created_at: 1,
                 updated_at: 1,
                 has_secret: false,

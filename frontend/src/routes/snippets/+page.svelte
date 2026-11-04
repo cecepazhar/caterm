@@ -222,10 +222,39 @@
     }
   }
 
-  function injectSnippet(cmd: string) {
+  // {{name}} placeholders: asked for in a small form right before the snippet runs.
+  const PLACEHOLDER_RE = /\{\{\s*([A-Za-z_][\w-]*)\s*\}\}/g;
+  let varModalOpen = $state(false);
+  let varNames = $state<string[]>([]);
+  let varValues = $state<Record<string, string>>({});
+  let pendingSnippetCmd = $state('');
+
+  function placeholderNames(cmd: string): string[] {
+    return [...new Set([...cmd.matchAll(PLACEHOLDER_RE)].map((m) => m[1]))];
+  }
+
+  function doInject(cmd: string) {
     const injected = injectIntoActiveSession(cmd);
     injectNotice = injected ? t('snippets.injectedNotice') : t('snippets.noActiveSessionNotice');
     setTimeout(() => (injectNotice = ''), 3000);
+  }
+
+  function injectSnippet(cmd: string) {
+    const names = placeholderNames(cmd);
+    if (names.length === 0) {
+      doInject(cmd);
+      return;
+    }
+    pendingSnippetCmd = cmd;
+    varNames = names;
+    varValues = Object.fromEntries(names.map((n) => [n, varValues[n] ?? '']));
+    varModalOpen = true;
+  }
+
+  function confirmVariables() {
+    const filled = pendingSnippetCmd.replace(PLACEHOLDER_RE, (_m, name: string) => varValues[name] ?? '');
+    varModalOpen = false;
+    doInject(filled);
   }
 
   const snippetGroups = $derived(
@@ -524,4 +553,18 @@
       </div>
     {/snippet}
   {/if}
+</Modal>
+
+<Modal bind:open={varModalOpen} title={t('snippets.variablesTitle')} size="sm">
+  <form class="space-y-3" onsubmit={(e) => { e.preventDefault(); confirmVariables(); }}>
+    <p class="text-xs text-neutral-500 dark:text-neutral-400">{t('snippets.variablesHint')}</p>
+    {#each varNames as name (name)}
+      <Input id={`snippet-var-${name}`} label={name} bind:value={varValues[name]} size="sm" />
+    {/each}
+    <pre class="text-[11px] font-mono whitespace-pre-wrap break-all rounded bg-neutral-100 dark:bg-neutral-900 p-2">{pendingSnippetCmd.replace(PLACEHOLDER_RE, (_m, n) => varValues[n] || `{{${n}}}`)}</pre>
+    <div class="flex justify-end gap-2">
+      <Button variant="secondary" size="sm" type="button" onclick={() => (varModalOpen = false)}>{t('common.cancel')}</Button>
+      <Button variant="primary" size="sm" type="submit">{t('snippets.inject')}</Button>
+    </div>
+  </form>
 </Modal>

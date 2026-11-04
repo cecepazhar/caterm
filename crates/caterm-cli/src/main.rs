@@ -66,12 +66,16 @@ enum HostAction {
         port: u16,
         #[arg(long)]
         username: String,
-        #[arg(long, help = "password, key-path=..., or key-id=...")]
+        #[arg(long, help = "password, agent, key-path=..., or key-id=...")]
         auth_method: String,
         #[arg(long, default_value = "")]
         secret: String,
         #[arg(long, value_delimiter = ',')]
         tags: Vec<String>,
+        #[arg(long, help = "id of a saved host to tunnel through (ProxyJump)")]
+        jump_host: Option<String>,
+        #[arg(long, help = "none, local, staging or production")]
+        environment: Option<String>,
     },
     Rm {
         id: String,
@@ -170,6 +174,8 @@ struct EnvInfo {
 fn parse_auth_method(val: &str) -> Result<caterm_core::store::AuthMethod, String> {
     if val == "password" {
         Ok(caterm_core::store::AuthMethod::Password)
+    } else if val == "agent" {
+        Ok(caterm_core::store::AuthMethod::Agent)
     } else if let Some(path) = val.strip_prefix("key-path=") {
         Ok(caterm_core::store::AuthMethod::Key {
             path: path.to_string(),
@@ -337,7 +343,19 @@ fn handle_host(action: HostAction) -> i32 {
             auth_method,
             secret,
             tags,
+            jump_host,
+            environment,
         } => {
+            let environment = match environment.as_deref().unwrap_or("none") {
+                "none" => caterm_core::store::HostEnvironment::None,
+                "local" => caterm_core::store::HostEnvironment::Local,
+                "staging" => caterm_core::store::HostEnvironment::Staging,
+                "production" => caterm_core::store::HostEnvironment::Production,
+                other => {
+                    eprintln!("Error: invalid environment: {other}");
+                    return 1;
+                }
+            };
             let auth = match parse_auth_method(&auth_method) {
                 Ok(a) => a,
                 Err(e) => {
@@ -355,6 +373,10 @@ fn handle_host(action: HostAction) -> i32 {
                 tags,
                 os: None,
                 protocol: Some(caterm_core::store::ConnectionProtocol::Ssh),
+                options: Some(caterm_core::store::HostOptions {
+                    environment,
+                    jump_host_id: jump_host,
+                }),
                 secret: if secret.is_empty() {
                     None
                 } else {

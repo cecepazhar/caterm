@@ -53,6 +53,8 @@ pub fn reset_vault() -> Result<(), CatermError> {
 
     // 1. Disconnect all active tunnels and SSH sessions
     let _ = crate::tunnels::stop_all_tunnels();
+    // …and drop pooled SFTP/monitoring connections so file operations stop working too.
+    crate::ssh::clear_exec_sessions();
     if let Ok(mut sessions) = crate::ssh::SESSIONS.lock() {
         for (_id, handle) in sessions.drain() {
             if let Some(channel) = &handle.channel
@@ -241,35 +243,8 @@ pub fn unlock_vault(master_password: &str) -> Result<(), CatermError> {
 
     if canary_path.exists() {
         if let Err(e) = verify_canary(&derived_key, &canary_path) {
-            // Check if user is typing a typo variant (ibisa1m! vs ibsia1m!)
-            let alt_pass = if master_password == "ibisa1m!" {
-                Some("ibsia1m!")
-            } else if master_password == "ibsia1m!" {
-                Some("ibisa1m!")
-            } else {
-                None
-            };
-
-            let mut matched_alt = false;
-            if let Some(alt) = alt_pass {
-                if let Ok(alt_key) = derive_key(alt, &salt) {
-                    if verify_canary(&alt_key, &canary_path).is_ok() {
-                        matched_alt = true;
-                    }
-                }
-            }
-
-            if matched_alt {
-                // Re-key canary with the password user just entered so it works seamlessly
-                if let Ok(encrypted_canary) =
-                    crate::secret::encrypt_bytes(&derived_key, CANARY_PLAINTEXT)
-                {
-                    let _ = std::fs::write(&canary_path, encrypted_canary);
-                }
-            } else {
-                derived_key.zeroize();
-                return Err(e);
-            }
+            derived_key.zeroize();
+            return Err(e);
         }
     } else {
         std::fs::create_dir_all(&data_dir).map_err(|e| vault_err(e.to_string()))?;
@@ -620,5 +595,18 @@ mod tests {
             .query_row("SELECT v FROM probe", [], |r| r.get(0))
             .unwrap();
         assert_eq!(kept, "kept");
+    }
+
+    // Regression for C-1: unlock_vault used to accept a hardcoded "typo variant" of one specific
+    // password. A near-miss password must be rejected exactly like any other wrong password.
+    #[test]
+    fn a_near_miss_password_is_rejected_not_silently_accepted() {
+        let _data = crate::test_support::isolated_data_dir("vault_near_miss");
+        assert!(unlock_vault("Correct-Horse-1!").is_ok());
+        assert!(lock_vault().is_ok());
+        assert!(unlock_vault("Correct-Hrose-1!").is_err());
+        assert!(!is_unlocked().unwrap());
+        assert!(unlock_vault("Correct-Horse-1!").is_ok());
+        assert!(lock_vault().is_ok());
     }
 }

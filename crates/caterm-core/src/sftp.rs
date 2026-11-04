@@ -10,7 +10,7 @@ use parking_lot::Mutex;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::fs::File;
-use std::io::{Read, Write};
+use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::Path;
 use std::sync::Arc;
 use std::time::Instant;
@@ -174,17 +174,49 @@ pub fn read_remote_file(host_id: &str, remote_path: &str) -> Result<Vec<u8>, Cat
     })
 }
 
+/// Replaces a remote file atomically: the data goes to a sibling temp file which is renamed over
+/// the target only once fully written, so a dropped connection leaves the old file intact
+/// instead of a truncated one. The existing file's permission bits are kept.
 pub fn write_remote_file(host_id: &str, remote_path: &str, data: &[u8]) -> Result<(), CatermError> {
     let path = remote_path.to_string();
+    let tmp_path = format!("{path}.caterm-tmp-{}", std::process::id());
 
     crate::ssh::with_exec_session(host_id, move |sess| {
         let sftp = open_sftp(sess)?;
-        let mut file = sftp
-            .create(Path::new(&path))
-            .map_err(|e| sftp_err(format!("Failed to create remote file {path}: {e}")))?;
+        let target = Path::new(&path);
+        let tmp = Path::new(&tmp_path);
+        let existing_mode = sftp.stat(target).ok().and_then(|st| st.perm);
 
-        file.write_all(data)
-            .map_err(|e| sftp_err(format!("Failed to write to remote file: {e}")))?;
+        let write_result = (|| -> Result<(), CatermError> {
+            let mut file = sftp
+                .create(tmp)
+                .map_err(|e| sftp_err(format!("Failed to create temp file {tmp_path}: {e}")))?;
+            file.write_all(data)
+                .map_err(|e| sftp_err(format!("Failed to write to remote file: {e}")))?;
+            file.flush()
+                .map_err(|e| sftp_err(format!("Failed to flush remote file: {e}")))?;
+            Ok(())
+        })();
+        if let Err(e) = write_result {
+            let _ = sftp.unlink(tmp);
+            return Err(e);
+        }
+
+        if let Some(mode) = existing_mode {
+            let stat = ssh2::FileStat {
+                size: None,
+                uid: None,
+                gid: None,
+                perm: Some(mode & 0o7777),
+                atime: None,
+                mtime: None,
+            };
+            let _ = sftp.setstat(tmp, stat);
+        }
+        if let Err(e) = replace_remote(&sftp, tmp, target) {
+            let _ = sftp.unlink(tmp);
+            return Err(sftp_err(format!("Failed to replace remote file {path}: {e}")));
+        }
         Ok(())
     })
 }
@@ -203,9 +235,11 @@ fn remove_remote_dir_recursive(sftp: &ssh2::Sftp, path: &Path) -> Result<(), Cat
     let mut dir = match sftp.opendir(path) {
         Ok(d) => d,
         Err(_) => {
-            let _ = sftp.unlink(path);
-            let _ = sftp.rmdir(path);
-            return Ok(());
+            // Not a listable directory: treat it as a file/link. Whatever happens, report it —
+            // a permission error must not look like a successful delete.
+            return sftp.unlink(path).map_err(|e| {
+                sftp_err(format!("Failed to delete {}: {e}", path.display()))
+            });
         }
     };
 
@@ -225,7 +259,9 @@ fn remove_remote_dir_recursive(sftp: &ssh2::Sftp, path: &Path) -> Result<(), Cat
         if is_dir {
             remove_remote_dir_recursive(sftp, &child)?;
         } else {
-            let _ = sftp.unlink(&child);
+            sftp.unlink(&child).map_err(|e| {
+                sftp_err(format!("Failed to delete {}: {e}", child.display()))
+            })?;
         }
     }
 
@@ -409,7 +445,94 @@ pub(crate) fn shell_quote(s: &str) -> String {
     format!("'{}'", s.replace('\'', r"'\''"))
 }
 
-/// Uploads a local file to remote SFTP with 64KB chunking and progress callbacks.
+/// Moves `tmp` onto `target`, replacing it if it exists.
+///
+/// SFTP v3 (what OpenSSH speaks) refuses to rename onto an existing file and libssh2 has no
+/// `posix-rename@openssh.com`, so an existing target is first moved aside, then replaced, then
+/// the old copy removed; if the swap fails the old file is put back. There is always one
+/// complete copy on disk — the target name is only briefly absent, never half-written.
+fn replace_remote(sftp: &ssh2::Sftp, tmp: &Path, target: &Path) -> Result<(), ssh2::Error> {
+    match sftp.rename(tmp, target, None) {
+        Ok(()) => return Ok(()),
+        Err(e) if sftp.stat(target).is_err() => return Err(e),
+        Err(_) => {}
+    }
+    let backup = std::path::PathBuf::from(format!(
+        "{}.caterm-old-{}",
+        target.display(),
+        std::process::id()
+    ));
+    sftp.rename(target, &backup, None)?;
+    if let Err(e) = sftp.rename(tmp, target, None) {
+        let _ = sftp.rename(&backup, target, None);
+        return Err(e);
+    }
+    let _ = sftp.unlink(&backup);
+    Ok(())
+}
+
+/// True when the SSH transport under `sess` no longer answers, i.e. the failure was the link
+/// dropping rather than the transfer itself going wrong. Partial files are kept for resume
+/// only in that case.
+fn session_looks_dead(sess: &ssh2::Session) -> bool {
+    sess.keepalive_send().is_err()
+}
+
+#[cfg(unix)]
+fn local_permission_bits(meta: &std::fs::Metadata) -> Option<u32> {
+    use std::os::unix::fs::PermissionsExt;
+    Some(meta.permissions().mode() & 0o777)
+}
+
+#[cfg(not(unix))]
+fn local_permission_bits(_meta: &std::fs::Metadata) -> Option<u32> {
+    None
+}
+
+#[cfg(unix)]
+fn set_local_permission_bits(path: &str, perm: Option<u32>) {
+    use std::os::unix::fs::PermissionsExt;
+    if let Some(mode) = perm {
+        let _ = std::fs::set_permissions(path, std::fs::Permissions::from_mode(mode & 0o777));
+    }
+}
+
+#[cfg(not(unix))]
+fn set_local_permission_bits(_path: &str, _perm: Option<u32>) {}
+
+/// Reports progress at most every 100ms (and once at the end).
+fn emit_progress<F>(
+    on_progress: &Arc<Mutex<F>>,
+    id: &str,
+    done: u64,
+    total: u64,
+    start: Instant,
+    last_emit: &mut Instant,
+) where
+    F: FnMut(SftpProgressPayload) + Send + 'static + ?Sized,
+{
+    if last_emit.elapsed().as_millis() < 100 && done != total {
+        return;
+    }
+    let secs = start.elapsed().as_secs_f64();
+    let speed_bps = if secs > 0.0 { (done as f64 / secs) as u64 } else { 0 };
+    let mut cb = on_progress.lock();
+    cb(SftpProgressPayload {
+        transfer_id: id.to_string(),
+        bytes_transferred: done,
+        total_bytes: total,
+        speed_bps,
+    });
+    *last_emit = Instant::now();
+}
+
+/// Uploads a local file with 64KB chunking and progress callbacks.
+///
+/// The bytes go to `<remote>.caterm-part` and are renamed onto the target only after the last
+/// chunk, so an interrupted upload never leaves a truncated file under the real name. The local
+/// file is reopened on every attempt: `with_exec_session` re-runs this closure on a fresh
+/// connection if the pooled one turned out to be dead, and a handle that had already advanced
+/// would silently upload only the tail of the file.
 pub fn upload_file_with_progress<F>(
     host_id: &str,
     local_path: &str,
@@ -420,77 +543,119 @@ pub fn upload_file_with_progress<F>(
 where
     F: FnMut(SftpProgressPayload) + Send + 'static + ?Sized,
 {
-    clear_cancel_token(transfer_id);
-    let local_file = File::open(local_path)
+    let local_meta = std::fs::metadata(local_path)
         .map_err(|e| sftp_err(format!("Failed to open local file {local_path}: {e}")))?;
-    let total_bytes = local_file.metadata().map(|m| m.len()).unwrap_or(0);
-
-    let local_file_arc = Arc::new(Mutex::new(local_file));
+    let total_bytes = local_meta.len();
+    let local_mtime = local_meta
+        .modified()
+        .ok()
+        .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+        .map(|d| d.as_secs());
+    let local_mode = local_permission_bits(&local_meta);
     let t_id = transfer_id.to_string();
     let r_path = remote_path.to_string();
+    let l_path = local_path.to_string();
+    let part_path = format!("{r_path}.caterm-part");
 
-    crate::ssh::with_exec_session(host_id, move |sess| {
+    let result = crate::ssh::with_dedicated_session(host_id, move |sess| {
+        let mut local_file = File::open(&l_path)
+            .map_err(|e| sftp_err(format!("Failed to open local file {l_path}: {e}")))?;
         let sftp = open_sftp(sess)?;
-        let mut remote_file = sftp
-            .create(Path::new(&r_path))
-            .map_err(|e| sftp_err(format!("Failed to create remote file {r_path}: {e}")))?;
+        let part = Path::new(&part_path);
 
-        let mut buffer = vec![0u8; 64 * 1024];
-        let mut bytes_transferred = 0u64;
-        let start_time = Instant::now();
-        let mut last_emit = Instant::now();
-
-        loop {
-            if is_cancelled(&t_id) {
-                clear_cancel_token(&t_id);
-                return Err(sftp_err("Transfer cancelled by user".to_string()));
-            }
-
-            let n = {
-                let mut guard = local_file_arc.lock();
-                guard
-                    .read(&mut buffer)
-                    .map_err(|e| sftp_err(format!("Failed to read local file: {e}")))?
+        let copy = (|| -> Result<(), CatermError> {
+            // Resume: a `.caterm-part` left by an interrupted upload of this same file is
+            // continued from its current size instead of starting over.
+            // Only if the source hasn't changed since the part was written (part newer than the
+            // local file); otherwise the old bytes belong to a different version.
+            let resume_from = sftp
+                .stat(part)
+                .ok()
+                .filter(|st| match (st.mtime, local_mtime) {
+                    (Some(part_m), Some(src_m)) => part_m >= src_m,
+                    _ => false,
+                })
+                .and_then(|st| st.size)
+                .filter(|&size| size > 0 && size < total_bytes)
+                .unwrap_or(0);
+            let mut remote_file = if resume_from > 0 {
+                let mut f = sftp
+                    .open_mode(part, ssh2::OpenFlags::WRITE, 0o644, ssh2::OpenType::File)
+                    .map_err(|e| sftp_err(format!("Failed to reopen {part_path}: {e}")))?;
+                f.seek(SeekFrom::Start(resume_from))
+                    .map_err(|e| sftp_err(format!("Failed to seek {part_path}: {e}")))?;
+                local_file
+                    .seek(SeekFrom::Start(resume_from))
+                    .map_err(|e| sftp_err(format!("Failed to seek local file: {e}")))?;
+                f
+            } else {
+                sftp.create(part).map_err(|e| {
+                    sftp_err(format!("Failed to create remote file {part_path}: {e}"))
+                })?
             };
-            if n == 0 {
-                break;
-            }
-
-            if let Some(chunk) = buffer.get(..n) {
-                remote_file
-                    .write_all(chunk)
-                    .map_err(|e| sftp_err(format!("Failed to write remote chunk: {e}")))?;
-            }
-
-            bytes_transferred += n as u64;
-
-            if last_emit.elapsed().as_millis() >= 100 || bytes_transferred == total_bytes {
-                let elapsed_secs = start_time.elapsed().as_secs_f64();
-                let speed_bps = if elapsed_secs > 0.0 {
-                    (bytes_transferred as f64 / elapsed_secs) as u64
-                } else {
-                    0
-                };
-
-                {
-                    let mut cb = on_progress.lock();
-                    cb(SftpProgressPayload {
-                        transfer_id: t_id.clone(),
-                        bytes_transferred,
-                        total_bytes,
-                        speed_bps,
-                    });
+            let mut buffer = vec![0u8; 64 * 1024];
+            let mut done = resume_from;
+            let start = Instant::now();
+            let mut last_emit = Instant::now();
+            loop {
+                if is_cancelled(&t_id) {
+                    return Err(sftp_err("Transfer cancelled by user".to_string()));
                 }
-                last_emit = Instant::now();
+                let n = local_file
+                    .read(&mut buffer)
+                    .map_err(|e| sftp_err(format!("Failed to read local file: {e}")))?;
+                if n == 0 {
+                    break;
+                }
+                if let Some(chunk) = buffer.get(..n) {
+                    remote_file
+                        .write_all(chunk)
+                        .map_err(|e| sftp_err(format!("Failed to write remote chunk: {e}")))?;
+                }
+                done += n as u64;
+                emit_progress(&on_progress, &t_id, done, total_bytes, start, &mut last_emit);
             }
-        }
+            if done != total_bytes {
+                return Err(sftp_err(format!(
+                    "Local file changed during upload ({done} of {total_bytes} bytes read)"
+                )));
+            }
+            remote_file
+                .flush()
+                .map_err(|e| sftp_err(format!("Failed to flush remote file: {e}")))?;
+            Ok(())
+        })();
 
-        clear_cancel_token(&t_id);
+        if let Err(e) = copy {
+            // A user cancel discards the partial file; a dropped link keeps it for resume.
+            if is_cancelled(&t_id) || !session_looks_dead(sess) {
+                let _ = sftp.unlink(part);
+            }
+            return Err(e);
+        }
+        if let Err(e) = replace_remote(&sftp, part, Path::new(&r_path)) {
+            let _ = sftp.unlink(part);
+            return Err(sftp_err(format!("Failed to finalize remote file {r_path}: {e}")));
+        }
+        // Keep the source's permission bits and modification time (best-effort: some
+        // servers refuse setstat, which must not fail an otherwise complete upload).
+        let stat = ssh2::FileStat {
+            size: None,
+            uid: None,
+            gid: None,
+            perm: local_mode,
+            atime: local_mtime,
+            mtime: local_mtime,
+        };
+        let _ = sftp.setstat(Path::new(&r_path), stat);
         Ok(())
-    })
+    });
+    clear_cancel_token(transfer_id);
+    result
 }
 
-/// Downloads a remote SFTP file to local path with 64KB chunking and progress callbacks.
+/// Downloads a remote file with 64KB chunking and progress callbacks, via `<local>.caterm-part`
+/// renamed onto the destination only once complete (see [`upload_file_with_progress`]).
 pub fn download_file_with_progress<F>(
     host_id: &str,
     remote_path: &str,
@@ -501,18 +666,17 @@ pub fn download_file_with_progress<F>(
 where
     F: FnMut(SftpProgressPayload) + Send + 'static + ?Sized,
 {
-    clear_cancel_token(transfer_id);
     let t_id = transfer_id.to_string();
     let r_path = remote_path.to_string();
     let l_path = local_path.to_string();
+    let part_local = format!("{l_path}.caterm-part");
 
-    crate::ssh::with_exec_session(host_id, move |sess| {
+    let result = crate::ssh::with_dedicated_session(host_id, move |sess| {
         let sftp = open_sftp(sess)?;
         let stat = sftp
             .stat(Path::new(&r_path))
             .map_err(|e| sftp_err(format!("Failed to stat remote file {r_path}: {e}")))?;
         let total_bytes = stat.size.unwrap_or(0);
-
         let mut remote_file = sftp
             .open(Path::new(&r_path))
             .map_err(|e| sftp_err(format!("Failed to open remote file {r_path}: {e}")))?;
@@ -520,64 +684,95 @@ where
         if let Some(parent) = Path::new(&l_path).parent() {
             let _ = std::fs::create_dir_all(parent);
         }
+        // Resume from a `.caterm-part` left by an interrupted download of this file.
+        // Only if the remote file hasn't changed since the part was written.
+        let resume_from = std::fs::metadata(&part_local)
+            .ok()
+            .filter(|m| {
+                let part_m = m
+                    .modified()
+                    .ok()
+                    .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+                    .map(|d| d.as_secs());
+                matches!((part_m, stat.mtime), (Some(p), Some(r)) if p >= r)
+            })
+            .map(|m| m.len())
+            .filter(|&size| size > 0 && size < total_bytes)
+            .unwrap_or(0);
+        let mut local_file = if resume_from > 0 {
+            remote_file
+                .seek(SeekFrom::Start(resume_from))
+                .map_err(|e| sftp_err(format!("Failed to seek remote file {r_path}: {e}")))?;
+            std::fs::OpenOptions::new()
+                .append(true)
+                .open(&part_local)
+                .map_err(|e| sftp_err(format!("Failed to reopen {part_local}: {e}")))?
+        } else {
+            File::create(&part_local).map_err(|e| {
+                sftp_err(format!("Failed to create local destination {part_local}: {e}"))
+            })?
+        };
 
-        let local_file = File::create(&l_path)
-            .map_err(|e| sftp_err(format!("Failed to create local destination {l_path}: {e}")))?;
-        let local_file_arc = Arc::new(Mutex::new(local_file));
-
-        let mut buffer = vec![0u8; 64 * 1024];
-        let mut bytes_transferred = 0u64;
-        let start_time = Instant::now();
-        let mut last_emit = Instant::now();
-
-        loop {
-            if is_cancelled(&t_id) {
-                clear_cancel_token(&t_id);
-                return Err(sftp_err("Transfer cancelled by user".to_string()));
-            }
-
-            let n = remote_file
-                .read(&mut buffer)
-                .map_err(|e| sftp_err(format!("Failed to read remote chunk: {e}")))?;
-            if n == 0 {
-                break;
-            }
-
-            {
-                let mut guard = local_file_arc.lock();
+        let copy = (|| -> Result<(), CatermError> {
+            let mut buffer = vec![0u8; 64 * 1024];
+            let mut done = resume_from;
+            let start = Instant::now();
+            let mut last_emit = Instant::now();
+            loop {
+                if is_cancelled(&t_id) {
+                    return Err(sftp_err("Transfer cancelled by user".to_string()));
+                }
+                let n = remote_file
+                    .read(&mut buffer)
+                    .map_err(|e| sftp_err(format!("Failed to read remote chunk: {e}")))?;
+                if n == 0 {
+                    break;
+                }
                 if let Some(chunk) = buffer.get(..n) {
-                    guard
+                    local_file
                         .write_all(chunk)
                         .map_err(|e| sftp_err(format!("Failed to write to local file: {e}")))?;
                 }
+                done += n as u64;
+                emit_progress(&on_progress, &t_id, done, total_bytes, start, &mut last_emit);
             }
+            if total_bytes != 0 && done != total_bytes {
+                return Err(sftp_err(format!(
+                    "Download incomplete ({done} of {total_bytes} bytes)"
+                )));
+            }
+            local_file
+                .sync_all()
+                .map_err(|e| sftp_err(format!("Failed to flush local file: {e}")))?;
+            if let Some(mtime) = stat.mtime {
+                let _ = local_file
+                    .set_modified(std::time::UNIX_EPOCH + std::time::Duration::from_secs(mtime));
+            }
+            Ok(())
+        })();
 
-            bytes_transferred += n as u64;
-
-            if last_emit.elapsed().as_millis() >= 100 || bytes_transferred == total_bytes {
-                let elapsed_secs = start_time.elapsed().as_secs_f64();
-                let speed_bps = if elapsed_secs > 0.0 {
-                    (bytes_transferred as f64 / elapsed_secs) as u64
-                } else {
-                    0
-                };
-
-                {
-                    let mut cb = on_progress.lock();
-                    cb(SftpProgressPayload {
-                        transfer_id: t_id.clone(),
-                        bytes_transferred,
-                        total_bytes,
-                        speed_bps,
-                    });
+        // Close the handle before renaming: Windows refuses to rename an open file.
+        drop(local_file);
+        match copy {
+            Ok(()) => {
+                std::fs::rename(&part_local, &l_path).map_err(|e| {
+                    let _ = std::fs::remove_file(&part_local);
+                    sftp_err(format!("Failed to finalize local file {l_path}: {e}"))
+                })?;
+                set_local_permission_bits(&l_path, stat.perm);
+                Ok(())
+            }
+            Err(e) => {
+                // A user cancel discards the partial file; a dropped link keeps it for resume.
+                if is_cancelled(&t_id) || !session_looks_dead(sess) {
+                    let _ = std::fs::remove_file(&part_local);
                 }
-                last_emit = Instant::now();
+                Err(e)
             }
         }
-
-        clear_cancel_token(&t_id);
-        Ok(())
-    })
+    });
+    clear_cancel_token(transfer_id);
+    result
 }
 
 /// A file match returned by [`search_remote_files`].

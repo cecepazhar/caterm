@@ -7,12 +7,12 @@ use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::io::{Read, Write};
+use std::io::{self, Read, Write};
 use std::net::{TcpListener, TcpStream};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -231,6 +231,206 @@ fn connect_host_session(host_id: &str) -> Result<ssh2::Session, CatermError> {
     Ok(sess)
 }
 
+/// libssh2's `LIBSSH2_ERROR_EAGAIN`: "would block", returned by every call on a non-blocking session.
+const LIBSSH2_ERROR_EAGAIN: i32 = -37;
+
+fn is_eagain(e: &ssh2::Error) -> bool {
+    matches!(e.code(), ssh2::ErrorCode::Session(LIBSSH2_ERROR_EAGAIN))
+}
+
+/// Re-runs a libssh2 call that may report EAGAIN until it completes, the tunnel is shut down,
+/// or 15 seconds pass.
+fn retry_eagain<T>(
+    shutdown: &AtomicBool,
+    mut f: impl FnMut() -> Result<T, ssh2::Error>,
+) -> Result<T, ssh2::Error> {
+    let started = Instant::now();
+    loop {
+        match f() {
+            Err(e) if is_eagain(&e) => {
+                if shutdown.load(Ordering::Relaxed) || started.elapsed() > Duration::from_secs(15) {
+                    return Err(e);
+                }
+                thread::sleep(Duration::from_millis(2));
+            }
+            other => return other,
+        }
+    }
+}
+
+/// `write_all` for a non-blocking writer: `WouldBlock` means "try again", not "failed".
+fn write_all_retry<W: Write>(w: &mut W, mut buf: &[u8], shutdown: &AtomicBool) -> io::Result<()> {
+    while !buf.is_empty() {
+        match w.write(buf) {
+            Ok(0) => return Err(io::ErrorKind::WriteZero.into()),
+            Ok(n) => buf = buf.get(n..).unwrap_or(&[]),
+            Err(e) if matches!(e.kind(), io::ErrorKind::WouldBlock | io::ErrorKind::Interrupted) => {
+                if shutdown.load(Ordering::Relaxed) {
+                    return Err(io::ErrorKind::Interrupted.into());
+                }
+                thread::sleep(Duration::from_millis(1));
+            }
+            Err(e) => return Err(e),
+        }
+    }
+    Ok(())
+}
+
+/// Copies bytes both ways between a local socket and an SSH channel until either side closes.
+///
+/// The SSH session must be non-blocking. With a blocking session one `channel.read()` holds
+/// libssh2's session lock until the remote answers, so a request larger than one buffer (the
+/// client is still sending while the server waits for the rest of it) deadlocked, and every
+/// other connection of the tunnel stalled behind that lock.
+pub(crate) fn relay(mut local: TcpStream, mut channel: ssh2::Channel, shutdown: &AtomicBool) {
+    if local.set_nonblocking(true).is_err() {
+        return;
+    }
+    let mut buf = [0u8; 16 * 1024];
+    let mut idle_rounds: u32 = 0;
+    let mut local_done = false;
+    while !shutdown.load(Ordering::Relaxed) {
+        let mut active = false;
+
+        if !local_done {
+            match local.read(&mut buf) {
+                Ok(0) => {
+                    local_done = true;
+                    let _ = retry_eagain(shutdown, || channel.send_eof());
+                }
+                Ok(n) => {
+                    active = true;
+                    if write_all_retry(&mut channel, buf.get(..n).unwrap_or(&[]), shutdown).is_err() {
+                        break;
+                    }
+                }
+                Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => {}
+                Err(_) => break,
+            }
+        }
+
+        match channel.read(&mut buf) {
+            Ok(0) => break,
+            Ok(n) => {
+                active = true;
+                if write_all_retry(&mut local, buf.get(..n).unwrap_or(&[]), shutdown).is_err() {
+                    break;
+                }
+            }
+            Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => {}
+            Err(_) => break,
+        }
+        if channel.eof() {
+            break;
+        }
+
+        if active {
+            idle_rounds = 0;
+        } else {
+            idle_rounds = idle_rounds.saturating_add(1);
+            thread::sleep(Duration::from_millis(u64::from(idle_rounds.min(10))));
+        }
+    }
+    let _ = channel.close();
+}
+
+/// Sends SSH keepalives for as long as the tunnel runs. A failed one means the link is dead:
+/// the tunnel is shut down and dropped from the active list so the UI stops showing it as up.
+fn spawn_keepalive(sess: ssh2::Session, shutdown: Arc<AtomicBool>, id: String) {
+    thread::spawn(move || {
+        let mut since_last = Duration::ZERO;
+        let tick = Duration::from_millis(500);
+        while !shutdown.load(Ordering::Relaxed) {
+            thread::sleep(tick);
+            since_last += tick;
+            if since_last < Duration::from_secs(15) {
+                continue;
+            }
+            since_last = Duration::ZERO;
+            match sess.keepalive_send() {
+                Ok(_) => {}
+                Err(e) if is_eagain(&e) => {}
+                Err(_) => {
+                    shutdown.store(true, Ordering::Relaxed);
+                    ACTIVE_TUNNELS.lock().remove(&id);
+                    return;
+                }
+            }
+        }
+    });
+}
+
+/// Minimal SOCKS5 (RFC 1928) server side: no-auth + CONNECT only. Answers the client with the
+/// proper failure code when it asks for something unsupported, then returns an error.
+fn socks5_handshake(stream: &mut TcpStream) -> io::Result<(String, u16)> {
+    stream.set_nonblocking(false)?;
+    stream.set_read_timeout(Some(Duration::from_secs(10)))?;
+    stream.set_write_timeout(Some(Duration::from_secs(10)))?;
+    let bad = || io::Error::from(io::ErrorKind::InvalidData);
+
+    let mut head = [0u8; 2];
+    stream.read_exact(&mut head)?;
+    if head[0] != 5 {
+        return Err(bad());
+    }
+    let mut methods = vec![0u8; head[1] as usize];
+    stream.read_exact(&mut methods)?;
+    if !methods.contains(&0) {
+        stream.write_all(&[5, 0xFF])?;
+        return Err(bad());
+    }
+    stream.write_all(&[5, 0])?;
+
+    let mut req = [0u8; 4];
+    stream.read_exact(&mut req)?;
+    if req[0] != 5 {
+        return Err(bad());
+    }
+    if req[1] != 1 {
+        // Only CONNECT: "command not supported".
+        stream.write_all(&[5, 7, 0, 1, 0, 0, 0, 0, 0, 0])?;
+        return Err(bad());
+    }
+    let host = match req[3] {
+        1 => {
+            let mut ip = [0u8; 4];
+            stream.read_exact(&mut ip)?;
+            std::net::Ipv4Addr::from(ip).to_string()
+        }
+        3 => {
+            let mut len = [0u8; 1];
+            stream.read_exact(&mut len)?;
+            let mut name = vec![0u8; len[0] as usize];
+            stream.read_exact(&mut name)?;
+            String::from_utf8_lossy(&name).into_owned()
+        }
+        4 => {
+            let mut ip = [0u8; 16];
+            stream.read_exact(&mut ip)?;
+            std::net::Ipv6Addr::from(ip).to_string()
+        }
+        _ => {
+            stream.write_all(&[5, 8, 0, 1, 0, 0, 0, 0, 0, 0])?;
+            return Err(bad());
+        }
+    };
+    let mut port = [0u8; 2];
+    stream.read_exact(&mut port)?;
+    stream.set_read_timeout(None)?;
+    Ok((host, u16::from_be_bytes(port)))
+}
+
+fn bind_listener(addr: &str, port: u16) -> Result<TcpListener, CatermError> {
+    let bind_str = format!("{addr}:{port}");
+    let listener = TcpListener::bind(&bind_str).map_err(|e| {
+        CatermError::Validation(ValidationError::Generic(format!(
+            "Failed to bind local port {bind_str}: {e}"
+        )))
+    })?;
+    listener.set_nonblocking(true).ok();
+    Ok(listener)
+}
+
 /// Start an active port forward tunnel listener.
 pub fn start_tunnel(id: &str) -> Result<(), CatermError> {
     if ACTIVE_TUNNELS.lock().contains_key(id) {
@@ -256,90 +456,35 @@ pub fn start_tunnel(id: &str) -> Result<(), CatermError> {
     );
 
     let shutdown_signal = Arc::new(AtomicBool::new(false));
-    let shutdown_clone = Arc::clone(&shutdown_signal);
 
     match tun.forward_type {
         ForwardType::Local => {
-            let bind_str = format!("{}:{}", tun.bind_addr, tun.bind_port);
-            let listener = TcpListener::bind(&bind_str).map_err(|e| {
-                CatermError::Validation(ValidationError::Generic(format!(
-                    "Failed to bind local port {bind_str}: {e}"
-                )))
-            })?;
+            let listener = bind_listener(&tun.bind_addr, tun.bind_port)?;
+            let sess = connect_host_session(&tun.host_id)?;
+            sess.set_keepalive(true, 15);
+            sess.set_blocking(false);
+            spawn_keepalive(sess.clone(), Arc::clone(&shutdown_signal), id.to_string());
 
-            listener.set_nonblocking(true).ok();
-
-            let host_id = tun.host_id.clone();
             let target_addr = tun.target_addr.clone();
             let target_port = tun.target_port;
-
-            let sess = connect_host_session(&host_id)?;
-            let sess_arc = Arc::new(Mutex::new(sess));
-
+            let shutdown = Arc::clone(&shutdown_signal);
             thread::spawn(move || {
-                while !shutdown_clone.load(Ordering::Relaxed) {
+                while !shutdown.load(Ordering::Relaxed) {
                     match listener.accept() {
-                        Ok((mut local_stream, _)) => {
-                            let sess_inner = Arc::clone(&sess_arc);
-                            let t_addr = target_addr.clone();
-                            let shutdown_worker = Arc::clone(&shutdown_clone);
-
+                        Ok((local, _)) => {
+                            let sess = sess.clone();
+                            let shutdown = Arc::clone(&shutdown);
+                            let target_addr = target_addr.clone();
                             thread::spawn(move || {
-                                let mut channel = {
-                                    let guard = sess_inner.lock();
-                                    match guard.channel_direct_tcpip(&t_addr, target_port, None) {
-                                        Ok(c) => c,
-                                        Err(_) => return,
-                                    }
+                                let Ok(channel) = retry_eagain(&shutdown, || {
+                                    sess.channel_direct_tcpip(&target_addr, target_port, None)
+                                }) else {
+                                    return;
                                 };
-
-                                local_stream.set_nonblocking(true).ok();
-                                let mut buf = [0u8; 8192];
-
-                                while !shutdown_worker.load(Ordering::Relaxed) {
-                                    let mut active = false;
-
-                                    // Local -> Remote
-                                    match local_stream.read(&mut buf) {
-                                        Ok(0) => break,
-                                        Ok(n) => {
-                                            active = true;
-                                            if channel
-                                                .write_all(buf.get(..n).unwrap_or(&[]))
-                                                .is_err()
-                                            {
-                                                break;
-                                            }
-                                        }
-                                        Err(ref e)
-                                            if e.kind() == std::io::ErrorKind::WouldBlock => {}
-                                        Err(_) => break,
-                                    }
-
-                                    // Remote -> Local
-                                    match channel.read(&mut buf) {
-                                        Ok(0) => break,
-                                        Ok(n) => {
-                                            active = true;
-                                            if local_stream
-                                                .write_all(buf.get(..n).unwrap_or(&[]))
-                                                .is_err()
-                                            {
-                                                break;
-                                            }
-                                        }
-                                        Err(ref e)
-                                            if e.kind() == std::io::ErrorKind::WouldBlock => {}
-                                        Err(_) => break,
-                                    }
-
-                                    if !active {
-                                        thread::sleep(Duration::from_millis(5));
-                                    }
-                                }
+                                relay(local, channel, &shutdown);
                             });
                         }
-                        Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => {
+                        Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => {
                             thread::sleep(Duration::from_millis(50));
                         }
                         Err(_) => break,
@@ -349,226 +494,82 @@ pub fn start_tunnel(id: &str) -> Result<(), CatermError> {
         }
         ForwardType::Remote => {
             let sess = connect_host_session(&tun.host_id)?;
-            let mut listener_channel = sess
+            // Listening is a blocking request; only afterwards does the session go non-blocking.
+            let (mut listener, _bound_port) = sess
                 .channel_forward_listen(tun.bind_port, Some(&tun.bind_addr), None)
                 .map_err(|e| {
                     CatermError::Validation(ValidationError::Generic(format!(
                         "Failed to remote bind: {e}"
                     )))
                 })?;
+            sess.set_keepalive(true, 15);
+            sess.set_blocking(false);
+            spawn_keepalive(sess.clone(), Arc::clone(&shutdown_signal), id.to_string());
 
             let target_addr = tun.target_addr.clone();
             let target_port = tun.target_port;
-
+            let shutdown = Arc::clone(&shutdown_signal);
             thread::spawn(move || {
-                while !shutdown_clone.load(Ordering::Relaxed) {
-                    if let Ok(mut remote_stream) = listener_channel.0.accept() {
-                        let t_addr = target_addr.clone();
-                        let shutdown_worker = Arc::clone(&shutdown_clone);
-                        thread::spawn(move || {
-                            let mut local_stream =
-                                match TcpStream::connect(format!("{}:{}", t_addr, target_port)) {
-                                    Ok(s) => s,
-                                    Err(_) => return,
+                // `sess` must outlive the listener; moving it in keeps the transport open.
+                let _sess = sess;
+                while !shutdown.load(Ordering::Relaxed) {
+                    match listener.accept() {
+                        Ok(channel) => {
+                            let shutdown = Arc::clone(&shutdown);
+                            let target_addr = target_addr.clone();
+                            thread::spawn(move || {
+                                let Ok(local) = TcpStream::connect((target_addr.as_str(), target_port))
+                                else {
+                                    let mut channel = channel;
+                                    let _ = channel.close();
+                                    return;
                                 };
-                            local_stream.set_nonblocking(true).ok();
-                            let mut buf = [0u8; 8192];
-                            while !shutdown_worker.load(Ordering::Relaxed) {
-                                let mut active = false;
-                                match local_stream.read(&mut buf) {
-                                    Ok(0) => break,
-                                    Ok(n) => {
-                                        active = true;
-                                        if remote_stream
-                                            .write_all(buf.get(..n).unwrap_or(&[]))
-                                            .is_err()
-                                        {
-                                            break;
-                                        }
-                                    }
-                                    Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => {}
-                                    Err(_) => break,
-                                }
-                                match remote_stream.read(&mut buf) {
-                                    Ok(0) => break,
-                                    Ok(n) => {
-                                        active = true;
-                                        if local_stream
-                                            .write_all(buf.get(..n).unwrap_or(&[]))
-                                            .is_err()
-                                        {
-                                            break;
-                                        }
-                                    }
-                                    Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => {}
-                                    Err(_) => break,
-                                }
-                                if !active {
-                                    thread::sleep(Duration::from_millis(5));
-                                }
-                            }
-                        });
-                    } else {
-                        thread::sleep(Duration::from_millis(50));
+                                relay(local, channel, &shutdown);
+                            });
+                        }
+                        Err(ref e) if is_eagain(e) => {
+                            thread::sleep(Duration::from_millis(20));
+                        }
+                        Err(_) => break,
                     }
                 }
             });
         }
         ForwardType::Dynamic => {
-            let bind_str = format!("{}:{}", tun.bind_addr, tun.bind_port);
-            let listener = TcpListener::bind(&bind_str).map_err(|e| {
-                CatermError::Validation(ValidationError::Generic(format!(
-                    "Failed to bind local port {bind_str}: {e}"
-                )))
-            })?;
-            listener.set_nonblocking(true).ok();
-
+            let listener = bind_listener(&tun.bind_addr, tun.bind_port)?;
             let sess = connect_host_session(&tun.host_id)?;
-            let sess_arc = Arc::new(Mutex::new(sess));
+            sess.set_keepalive(true, 15);
+            sess.set_blocking(false);
+            spawn_keepalive(sess.clone(), Arc::clone(&shutdown_signal), id.to_string());
 
+            let shutdown = Arc::clone(&shutdown_signal);
             thread::spawn(move || {
-                while !shutdown_clone.load(Ordering::Relaxed) {
+                while !shutdown.load(Ordering::Relaxed) {
                     match listener.accept() {
-                        Ok((mut local_stream, _)) => {
-                            let sess_inner = Arc::clone(&sess_arc);
-                            let shutdown_worker = Arc::clone(&shutdown_clone);
-
+                        Ok((mut local, _)) => {
+                            let sess = sess.clone();
+                            let shutdown = Arc::clone(&shutdown);
                             thread::spawn(move || {
-                                local_stream.set_nonblocking(false).ok();
-                                let mut buf = [0u8; 512];
-                                let Some(head) = buf.get_mut(0..2) else {
+                                let Ok((host, port)) = socks5_handshake(&mut local) else {
                                     return;
                                 };
-                                if local_stream.read_exact(head).is_err()
-                                    || head.first() != Some(&5)
-                                {
-                                    return;
-                                }
-                                let nmethods = head.get(1).copied().unwrap_or(0) as usize;
-                                let Some(methods_buf) = buf.get_mut(0..nmethods) else {
-                                    return;
-                                };
-                                if local_stream.read_exact(methods_buf).is_err() {
-                                    return;
-                                }
-                                if local_stream.write_all(&[5, 0]).is_err() {
-                                    return;
-                                }
-
-                                let Some(req_head) = buf.get_mut(0..4) else {
-                                    return;
-                                };
-                                if local_stream.read_exact(req_head).is_err()
-                                    || req_head.first() != Some(&5)
-                                    || req_head.get(1) != Some(&1)
-                                {
-                                    return;
-                                }
-                                let atyp = req_head.get(3).copied().unwrap_or(0);
-                                let target_host = if atyp == 1 {
-                                    let Some(ip_buf) = buf.get_mut(0..4) else {
+                                let channel = match retry_eagain(&shutdown, || {
+                                    sess.channel_direct_tcpip(&host, port, None)
+                                }) {
+                                    Ok(c) => c,
+                                    Err(_) => {
+                                        // 0x05: connection refused.
+                                        let _ = local.write_all(&[5, 5, 0, 1, 0, 0, 0, 0, 0, 0]);
                                         return;
-                                    };
-                                    if local_stream.read_exact(ip_buf).is_err() {
-                                        return;
-                                    }
-                                    format!(
-                                        "{}.{}.{}.{}",
-                                        ip_buf.first().copied().unwrap_or(0),
-                                        ip_buf.get(1).copied().unwrap_or(0),
-                                        ip_buf.get(2).copied().unwrap_or(0),
-                                        ip_buf.get(3).copied().unwrap_or(0)
-                                    )
-                                } else if atyp == 3 {
-                                    let Some(len_buf) = buf.get_mut(0..1) else {
-                                        return;
-                                    };
-                                    if local_stream.read_exact(len_buf).is_err() {
-                                        return;
-                                    }
-                                    let len = len_buf.first().copied().unwrap_or(0) as usize;
-                                    let Some(domain_buf) = buf.get_mut(0..len) else {
-                                        return;
-                                    };
-                                    if local_stream.read_exact(domain_buf).is_err() {
-                                        return;
-                                    }
-                                    String::from_utf8_lossy(domain_buf).to_string()
-                                } else {
-                                    return;
-                                };
-
-                                let Some(port_buf) = buf.get_mut(0..2) else {
-                                    return;
-                                };
-                                if local_stream.read_exact(port_buf).is_err() {
-                                    return;
-                                }
-                                let target_port = u16::from_be_bytes([
-                                    port_buf.first().copied().unwrap_or(0),
-                                    port_buf.get(1).copied().unwrap_or(0),
-                                ]);
-
-                                let mut channel = {
-                                    let guard = sess_inner.lock();
-                                    match guard.channel_direct_tcpip(
-                                        &target_host,
-                                        target_port,
-                                        None,
-                                    ) {
-                                        Ok(c) => c,
-                                        Err(_) => return,
                                     }
                                 };
-
-                                if local_stream
-                                    .write_all(&[5, 0, 0, 1, 0, 0, 0, 0, 0, 0])
-                                    .is_err()
-                                {
+                                if local.write_all(&[5, 0, 0, 1, 0, 0, 0, 0, 0, 0]).is_err() {
                                     return;
                                 }
-
-                                local_stream.set_nonblocking(true).ok();
-                                let mut buf2 = [0u8; 8192];
-                                while !shutdown_worker.load(Ordering::Relaxed) {
-                                    let mut active = false;
-                                    match local_stream.read(&mut buf2) {
-                                        Ok(0) => break,
-                                        Ok(n) => {
-                                            active = true;
-                                            if channel
-                                                .write_all(buf2.get(..n).unwrap_or(&[]))
-                                                .is_err()
-                                            {
-                                                break;
-                                            }
-                                        }
-                                        Err(ref e)
-                                            if e.kind() == std::io::ErrorKind::WouldBlock => {}
-                                        Err(_) => break,
-                                    }
-                                    match channel.read(&mut buf2) {
-                                        Ok(0) => break,
-                                        Ok(n) => {
-                                            active = true;
-                                            if local_stream
-                                                .write_all(buf2.get(..n).unwrap_or(&[]))
-                                                .is_err()
-                                            {
-                                                break;
-                                            }
-                                        }
-                                        Err(ref e)
-                                            if e.kind() == std::io::ErrorKind::WouldBlock => {}
-                                        Err(_) => break,
-                                    }
-                                    if !active {
-                                        thread::sleep(Duration::from_millis(5));
-                                    }
-                                }
+                                relay(local, channel, &shutdown);
                             });
                         }
-                        Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => {
+                        Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => {
                             thread::sleep(Duration::from_millis(50));
                         }
                         Err(_) => break,

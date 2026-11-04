@@ -22,6 +22,30 @@ pub enum AuthMethod {
     Password,
     Key { path: String },
     KeyId { id: String },
+    /// Keys held by the local SSH agent (`SSH_AUTH_SOCK` / Pageant). No secret is stored.
+    Agent,
+}
+
+/// Which environment a host belongs to. Drives the colour badge and the extra confirmation
+/// before connecting to production.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "lowercase")]
+pub enum HostEnvironment {
+    #[default]
+    None,
+    Local,
+    Staging,
+    Production,
+}
+
+/// Per-host connection options, stored as one JSON column so adding an option never needs
+/// another schema migration. Every field defaults, so rows written before it existed load fine.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase", default)]
+pub struct HostOptions {
+    pub environment: HostEnvironment,
+    /// Saved host to tunnel through (OpenSSH `ProxyJump`). Must itself be a direct SSH host.
+    pub jump_host_id: Option<String>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
@@ -76,6 +100,8 @@ pub struct HostRecord {
     pub os: Option<String>,
     #[serde(default)]
     pub protocol: ConnectionProtocol,
+    #[serde(default)]
+    pub options: HostOptions,
     pub created_at: u64,
     pub updated_at: u64,
     /// Whether a password/passphrase is already stored for this host. Never the secret
@@ -100,6 +126,9 @@ pub struct HostInput {
     pub os: Option<String>,
     #[serde(default)]
     pub protocol: Option<ConnectionProtocol>,
+    /// `None` (field omitted) = keep the host's stored options.
+    #[serde(default)]
+    pub options: Option<HostOptions>,
     /// Write-only. `None` (field omitted) = leave the stored secret untouched. `Some("")` =
     /// clear it. `Some(s)` = encrypt `s` and store it, replacing whatever was there.
     #[serde(default)]
@@ -134,6 +163,12 @@ fn row_to_host(row: &rusqlite::Row) -> rusqlite::Result<HostRecord> {
     let os: Option<String> = row.get("os").unwrap_or(None);
     let protocol_str: String = row.get("protocol").unwrap_or_else(|_| "ssh".to_string());
     let protocol = ConnectionProtocol::from_str_opt(&protocol_str);
+    let options: HostOptions = row
+        .get::<_, Option<String>>("options")
+        .ok()
+        .flatten()
+        .and_then(|j| serde_json::from_str(&j).ok())
+        .unwrap_or_default();
     Ok(HostRecord {
         id: row.get("id")?,
         label: row.get("label")?,
@@ -144,6 +179,7 @@ fn row_to_host(row: &rusqlite::Row) -> rusqlite::Result<HostRecord> {
         tags,
         os,
         protocol,
+        options,
         created_at: row.get::<_, i64>("created_at")? as u64,
         updated_at: row.get::<_, i64>("updated_at")? as u64,
         has_secret: secret_enc.map(|s| !s.is_empty()).unwrap_or(false),
@@ -155,7 +191,7 @@ fn row_to_host(row: &rusqlite::Row) -> rusqlite::Result<HostRecord> {
 pub(crate) fn list_hosts_in(conn: &Connection) -> Result<Vec<HostRecord>, CatermError> {
     let mut stmt = conn
         .prepare(
-            "SELECT id, label, address, port, username, auth_method, tags, os, protocol, created_at, updated_at, secret_enc \
+            "SELECT id, label, address, port, username, auth_method, tags, os, protocol, created_at, updated_at, secret_enc, options \
              FROM hosts ORDER BY created_at ASC",
         )
         .map_err(|e| CatermError::Db(DbError::Generic(format!("gagal query hosts: {e}"))))?;
@@ -179,16 +215,23 @@ pub(crate) fn save_host_in(
 ) -> Result<HostRecord, CatermError> {
     let now = now_unix();
     let id = input.id.filter(|id| !id.is_empty());
-    let (created_at, existing_secret_enc): (u64, Option<String>) = match &id {
-        Some(existing_id) => conn
-            .query_row(
-                "SELECT created_at, secret_enc FROM hosts WHERE id = ?1",
-                params![existing_id],
-                |r| Ok((r.get::<_, i64>(0)? as u64, r.get::<_, Option<String>>(1)?)),
-            )
-            .unwrap_or((now, None)),
-        None => (now, None),
-    };
+    let (created_at, existing_secret_enc, existing_options): (u64, Option<String>, Option<String>) =
+        match &id {
+            Some(existing_id) => conn
+                .query_row(
+                    "SELECT created_at, secret_enc, options FROM hosts WHERE id = ?1",
+                    params![existing_id],
+                    |r| {
+                        Ok((
+                            r.get::<_, i64>(0)? as u64,
+                            r.get::<_, Option<String>>(1)?,
+                            r.get::<_, Option<String>>(2)?,
+                        ))
+                    },
+                )
+                .unwrap_or((now, None, None)),
+            None => (now, None, None),
+        };
     let id = id.unwrap_or_else(generate_id);
 
     let secret_enc: Option<String> = match input.secret.as_deref() {
@@ -207,9 +250,22 @@ pub(crate) fn save_host_in(
 
     let os = input.os.filter(|s| !s.is_empty());
     let protocol = input.protocol.unwrap_or(ConnectionProtocol::Ssh);
+    let options: HostOptions = match input.options {
+        Some(o) => o,
+        None => existing_options
+            .and_then(|j| serde_json::from_str(&j).ok())
+            .unwrap_or_default(),
+    };
+    if options.jump_host_id.as_deref() == Some(id.as_str()) {
+        return Err(CatermError::Db(DbError::Generic(
+            "Host tidak bisa menjadi jump host untuk dirinya sendiri".to_string(),
+        )));
+    }
+    let options_json = serde_json::to_string(&options)
+        .map_err(|e| CatermError::Db(DbError::Generic(format!("gagal serialisasi options: {e}"))))?;
     conn.execute(
-        "INSERT INTO hosts (id, label, address, port, username, auth_method, tags, os, protocol, created_at, updated_at, secret_enc)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)
+        "INSERT INTO hosts (id, label, address, port, username, auth_method, tags, os, protocol, created_at, updated_at, secret_enc, options)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)
          ON CONFLICT(id) DO UPDATE SET
             label = excluded.label,
             address = excluded.address,
@@ -220,7 +276,8 @@ pub(crate) fn save_host_in(
             os = excluded.os,
             protocol = excluded.protocol,
             updated_at = excluded.updated_at,
-            secret_enc = excluded.secret_enc",
+            secret_enc = excluded.secret_enc,
+            options = excluded.options",
         params![
             id,
             input.label,
@@ -233,7 +290,8 @@ pub(crate) fn save_host_in(
             protocol.as_str(),
             created_at as i64,
             now as i64,
-            secret_enc
+            secret_enc,
+            options_json
         ],
     )
     .map_err(|e| CatermError::Db(DbError::Generic(format!("gagal menyimpan host: {e}"))))?;
@@ -248,6 +306,7 @@ pub(crate) fn save_host_in(
         tags: input.tags,
         os,
         protocol,
+        options,
         created_at,
         updated_at: now,
         has_secret: secret_enc.map(|s| !s.is_empty()).unwrap_or(false),
@@ -275,7 +334,7 @@ pub(crate) fn list_hosts_with_secrets_in(
 ) -> Result<Vec<(HostRecord, Option<String>)>, CatermError> {
     let mut stmt = conn
         .prepare(
-            "SELECT id, label, address, port, username, auth_method, tags, os, protocol, created_at, updated_at, secret_enc \
+            "SELECT id, label, address, port, username, auth_method, tags, os, protocol, created_at, updated_at, secret_enc, options \
              FROM hosts ORDER BY created_at ASC",
         )
         .map_err(|e| CatermError::Db(DbError::Generic(format!("gagal query hosts: {e}"))))?;
@@ -328,7 +387,7 @@ pub fn delete_host(id: &str) -> Result<(), CatermError> {
 pub fn get_host(id: &str) -> Result<HostRecord, CatermError> {
     let conn = db::open()?;
     conn.query_row(
-        "SELECT id, label, address, port, username, auth_method, tags, os, protocol, created_at, updated_at, secret_enc \
+        "SELECT id, label, address, port, username, auth_method, tags, os, protocol, created_at, updated_at, secret_enc, options \
          FROM hosts WHERE id = ?1",
         params![id],
         row_to_host,
@@ -358,7 +417,7 @@ pub(crate) fn load_host_for_connect_in(
 ) -> Result<(HostRecord, Option<String>), CatermError> {
     let (host, secret_enc): (HostRecord, Option<String>) = conn
         .query_row(
-            "SELECT id, label, address, port, username, auth_method, tags, os, protocol, created_at, updated_at, secret_enc \
+            "SELECT id, label, address, port, username, auth_method, tags, os, protocol, created_at, updated_at, secret_enc, options \
              FROM hosts WHERE id = ?1",
             params![id],
             |row| Ok((row_to_host(row)?, row.get::<_, Option<String>>("secret_enc")?)),
@@ -423,6 +482,7 @@ mod tests {
                 tags: vec!["test".into()],
                 os: None,
                 protocol: None,
+                options: None,
                 secret: None,
             },
             TEST_KEY,
@@ -450,6 +510,7 @@ mod tests {
                 tags: vec![],
                 os: None,
                 protocol: None,
+                options: None,
                 secret: Some("hunter2".into()),
             },
             TEST_KEY,
@@ -471,6 +532,7 @@ mod tests {
                 tags: vec!["prod".into()],
                 os: Some("fedora".into()),
                 protocol: None,
+                options: None,
                 secret: None,
             },
             TEST_KEY,
@@ -508,6 +570,7 @@ mod tests {
                 tags: vec![],
                 os: None,
                 protocol: None,
+                options: None,
                 secret: Some("hunter2".into()),
             },
             TEST_KEY,
@@ -527,6 +590,7 @@ mod tests {
                 tags: vec![],
                 os: None,
                 protocol: None,
+                options: None,
                 secret: Some("".into()),
             },
             TEST_KEY,
@@ -550,6 +614,7 @@ mod tests {
                 tags: vec![],
                 os: None,
                 protocol: None,
+                options: None,
                 secret: None,
             },
             TEST_KEY,
@@ -576,6 +641,7 @@ mod tests {
                 tags: vec![],
                 os: None,
                 protocol: None,
+                options: None,
                 secret: None,
             },
             TEST_KEY,

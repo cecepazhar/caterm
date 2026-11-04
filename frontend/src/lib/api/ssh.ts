@@ -22,6 +22,8 @@ export interface SshOutputEvent {
 
 export interface SshClosedEvent {
   sessionId: string;
+  /** True when the link failed (not a normal shell exit) — the pane then auto-reconnects. */
+  unexpected?: boolean;
 }
 
 export function sshConnect(hostId: string): Promise<SshSession> {

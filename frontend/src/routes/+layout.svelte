@@ -35,6 +35,7 @@
   import { getFeedbackPromptState } from '$lib/stores/feedbackStore.svelte';
   import { checkForUpdates } from '$lib/stores/updater.svelte';
   import { lockVault } from '$lib/api/vault';
+  import { startAutoLock } from '$lib/stores/autoLock.svelte';
   import { APP_VERSION } from '$lib/appInfo';
   import { goto } from '$app/navigation';
   import { onMount, onDestroy } from 'svelte';
@@ -111,6 +112,8 @@
   onMount(() => {
     startMonitoring();
     initTheme();
+    // Locks after the idle timeout from Settings → Security, and right after waking from sleep.
+    const stopAutoLock = startAutoLock(() => isUnlocked, lockApp);
     // One quiet check per launch; failures (offline, no release yet) stay silent. Skipped under
     // `vite dev`, where there is no installed build to update.
     if (!import.meta.env.DEV) void checkForUpdates({ silent: true });
@@ -163,6 +166,7 @@
     window.addEventListener('keydown', handleShortcut, true);
 
     return () => {
+      stopAutoLock();
       window.removeEventListener('keydown', handleShortcut, true);
       window.removeEventListener('click', handleGlobalClick, true);
       document.removeEventListener('contextmenu', handleContextMenu, true);

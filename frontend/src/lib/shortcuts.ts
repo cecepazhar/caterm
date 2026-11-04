@@ -73,7 +73,7 @@ export function appCommandFor(e: KeyboardEvent): AppCommand | null {
 }
 
 /** Keys the terminal pane handles itself (they only make sense with a terminal focused). */
-export type TerminalKeyAction = 'copy' | 'paste' | 'fontUp' | 'fontDown' | 'fontReset';
+export type TerminalKeyAction = 'copy' | 'paste' | 'fontUp' | 'fontDown' | 'fontReset' | 'find';
 
 export function terminalKeyAction(e: KeyboardEvent, hasSelection: boolean): TerminalKeyAction | null {
   if (e.type !== 'keydown' || e.isComposing || e.altKey || !hasMod(e)) return null;
@@ -81,6 +81,7 @@ export function terminalKeyAction(e: KeyboardEvent, hasSelection: boolean): Term
   // Ctrl+C copies only when something is selected; otherwise it stays the shell's interrupt.
   if (key === 'c' && (e.shiftKey || hasSelection)) return 'copy';
   if (key === 'v') return 'paste';
+  if (key === 'f' && e.shiftKey) return 'find';
   if (key === '=' || key === '+') return 'fontUp';
   if (key === '-' || key === '_') return 'fontDown';
   if (key === '0' && !e.shiftKey) return 'fontReset';
@@ -133,6 +134,7 @@ export const SHORTCUT_GROUPS: ShortcutGroup[] = [
       { label: 'fontBigger', keys: [[MOD, '+']] },
       { label: 'fontSmaller', keys: [[MOD, '−']] },
       { label: 'fontReset', keys: [[MOD, '0']] },
+      { label: 'findInTerminal', keys: [[MOD, 'Shift', 'F']] },
       { label: 'autocompleteAccept', keys: [['Tab']] }
     ]
   },

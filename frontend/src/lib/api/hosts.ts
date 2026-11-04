@@ -4,7 +4,20 @@
 // boundary; that is zero-knowledge vault territory for a later phase.
 import { invoke } from '@tauri-apps/api/core';
 
-export type AuthMethod = { type: 'password' } | { type: 'key'; path: string } | { type: 'keyId'; id: string };
+export type AuthMethod =
+  | { type: 'password' }
+  | { type: 'key'; path: string }
+  | { type: 'keyId'; id: string }
+  /** Keys from the local SSH agent (SSH_AUTH_SOCK / Pageant). No secret is stored. */
+  | { type: 'agent' };
+
+export type HostEnvironment = 'none' | 'local' | 'staging' | 'production';
+
+export interface HostOptions {
+  environment: HostEnvironment;
+  /** Saved host to tunnel through (ProxyJump). */
+  jumpHostId?: string | null;
+}
 export type ConnectionProtocol = 'ssh' | 'scp' | 'ftp' | 'ftps' | 'webdav' | 's3';
 
 export interface HostRecord {
@@ -17,6 +30,7 @@ export interface HostRecord {
   tags: string[];
   os?: string;
   protocol?: ConnectionProtocol;
+  options?: HostOptions;
   createdAt: number;
   updatedAt: number;
   /** Whether a password/passphrase is already stored for this host (never the value itself). */
@@ -33,6 +47,8 @@ export interface HostInput {
   tags: string[];
   os?: string;
   protocol?: ConnectionProtocol;
+  /** Omit to keep the host's stored options. */
+  options?: HostOptions;
   /** Write-only. Omit to leave the stored secret untouched, "" to clear it, or a new
    * password/passphrase to (re)encrypt and store it. Never comes back out via HostRecord. */
   secret?: string;

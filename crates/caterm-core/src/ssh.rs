@@ -52,7 +52,10 @@ pub struct ConnectionTestResult {
 #[derive(Debug, Clone)]
 pub enum SshEvent {
     Output { session_id: String, data: String },
-    Closed { session_id: String },
+    /// `unexpected` is true when the link failed (keepalives unanswered, transport error) and
+    /// false for a normal end (the shell exited, the user disconnected). The UI auto-reconnects
+    /// only the former.
+    Closed { session_id: String, unexpected: bool },
     OsDetected { host_id: String, os: String },
 }
 
@@ -254,6 +257,16 @@ fn connect_resolved(addr: &str, timeout: Duration) -> std::io::Result<std::net::
 pub(crate) fn open_authenticated_session(
     host_id: &str,
 ) -> Result<(ssh2::Session, HostRecord), CatermError> {
+    open_authenticated_session_hops(host_id, 0)
+}
+
+/// Longest ProxyJump chain followed before giving up (also what stops a jump-host loop).
+const MAX_JUMP_HOPS: u8 = 3;
+
+fn open_authenticated_session_hops(
+    host_id: &str,
+    hops: u8,
+) -> Result<(ssh2::Session, HostRecord), CatermError> {
     require_non_empty("host_id", host_id)?;
 
     let (host, secret) = crate::store::load_host_for_connect(host_id)?;
@@ -267,8 +280,26 @@ pub(crate) fn open_authenticated_session(
         addr.clone()
     };
 
-    let tcp = connect_resolved(&lookup_addr, Duration::from_secs(10))
-        .map_err(|e| invalid(format!("Connection failed to {addr}: {e}")))?;
+    let jump_host = host
+        .options
+        .jump_host_id
+        .as_deref()
+        .map(str::trim)
+        .filter(|j| !j.is_empty())
+        .map(str::to_string);
+    let tcp = match jump_host {
+        Some(jump_id) => {
+            if hops >= MAX_JUMP_HOPS {
+                return Err(invalid(format!(
+                    "Rantai jump host untuk '{}' lebih dari {MAX_JUMP_HOPS} hop (atau berputar)",
+                    host.label
+                )));
+            }
+            connect_via_jump_host(&jump_id, &host.address, port, hops)?
+        }
+        None => connect_resolved(&lookup_addr, Duration::from_secs(10))
+            .map_err(|e| invalid(format!("Connection failed to {addr}: {e}")))?,
+    };
 
     tcp.set_nonblocking(false)
         .map_err(|e| invalid(format!("Failed to set blocking TCP stream: {e}")))?;
@@ -291,6 +322,78 @@ pub(crate) fn open_authenticated_session(
     }
 
     Ok((sess, host))
+}
+
+/// ProxyJump: authenticates to `jump_id`, opens a `direct-tcpip` channel from it to the target,
+/// and hands that channel back as a local TCP stream that `ssh2::Session` can run on.
+///
+/// libssh2 can only run a session over a real socket, so the channel is bridged to a one-shot
+/// loopback listener. Only the connection coming from our own socket is accepted (checked by
+/// peer address), so another local process racing for the port gets nothing.
+fn connect_via_jump_host(
+    jump_id: &str,
+    target_host: &str,
+    target_port: u16,
+    hops: u8,
+) -> Result<std::net::TcpStream, CatermError> {
+    use std::sync::atomic::AtomicBool;
+
+    let (bastion, jump) = open_authenticated_session_hops(jump_id, hops + 1)?;
+    let channel = bastion
+        .channel_direct_tcpip(target_host, target_port, None)
+        .map_err(|e| {
+            invalid(format!(
+                "Jump host '{}' tidak bisa membuka koneksi ke {target_host}:{target_port}: {e}",
+                jump.label
+            ))
+        })?;
+    bastion.set_keepalive(true, 15);
+    bastion.set_blocking(false);
+
+    let listener = std::net::TcpListener::bind("127.0.0.1:0")
+        .map_err(|e| invalid(format!("Gagal membuka port lokal untuk jump host: {e}")))?;
+    let bridge_addr = listener
+        .local_addr()
+        .map_err(|e| invalid(format!("Gagal membaca port lokal jump host: {e}")))?;
+    listener
+        .set_nonblocking(true)
+        .map_err(|e| invalid(format!("Gagal menyiapkan port lokal jump host: {e}")))?;
+
+    let (expected_tx, expected_rx) = std::sync::mpsc::channel::<std::net::SocketAddr>();
+    thread::spawn(move || {
+        // Owning the bastion session here keeps its transport open exactly as long as the
+        // bridged connection lives.
+        let _bastion = bastion;
+        let shutdown = AtomicBool::new(false);
+        let Ok(expected_peer) = expected_rx.recv_timeout(Duration::from_secs(15)) else {
+            return;
+        };
+        let deadline = Instant::now() + Duration::from_secs(15);
+        loop {
+            match listener.accept() {
+                Ok((stream, peer)) if peer == expected_peer => {
+                    crate::tunnels::relay(stream, channel, &shutdown);
+                    return;
+                }
+                Ok(_) => continue, // someone else raced for the port: drop them
+                Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {
+                    if Instant::now() > deadline {
+                        return;
+                    }
+                    thread::sleep(Duration::from_millis(5));
+                }
+                Err(_) => return,
+            }
+        }
+    });
+
+    let stream = std::net::TcpStream::connect_timeout(&bridge_addr, Duration::from_secs(10))
+        .map_err(|e| invalid(format!("Gagal tersambung ke bridge jump host: {e}")))?;
+    let own_addr = stream
+        .local_addr()
+        .map_err(|e| invalid(format!("Gagal membaca alamat bridge jump host: {e}")))?;
+    let _ = expected_tx.send(own_addr);
+    Ok(stream)
 }
 
 /// TOFU Host Key Verification (REQ-18, T2-SSH-04).
@@ -453,9 +556,30 @@ fn authenticate(
                     host.label
                 ))
             })?;
-            sess.userauth_password(&host.username, &password)
-                .map_err(|e| invalid(format!("Auth failed for user {}: {e}", host.username)))
+            match sess.userauth_password(&host.username, &password) {
+                Ok(()) => Ok(()),
+                Err(e) => {
+                    // Servers with `PasswordAuthentication no` often still take the password
+                    // through keyboard-interactive (PAM). Answer its prompts with the password.
+                    let offers_kbd = sess
+                        .auth_methods(&host.username)
+                        .map(|m| m.split(',').any(|x| x == "keyboard-interactive"))
+                        .unwrap_or(false);
+                    if offers_kbd {
+                        let mut prompter = PasswordPrompter(password.clone());
+                        if sess
+                            .userauth_keyboard_interactive(&host.username, &mut prompter)
+                            .is_ok()
+                            && sess.authenticated()
+                        {
+                            return Ok(());
+                        }
+                    }
+                    Err(invalid(format!("Auth failed for user {}: {e}", host.username)))
+                }
+            }
         }
+        AuthMethod::Agent => authenticate_with_agent(sess, &host.username),
         AuthMethod::Key { path } => {
             let expanded = crate::paths::expand_tilde(path);
             sess.userauth_pubkey_file(
@@ -487,6 +611,53 @@ fn authenticate(
                 })
         }
     }
+}
+
+/// Answers every keyboard-interactive prompt with the stored password.
+struct PasswordPrompter(String);
+
+impl ssh2::KeyboardInteractivePrompt for PasswordPrompter {
+    fn prompt<'a>(
+        &mut self,
+        _username: &str,
+        _instructions: &str,
+        prompts: &[ssh2::Prompt<'a>],
+    ) -> Vec<String> {
+        prompts.iter().map(|_| self.0.clone()).collect()
+    }
+}
+
+/// Tries every identity the local SSH agent offers until the server accepts one.
+fn authenticate_with_agent(sess: &ssh2::Session, username: &str) -> Result<(), CatermError> {
+    let mut agent = sess
+        .agent()
+        .map_err(|e| invalid(format!("SSH agent tidak bisa diinisialisasi: {e}")))?;
+    agent.connect().map_err(|e| {
+        invalid(format!(
+            "SSH agent tidak ditemukan (cek SSH_AUTH_SOCK / Pageant sedang berjalan): {e}"
+        ))
+    })?;
+    agent
+        .list_identities()
+        .map_err(|e| invalid(format!("Gagal membaca key dari SSH agent: {e}")))?;
+    let identities = agent
+        .identities()
+        .map_err(|e| invalid(format!("Gagal membaca key dari SSH agent: {e}")))?;
+    if identities.is_empty() {
+        let _ = agent.disconnect();
+        return Err(invalid("SSH agent berjalan tetapi tidak berisi key (jalankan ssh-add)".to_string()));
+    }
+    for identity in &identities {
+        if agent.userauth(username, identity).is_ok() && sess.authenticated() {
+            let _ = agent.disconnect();
+            return Ok(());
+        }
+    }
+    let _ = agent.disconnect();
+    Err(invalid(format!(
+        "Tidak ada key di SSH agent ({} key) yang diterima server untuk user {username}",
+        identities.len()
+    )))
 }
 
 fn evict_exec_session(host_id: &str) {
@@ -566,6 +737,37 @@ where
         .lock()
         .map_err(|_| invalid("Exec session mutex poisoned".to_string()))?;
     f(&sess)
+}
+
+/// Runs `f` on a fresh SSH connection opened just for it, retrying once on a new connection if
+/// the first one drops mid-way.
+///
+/// Used for file transfers: unlike [`with_exec_session`] it never holds the shared per-host
+/// pooled session, so a long upload no longer blocks directory listing, monitoring or other
+/// transfers to the same host, and several transfers can run in parallel. `f` must be safe to
+/// re-run (the SFTP transfers resume from their `.caterm-part` file).
+pub fn with_dedicated_session<T, F>(host_id: &str, f: F) -> Result<T, CatermError>
+where
+    F: Fn(&ssh2::Session) -> Result<T, CatermError>,
+{
+    require_non_empty("host_id", host_id)?;
+    let (sess, _host) = open_authenticated_session(host_id)?;
+    sess.set_blocking(true);
+    sess.set_timeout(30_000);
+    sess.set_keepalive(true, 15);
+    match f(&sess) {
+        Ok(v) => Ok(v),
+        Err(err) => {
+            if sess.keepalive_send().is_ok() {
+                return Err(err);
+            }
+            let (sess, _host) = open_authenticated_session(host_id)?;
+            sess.set_blocking(true);
+            sess.set_timeout(30_000);
+            sess.set_keepalive(true, 15);
+            f(&sess)
+        }
+    }
 }
 
 /// Tests TCP connectivity, SSH handshake, and credentials for a given host configuration.
@@ -667,6 +869,7 @@ pub fn test_host_connection(
         tags: input.tags.clone(),
         os: input.os.clone(),
         protocol: crate::store::ConnectionProtocol::Ssh,
+        options: input.options.clone().unwrap_or_default(),
         created_at: 0,
         updated_at: 0,
         has_secret: secret.is_some(),
@@ -902,6 +1105,7 @@ fn connect_local() -> Result<SshSession, CatermError> {
         }
         emit(SshEvent::Closed {
             session_id: reader_session_id,
+            unexpected: false,
         });
     });
 
@@ -982,10 +1186,25 @@ pub fn connect(host_id: &str) -> Result<SshSession, CatermError> {
         let mut batch_started: Option<Instant> = None;
         let mut idle_streak: u32 = 0;
         let mut last_keepalive = Instant::now();
+        let mut keepalive_failures: u32 = 0;
+        let mut unexpected = false;
 
         loop {
             if last_keepalive.elapsed() >= Duration::from_secs(10) {
-                let _ = _owned_session.keepalive_send();
+                // A keepalive the transport refuses outright means the link is gone; EAGAIN is
+                // just the non-blocking session saying "later". Three misses in a row end the
+                // session so the tab turns offline instead of freezing silently.
+                match _owned_session.keepalive_send() {
+                    Ok(_) => keepalive_failures = 0,
+                    Err(e) if matches!(e.code(), ssh2::ErrorCode::Session(-37)) => {}
+                    Err(_) => {
+                        keepalive_failures += 1;
+                        if keepalive_failures >= 3 {
+                            unexpected = true;
+                            break;
+                        }
+                    }
+                }
                 last_keepalive = Instant::now();
             }
 
@@ -1043,6 +1262,7 @@ pub fn connect(host_id: &str) -> Result<SshSession, CatermError> {
                         thread::sleep(next_poll_delay(idle_streak));
                         idle_streak = idle_streak.saturating_add(1);
                     } else {
+                        unexpected = true;
                         break;
                     }
                 }
@@ -1050,9 +1270,15 @@ pub fn connect(host_id: &str) -> Result<SshSession, CatermError> {
         }
 
         flush_pty_output(&reader_session_id, &mut pending, &tail_read);
+        // The session is over: drop its registry entry so the writer thread's channel closes
+        // (ending that thread) and nothing keeps a dead handle around until the pane unmounts.
+        if let Ok(mut sessions) = SESSIONS.lock() {
+            sessions.remove(&reader_session_id);
+        }
         if push {
             emit(SshEvent::Closed {
                 session_id: reader_session_id.clone(),
+                unexpected,
             });
         }
     });
@@ -1149,40 +1375,66 @@ pub fn write(session_id: &str, data: &str) -> Result<String, CatermError> {
 
     if !data.is_empty() {
         if let Ok(mut buf) = input_buffer.lock() {
-            if data == "\r" || data == "\n" {
-                if !buf.is_empty() {
-                    // C-09: don't audit-log what was typed at a silent prompt (sudo, su, ssh-add,
-                    // passwd, ...) — the terminal never echoes it back, but this buffer captures
-                    // every keystroke regardless, so without this check the password itself was
-                    // stored (encrypted at rest, but plainly readable in Command Logs and its
-                    // CSV export, and offered back as an autocomplete suggestion).
-                    let tail = last_output_tail
-                        .lock()
-                        .map(|t| t.clone())
-                        .unwrap_or_default();
-                    if looks_like_password_prompt(&tail) {
+            // C-8: process the input character by character. A pasted or injected command
+            // arrives as one chunk ending in "\r" (never the bare "\r" this used to wait for),
+            // so it was either never logged or glued onto the next command.
+            let completed = feed_audit_buffer(&mut buf, data);
+            if !completed.is_empty() {
+                // C-09: don't audit-log what was typed at a silent prompt (sudo, su, ssh-add,
+                // passwd, ...) — the terminal never echoes it back, but this buffer captures
+                // every keystroke regardless.
+                let tail = last_output_tail
+                    .lock()
+                    .map(|t| t.clone())
+                    .unwrap_or_default();
+                let at_password_prompt = looks_like_password_prompt(&tail);
+                for (i, line) in completed.iter().enumerate() {
+                    if i == 0 && at_password_prompt {
                         let _ = crate::audit::log_event(
                             "PTY_COMMAND",
                             Some(&host_id),
                             "***redacted: typed at a password/passphrase prompt, not logged***",
                         );
                     } else {
-                        let _ = crate::audit::log_event("PTY_COMMAND", Some(&host_id), &buf);
+                        let _ = crate::audit::log_event("PTY_COMMAND", Some(&host_id), line);
                     }
-                    buf.clear();
                 }
-            } else if data == "\x7F" || data == "\x08" {
-                // Backspace
-                buf.pop();
-            } else if !data.contains('\x1b') {
-                // Ignore escape sequences
-                buf.push_str(data);
             }
         }
         let _ = tx.send(data.as_bytes().to_vec());
     }
 
     Ok(String::new())
+}
+
+/// Feeds terminal input into the audit line buffer and returns every line it completed.
+/// Bracketed-paste markers are stripped; any other escape sequence (arrow keys, history
+/// recall, function keys) makes the chunk unloggable, as before, because its effect on the
+/// line can't be known without a full line editor.
+fn feed_audit_buffer(buf: &mut String, data: &str) -> Vec<String> {
+    let data = data.replace("\x1b[200~", "").replace("\x1b[201~", "");
+    let mut completed = Vec::new();
+    if data.contains('\x1b') {
+        return completed;
+    }
+    for ch in data.chars() {
+        match ch {
+            '\r' | '\n' => {
+                let line = buf.trim().to_string();
+                buf.clear();
+                if !line.is_empty() {
+                    completed.push(line);
+                }
+            }
+            '\x7f' | '\x08' => {
+                buf.pop();
+            }
+            '\x03' | '\x15' => buf.clear(), // Ctrl+C / Ctrl+U drop the line
+            c if !c.is_control() => buf.push(c),
+            _ => {}
+        }
+    }
+    completed
 }
 
 /// Read available output from an active SSH channel without writing.
@@ -1224,33 +1476,58 @@ pub fn read(session_id: &str) -> Result<String, CatermError> {
 }
 
 /// Resize active terminal PTY window.
+///
+/// The remote PTY channel is non-blocking, so `request_pty_size` can report EAGAIN while the
+/// reader thread is mid-read; that used to drop the resize silently and leave the remote shell
+/// at its old size. It is retried for up to ~200ms, outside the global session-map lock.
 pub fn resize(session_id: &str, cols: u16, rows: u16) -> Result<(), CatermError> {
     require_non_empty("session_id", session_id)?;
 
-    let sessions = SESSIONS
-        .lock()
-        .map_err(|_| invalid("Lock failure".to_string()))?;
-    if let Some(handle) = sessions.get(session_id) {
-        if let Some(channel) = &handle.channel
-            && let Ok(mut ch) = channel.lock()
-        {
-            let _ = ch.request_pty_size(cols as u32, rows as u32, None, None);
+    let (channel, pty_master) = {
+        let sessions = SESSIONS
+            .lock()
+            .map_err(|_| invalid("Lock failure".to_string()))?;
+        match sessions.get(session_id) {
+            Some(handle) => (handle.channel.clone(), handle.pty_master.clone()),
+            None => return Ok(()),
         }
-        // Local sessions have no ssh2::Channel — resize their real PTY instead (see the
-        // `pty_master` field doc comment). Without this the pane could be fit()'d to the
-        // frontend's width but the shell itself would still think it was 80x24 forever.
-        if let Some(master) = &handle.pty_master
-            && let Ok(m) = master.lock()
-        {
-            let _ = m.resize(portable_pty::PtySize {
-                rows,
-                cols,
-                pixel_width: 0,
-                pixel_height: 0,
-            });
+    };
+
+    if let Some(channel) = channel {
+        for _ in 0..100 {
+            let res = match channel.lock() {
+                Ok(mut ch) => ch.request_pty_size(cols as u32, rows as u32, None, None),
+                Err(_) => break,
+            };
+            match res {
+                Err(e) if matches!(e.code(), ssh2::ErrorCode::Session(-37)) => {
+                    thread::sleep(Duration::from_millis(2));
+                }
+                _ => break,
+            }
         }
     }
+    // Local sessions have no ssh2::Channel — resize their real PTY instead.
+    if let Some(master) = pty_master
+        && let Ok(m) = master.lock()
+    {
+        let _ = m.resize(portable_pty::PtySize {
+            rows,
+            cols,
+            pixel_width: 0,
+            pixel_height: 0,
+        });
+    }
     Ok(())
+}
+
+/// Drops every pooled non-interactive session (SFTP, monitoring, AI exec). Called when the
+/// vault locks, so nothing keeps working on a connection opened with now-locked credentials.
+/// # Infallible: a poisoned pool lock leaves the pool as-is; there is nothing to report.
+pub fn clear_exec_sessions() {
+    if let Ok(mut pool) = EXEC_SESSIONS.lock() {
+        pool.clear();
+    }
 }
 
 /// Disconnect and remove active SSH session.
@@ -1271,6 +1548,7 @@ pub fn disconnect(session_id: &str) -> Result<(), CatermError> {
             let _ = ch.kill();
             emit(SshEvent::Closed {
                 session_id: session_id.to_string(),
+                unexpected: false,
             });
         }
     }
@@ -1642,6 +1920,7 @@ mod tests {
             tags: vec![],
             os: None,
             protocol: crate::store::ConnectionProtocol::default(),
+            options: Default::default(),
             created_at: 0,
             updated_at: 0,
             has_secret: false,
@@ -1752,6 +2031,7 @@ mod tests {
             tags: vec![],
             os: None,
             protocol: crate::store::ConnectionProtocol::default(),
+            options: Default::default(),
             created_at: 0,
             updated_at: 0,
             has_secret: false,
@@ -1807,6 +2087,27 @@ mod tests {
         // when the name is normalised here.
         assert_eq!(known_hosts_name("10.0.0.1", 22), "10.0.0.1");
         assert_eq!(known_hosts_name("10.0.0.1", 2222), "[10.0.0.1]:2222");
+    }
+
+    #[test]
+    fn audit_buffer_logs_pasted_and_injected_lines_one_by_one() {
+        let mut buf = String::new();
+        assert!(feed_audit_buffer(&mut buf, "l").is_empty());
+        assert!(feed_audit_buffer(&mut buf, "s").is_empty());
+        assert_eq!(feed_audit_buffer(&mut buf, "\r"), vec!["ls".to_string()]);
+        // An injected snippet arrives as one chunk.
+        assert_eq!(feed_audit_buffer(&mut buf, "df -h\r"), vec!["df -h".to_string()]);
+        // A multi-line bracketed paste yields every line, markers stripped.
+        assert_eq!(
+            feed_audit_buffer(&mut buf, "\x1b[200~cd /tmp\nls -la\x1b[201~\r"),
+            vec!["cd /tmp".to_string(), "ls -la".to_string()]
+        );
+        // Backspace and Ctrl+U edit the line.
+        assert_eq!(feed_audit_buffer(&mut buf, "lx\x7fs\r"), vec!["ls".to_string()]);
+        assert!(feed_audit_buffer(&mut buf, "rm -rf x\x15").is_empty());
+        assert!(buf.is_empty());
+        // Arrow-key history recall can't be reconstructed: not logged.
+        assert!(feed_audit_buffer(&mut buf, "\x1b[A").is_empty());
     }
 
     #[test]

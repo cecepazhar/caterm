@@ -258,6 +258,7 @@ mod tests {
                 tags: vec![],
                 os: None,
                 protocol: None,
+                options: None,
                 secret: None,
             },
             "test-local-key",

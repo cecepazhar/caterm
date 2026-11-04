@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import { listen, type UnlistenFn } from '@tauri-apps/api/event';
-  import { listHosts, saveHost, deleteHost, testHostConnection, type HostRecord, type HostInput, type ConnectionProtocol } from '$lib/api/hosts';
+  import { listHosts, saveHost, deleteHost, testHostConnection, type HostRecord, type HostInput, type ConnectionProtocol, type AuthMethod, type HostEnvironment, type HostOptions } from '$lib/api/hosts';
   import { sshClearHostKey } from '$lib/api/ssh';
   import { listGroups, type GroupRecord } from '$lib/api/groups';
   import { listKeys, type KeyRecord } from '$lib/api/keys';
@@ -99,13 +99,26 @@
   let formAddress = $state('');
   let formPort = $state(22);
   let formUsername = $state('root');
-  let formAuthType = $state<'password' | 'key' | 'keyId'>('password');
+  let formAuthType = $state<'password' | 'key' | 'keyId' | 'agent'>('password');
   let formKeyPath = $state('');
   let formKeyId = $state('');
   let formSecret = $state('');
   let showFormSecret = $state(false);
   let formTags = $state('');
   let formOs = $state('');
+  let formEnvironment = $state<HostEnvironment>('none');
+  let formJumpHostId = $state('');
+
+  function buildAuthMethod(): AuthMethod {
+    if (formAuthType === 'password') return { type: 'password' };
+    if (formAuthType === 'agent') return { type: 'agent' };
+    if (formAuthType === 'keyId') return { type: 'keyId', id: formKeyId };
+    return { type: 'key', path: formKeyPath.trim() };
+  }
+
+  function buildOptions(): HostOptions {
+    return { environment: formEnvironment, jumpHostId: formJumpHostId || null };
+  }
   let formTotpSecret = $state('');
   let testTotpResult = $state<{ token: string; remaining: number } | null>(null);
   let unlistenOsDetected: UnlistenFn | null = null;
@@ -210,13 +223,15 @@
     port: 22,
     username: 'root',
     protocol: 'ssh' as ConnectionProtocol,
-    authType: 'password' as 'password' | 'key' | 'keyId',
+    authType: 'password' as 'password' | 'key' | 'keyId' | 'agent',
     keyPath: '',
     keyId: '',
     secret: '',
     tags: '',
     os: '',
-    totp: ''
+    totp: '',
+    environment: 'none' as HostEnvironment,
+    jumpHostId: ''
   });
 
   function isFormDirty(): boolean {
@@ -232,6 +247,8 @@
       formSecret !== initialSnapshot.secret ||
       formTags.trim() !== initialSnapshot.tags ||
       formOs !== initialSnapshot.os ||
+      formEnvironment !== initialSnapshot.environment ||
+      formJumpHostId !== initialSnapshot.jumpHostId ||
       formTotpSecret.trim() !== initialSnapshot.totp
     );
   }
@@ -266,9 +283,8 @@
         port: Number(formPort) || 22,
         username: formUsername.trim() || 'root',
         protocol: formProtocol,
-        authMethod: formAuthType === 'password'
-          ? { type: 'password' }
-          : (formAuthType === 'keyId' ? { type: 'keyId', id: formKeyId } : { type: 'key', path: formKeyPath.trim() }),
+        authMethod: buildAuthMethod(),
+        options: buildOptions(),
         tags: formTags.split(',').map(t => t.trim()).filter(Boolean),
         os: formOs ? formOs : undefined,
         secret: formSecret ? formSecret : undefined
@@ -326,6 +342,8 @@
     formSecret = '';
     formTags = '';
     formOs = '';
+    formEnvironment = 'none';
+    formJumpHostId = '';
     formTotpSecret = '';
     testTotpResult = null;
     testResult = null;
@@ -342,7 +360,9 @@
       secret: '',
       tags: '',
       os: '',
-      totp: ''
+      totp: '',
+      environment: 'none',
+      jumpHostId: ''
     };
     isAddModalOpen = true;
   }
@@ -364,6 +384,8 @@
     formSecret = '';
     formTags = host.tags.join(', ');
     formOs = host.os || '';
+    formEnvironment = host.options?.environment ?? 'none';
+    formJumpHostId = host.options?.jumpHostId ?? '';
     formTotpSecret = '';
     testTotpResult = null;
     testResult = null;
@@ -380,7 +402,9 @@
       secret: '',
       tags: host.tags.join(', '),
       os: host.os || '',
-      totp: ''
+      totp: '',
+      environment: host.options?.environment ?? 'none',
+      jumpHostId: host.options?.jumpHostId ?? ''
     };
     isAddModalOpen = true;
   }
@@ -401,7 +425,8 @@
         port: Number(formPort) || 22,
         username: formUsername,
         protocol: formProtocol,
-        authMethod: formAuthType === 'password' ? { type: 'password' } : (formAuthType === 'keyId' ? { type: 'keyId', id: formKeyId } : { type: 'key', path: formKeyPath }),
+        authMethod: buildAuthMethod(),
+        options: buildOptions(),
         tags: formTags.split(',').map(t => t.trim()).filter(Boolean),
         os: formOs ? formOs : undefined,
         // Blank = leave whatever's stored untouched (edit) or no secret at all (create).
@@ -441,6 +466,7 @@
         username: host.username,
         protocol: host.protocol,
         authMethod: host.authMethod,
+        options: host.options,
         tags: [...host.tags],
         os: host.os
       };
@@ -1095,8 +1121,11 @@
 
           <!-- Actions -->
           <div class="mt-3 pt-3 border-t border-neutral-100 dark:border-neutral-800/80 flex items-center gap-1.5">
+            {#if host.options?.environment && host.options.environment !== 'none'}
+              <span class="shrink-0 text-[10px] font-bold uppercase px-1.5 py-0.5 rounded {host.options.environment === 'production' ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30' : host.options.environment === 'staging' ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30' : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30'}">{host.options.environment === 'production' ? 'PROD' : host.options.environment}</span>
+            {/if}
             <span class="text-[11px] text-neutral-400 dark:text-neutral-500 truncate">
-              {host.authMethod.type === 'password' ? t('hosts.authPassword') : t('hosts.authKey')} · {host.hasSecret ? t('hosts.passwordSaved') : host.authMethod.type === 'password' ? t('hosts.passwordNotSaved') : t('hosts.noPassphrase')}
+              {host.authMethod.type === 'password' ? t('hosts.authPassword') : host.authMethod.type === 'agent' ? t('hosts.authAgent') : t('hosts.authKey')} · {host.hasSecret ? t('hosts.passwordSaved') : host.authMethod.type === 'password' ? t('hosts.passwordNotSaved') : t('hosts.noPassphrase')}
             </span>
 
             <Button
@@ -1322,7 +1351,7 @@
       </div>
 
       <!-- Segmented Radio Cards -->
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
         <label class="flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer {formAuthType === 'password' ? 'bg-sky-500/10 border-sky-500/40 text-sky-800 dark:text-sky-300 shadow-xs' : 'bg-white dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 hover:border-neutral-300 dark:hover:border-neutral-700'}">
           <input type="radio" value="password" bind:group={formAuthType} class="text-sky-600 focus:ring-0" />
           <div class="min-w-0">
@@ -1349,6 +1378,36 @@
             <div class="text-[10px] text-neutral-500 dark:text-neutral-400">File ~/.ssh di laptop</div>
           </div>
         </label>
+
+        <label class="flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer {formAuthType === 'agent' ? 'bg-sky-500/10 border-sky-500/40 text-sky-800 dark:text-sky-300 shadow-xs' : 'bg-white dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 hover:border-neutral-300 dark:hover:border-neutral-700'}">
+          <input type="radio" value="agent" bind:group={formAuthType} class="text-sky-600 focus:ring-0" />
+          <div class="min-w-0">
+            <div class="text-xs font-bold">{t('hosts.authAgent')}</div>
+            <div class="text-[10px] text-neutral-500 dark:text-neutral-400">{t('hosts.authAgentHint')}</div>
+          </div>
+        </label>
+      </div>
+
+      <!-- Environment & Jump Host -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+        <div>
+          <label for="form-environment" class="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 uppercase tracking-wide mb-1">{t('hosts.environment')}</label>
+          <select id="form-environment" bind:value={formEnvironment} class="w-full rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-xs px-2.5 py-2">
+            <option value="none">{t('hosts.envNone')}</option>
+            <option value="local">Local</option>
+            <option value="staging">Staging</option>
+            <option value="production">Production</option>
+          </select>
+        </div>
+        <div>
+          <label for="form-jump-host" class="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 uppercase tracking-wide mb-1">{t('hosts.jumpHost')}</label>
+          <select id="form-jump-host" bind:value={formJumpHostId} class="w-full rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-xs px-2.5 py-2">
+            <option value="">{t('hosts.jumpHostNone')}</option>
+            {#each hosts.filter((h) => h.id !== editingId && (h.protocol ?? 'ssh') === 'ssh') as h (h.id)}
+              <option value={h.id}>{h.label} ({h.username}@{h.address})</option>
+            {/each}
+          </select>
+        </div>
       </div>
 
       <!-- Detail Per-Auth Method -->

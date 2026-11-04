@@ -52,6 +52,7 @@ pub fn open_encrypted(data_dir: &Path, passphrase: &str) -> Result<Connection, C
     migrate_hosts_secret_column(&conn)?;
     migrate_hosts_os_column(&conn)?;
     migrate_hosts_protocol_column(&conn)?;
+    migrate_hosts_options_column(&conn)?;
     migrate_groups_categories_column(&conn)?;
     migrate_ai_routing_and_memory(&conn)?;
     Ok(conn)
@@ -270,6 +271,21 @@ fn migrate_hosts_protocol_column(conn: &Connection) -> Result<(), CatermError> {
                 CatermError::Db(DbError::Generic(format!(
                     "gagal migrasi kolom protocol: {e}"
                 )))
+            })?;
+    }
+    Ok(())
+}
+
+/// Adds the JSON `options` column (environment, jump host) to `hosts`.
+fn migrate_hosts_options_column(conn: &Connection) -> Result<(), CatermError> {
+    let has_column: bool = conn
+        .prepare("SELECT 1 FROM pragma_table_info('hosts') WHERE name = 'options'")
+        .and_then(|mut stmt| stmt.exists([]))
+        .unwrap_or(false);
+    if !has_column {
+        conn.execute_batch("ALTER TABLE hosts ADD COLUMN options TEXT")
+            .map_err(|e| {
+                CatermError::Db(DbError::Generic(format!("gagal migrasi kolom options: {e}")))
             })?;
     }
     Ok(())
