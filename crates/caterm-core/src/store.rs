@@ -20,8 +20,12 @@ use serde::{Deserialize, Serialize};
 #[serde(tag = "type", rename_all = "camelCase")]
 pub enum AuthMethod {
     Password,
-    Key { path: String },
-    KeyId { id: String },
+    Key {
+        path: String,
+    },
+    KeyId {
+        id: String,
+    },
     /// Keys held by the local SSH agent (`SSH_AUTH_SOCK` / Pageant). No secret is stored.
     Agent,
 }
@@ -261,8 +265,9 @@ pub(crate) fn save_host_in(
             "Host tidak bisa menjadi jump host untuk dirinya sendiri".to_string(),
         )));
     }
-    let options_json = serde_json::to_string(&options)
-        .map_err(|e| CatermError::Db(DbError::Generic(format!("gagal serialisasi options: {e}"))))?;
+    let options_json = serde_json::to_string(&options).map_err(|e| {
+        CatermError::Db(DbError::Generic(format!("gagal serialisasi options: {e}")))
+    })?;
     conn.execute(
         "INSERT INTO hosts (id, label, address, port, username, auth_method, tags, os, protocol, created_at, updated_at, secret_enc, options)
          VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)

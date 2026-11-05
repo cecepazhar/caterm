@@ -264,7 +264,12 @@ fn write_all_retry<W: Write>(w: &mut W, mut buf: &[u8], shutdown: &AtomicBool) -
         match w.write(buf) {
             Ok(0) => return Err(io::ErrorKind::WriteZero.into()),
             Ok(n) => buf = buf.get(n..).unwrap_or(&[]),
-            Err(e) if matches!(e.kind(), io::ErrorKind::WouldBlock | io::ErrorKind::Interrupted) => {
+            Err(e)
+                if matches!(
+                    e.kind(),
+                    io::ErrorKind::WouldBlock | io::ErrorKind::Interrupted
+                ) =>
+            {
                 if shutdown.load(Ordering::Relaxed) {
                     return Err(io::ErrorKind::Interrupted.into());
                 }
@@ -300,7 +305,8 @@ pub(crate) fn relay(mut local: TcpStream, mut channel: ssh2::Channel, shutdown: 
                 }
                 Ok(n) => {
                     active = true;
-                    if write_all_retry(&mut channel, buf.get(..n).unwrap_or(&[]), shutdown).is_err() {
+                    if write_all_retry(&mut channel, buf.get(..n).unwrap_or(&[]), shutdown).is_err()
+                    {
                         break;
                     }
                 }
@@ -518,7 +524,8 @@ pub fn start_tunnel(id: &str) -> Result<(), CatermError> {
                             let shutdown = Arc::clone(&shutdown);
                             let target_addr = target_addr.clone();
                             thread::spawn(move || {
-                                let Ok(local) = TcpStream::connect((target_addr.as_str(), target_port))
+                                let Ok(local) =
+                                    TcpStream::connect((target_addr.as_str(), target_port))
                                 else {
                                     let mut channel = channel;
                                     let _ = channel.close();

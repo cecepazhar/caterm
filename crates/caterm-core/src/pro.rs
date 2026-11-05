@@ -1128,7 +1128,10 @@ pub fn activate_license_key(key: &str) -> Result<ProStatus, CatermError> {
     if !prefix.starts_with("CA") {
         return Err(pro_err("INVALID_LICENSE_KEY"));
     }
-    if !clean_key.chars().all(|c| c.is_ascii_alphanumeric() || c == '-') {
+    if !clean_key
+        .chars()
+        .all(|c| c.is_ascii_alphanumeric() || c == '-')
+    {
         return Err(pro_err("INVALID_LICENSE_KEY"));
     }
 

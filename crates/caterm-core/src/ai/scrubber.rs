@@ -18,37 +18,30 @@ static RE_PRIVATE_KEY: LazyLock<Regex> = LazyLock::new(|| {
     )
 });
 
-static RE_BEARER: LazyLock<Regex> = LazyLock::new(|| {
-    safe_regex(r"(?i)\bBearer\s+[A-Za-z0-9\-._~+/]+=*")
-});
+static RE_BEARER: LazyLock<Regex> =
+    LazyLock::new(|| safe_regex(r"(?i)\bBearer\s+[A-Za-z0-9\-._~+/]+=*"));
 
 static RE_JWT: LazyLock<Regex> = LazyLock::new(|| {
     safe_regex(r"\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\b")
 });
 
-static RE_AWS_KEY: LazyLock<Regex> = LazyLock::new(|| {
-    safe_regex(r"\b(AKIA|ABIA|ACCA|ASIA)[0-9A-Z]{16}\b")
-});
+static RE_AWS_KEY: LazyLock<Regex> =
+    LazyLock::new(|| safe_regex(r"\b(AKIA|ABIA|ACCA|ASIA)[0-9A-Z]{16}\b"));
 
-static RE_OPENAI_KEY: LazyLock<Regex> = LazyLock::new(|| {
-    safe_regex(r"\bsk-[a-zA-Z0-9_-]{20,}\b")
-});
+static RE_OPENAI_KEY: LazyLock<Regex> = LazyLock::new(|| safe_regex(r"\bsk-[a-zA-Z0-9_-]{20,}\b"));
 
-static RE_GITHUB_KEY: LazyLock<Regex> = LazyLock::new(|| {
-    safe_regex(r"\b(ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9]{36}\b")
-});
+static RE_GITHUB_KEY: LazyLock<Regex> =
+    LazyLock::new(|| safe_regex(r"\b(ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9]{36}\b"));
 
 static RE_PASSWORD_FLAG: LazyLock<Regex> = LazyLock::new(|| {
     safe_regex(r#"(?i)(--password[=\s]+|--pass[=\s]+|--secret[=\s]+|-p\s+)(['"]?[^\s'"]+['"]?)"#)
 });
 
-static RE_URL_BASIC_AUTH: LazyLock<Regex> = LazyLock::new(|| {
-    safe_regex(r#"https?://[^:\s]+:[^@\s]+@"#)
-});
+static RE_URL_BASIC_AUTH: LazyLock<Regex> =
+    LazyLock::new(|| safe_regex(r#"https?://[^:\s]+:[^@\s]+@"#));
 
-static RE_ANSI_ESCAPE: LazyLock<Regex> = LazyLock::new(|| {
-    safe_regex(r#"\x1b\[[0-9;]*[a-zA-Z]|\x1b\][^\x07\x1b]*(\x07|\x1b\\)"#)
-});
+static RE_ANSI_ESCAPE: LazyLock<Regex> =
+    LazyLock::new(|| safe_regex(r#"\x1b\[[0-9;]*[a-zA-Z]|\x1b\][^\x07\x1b]*(\x07|\x1b\\)"#));
 
 #[derive(Debug, Clone, Default)]
 pub struct PromptScrubber;

@@ -207,10 +207,7 @@ pub fn generate_totp_at_timestamp(
     let b2 = *hmac_result.get(offset + 2).unwrap_or(&0) as u32;
     let b3 = *hmac_result.get(offset + 3).unwrap_or(&0) as u32;
 
-    let binary = ((b0 & 0x7f) << 24)
-        | ((b1 & 0xff) << 16)
-        | ((b2 & 0xff) << 8)
-        | (b3 & 0xff);
+    let binary = ((b0 & 0x7f) << 24) | ((b1 & 0xff) << 16) | ((b2 & 0xff) << 8) | (b3 & 0xff);
 
     let divisor = 10_u32.pow(digits);
     let otp = binary % divisor;

@@ -48,3 +48,15 @@ flatpak/tools/.venv
 *.18-linux-x86_64
 *.gz
 *.idsig
+
+# Local build output & release staging (never commit binaries — CI T-15/T-16)
+/build/
+/dist-release/
+
+# Editor/agent scratch copies of source files
+*.rs_draft
+*.rs.new
+
+# Frontend uses npm only (package-lock.json); keep other lockfiles out
+frontend/pnpm-lock.yaml
+frontend/yarn.lock
