@@ -120,7 +120,7 @@ Semua temuan di bawah diverifikasi langsung dari repo pada commit `5843207`.
 |---|---|---|---|---|
 | F-01 | 🔴 P0 | **Binary ELF 15,8 MB ter-commit** di repo. Ini melanggar aturan CI sendiri (T-16 "no file over 1MB"), jadi job `repo-hygiene` seharusnya gagal di `main`. | `build/bin/caterm` | ENT-GOV-01 |
 | F-02 | 🔴 P0 | **Tidak ada code signing OS.** Hanya ada tanda tangan updater (minisign); belum ada Authenticode (Windows) maupun Developer ID + notarization (macOS). | `.github/workflows/release.yml` hanya memakai `TAURI_SIGNING_*` | ENT-REL-01..03 |
-| F-03 | 🔴 P0 | **Endpoint updater fallback mengarah ke owner yang berbeda**: `github.com/cecepazhar/caterm`, padahal repo-nya `cecep-azhar/caterm`. Kalau server utama mati, update gagal (atau lebih buruk: mengarah ke akun pihak lain). | `tauri.conf.json → plugins.updater.endpoints[1]` | ENT-REL-09 |
+| F-03 | 🟠 P1 | **Updater belum siap enterprise**: hanya satu kanal, tidak bisa dimatikan atau diarahkan ke mirror internal, dan belum ada prosedur rotasi kunci minisign. (Catatan: URL fallback `github.com/cecepazhar/caterm` sudah benar; `cecep-azhar` adalah nama lama yang di-redirect GitHub.) | `tauri.conf.json → plugins.updater` | ENT-REL-09 |
 | F-04 | 🟠 P1 | **Dua lockfile frontend** (`package-lock.json` & `pnpm-lock.yaml`). CI memakai npm + Node 24, sedangkan release memakai pnpm + Node 20, dengan fallback `pnpm install --frozen-lockfile \|\| pnpm install`. Akibatnya build rilis tidak reproducible dan bisa berbeda dari yang dites CI. | `ci.yml` vs `release.yml` | ENT-REL-04 |
 | F-05 | 🟠 P1 | **Release tidak digate oleh CI.** Workflow release tidak bergantung pada hasil test/clippy. | `release.yml` (tidak ada `needs:`) | ENT-REL-04 |
 | F-06 | 🟠 P1 | **Frontend tanpa tes otomatis** (0 file `*.test.*` / `*.spec.*`). | `frontend/` | ENT-QA-01..04 |
@@ -145,7 +145,7 @@ Semua temuan di bawah diverifikasi langsung dari repo pada commit `5843207`.
 
 | Milestone | Tema | Target durasi | Exit criteria |
 |---|---|---|---|
-| **M0: Stabilize** | CI hijau, repo bersih | 2–3 hari | F-01, F-03, F-13 selesai; semua job `ci.yml` hijau di `main` |
+| **M0: Stabilize** | CI hijau, repo bersih, build rilis reproducible | 2–3 hari | F-01, F-04, F-05, F-13 selesai; semua job `ci.yml` hijau di `main` |
 | **M1: Foundation** | Governance, tes, logging | 2 minggu | ENT-GOV-*, ENT-QA-01..04, ENT-OBS-01..03, ENT-REL-04..08 selesai |
 | **M2: Trusted Distribution** | Signing, MSI, SBOM | 2 minggu (tergantung sertifikat) | E1, E2, E5 terpenuhi |
 | **M3: Enterprise Control** | Policy, audit, SIEM, security | 3–4 minggu | E3, E4, E6, E8 terpenuhi |
@@ -214,10 +214,10 @@ Format setiap task:
 - **Owner:** setting di GitHub → Settings → Branches.
 - **Acceptance criteria:** push langsung ke `main` ditolak.
 
-#### ENT-GOV-07 · Perbaiki identitas & link publik · P1 · S · 🤖 · ⬜
-- **Masalah:** README dan konfigurasi memakai `cecepazhar/caterm`, padahal repo-nya `cecep-azhar/caterm`.
-- **Lingkup:** cari semua `cecepazhar` di repo, lalu konfirmasi ke Owner mana yang benar dan seragamkan. Ini juga mencakup endpoint updater (lihat ENT-REL-09).
-- **Acceptance criteria:** `git grep cecepazhar` kosong (atau semuanya disengaja dan terdokumentasi).
+#### ENT-GOV-07 · Seragamkan identitas & URL publik · P2 · S · 🤖 · ⬜
+- **Masalah:** pemilik repo yang benar adalah `cecepazhar` (dipakai di `Cargo.toml`, README, FUNDING, updater). Nama `cecep-azhar` hanya redirect lama dari GitHub, tapi masih bisa muncul di clone URL, dokumen, atau skrip.
+- **Lingkup:** cari `cecep-azhar` di repo, CI, dan dokumentasi, lalu ganti ke `cecepazhar`. Pastikan `repository`/`homepage` di semua `Cargo.toml` dan `frontend/package.json` konsisten.
+- **Acceptance criteria:** `git grep cecep-azhar` kosong.
 
 #### ENT-GOV-08 · Selaraskan `STATUS.md` dengan kenyataan · P2 · S · 🤖 · ⬜
 - **Masalah:** F-16. Versi di `STATUS.md` masih v2.1.19, dan label "Production Ready" diberikan tanpa bukti.
@@ -283,14 +283,15 @@ Format setiap task:
 - **Lingkup:** job `osv-scanner` / `trivy fs` terhadap lockfile; gagal untuk severity High/Critical tanpa pengecualian tertulis. Pastikan `npm audit --omit=dev` juga ikut dijalankan.
 - **Dependensi:** ENT-REL-04.
 
-#### ENT-REL-09 · Perbaiki & perkuat endpoint updater · P0 · S · 🤝 · ⬜
+#### ENT-REL-09 · Perkuat updater untuk enterprise · P1 · M · 🤝 · ⬜
 - **Masalah:** F-03.
 - **Lingkup:**
-  1. Perbaiki URL fallback ke repo yang benar.
-  2. Tambahkan kanal update (`stable`, `beta`, `lts`) via `latest-<channel>.json`.
-  3. Updater harus **bisa dimatikan oleh policy** (ENT-ADM-07) dan bisa diarahkan ke **server internal perusahaan** (mirror).
-  4. Rotasi kunci minisign: dokumentasikan prosedur rotasi dan siapkan kunci cadangan offline.
+  1. Tambahkan kanal update (`stable`, `beta`, `lts`) via `latest-<channel>.json`.
+  2. Updater harus **bisa dimatikan oleh policy** (`updates.enabled`, ENT-ADM-06) dan bisa diarahkan ke **server internal perusahaan** (`updates.endpoint`).
+  3. Rotasi kunci minisign: dokumentasikan prosedur rotasi dan siapkan kunci cadangan offline.
+  4. Tes otomatis bahwa kedua endpoint (`caterm.fathforce.com` dan GitHub Releases) menyajikan `latest.json` yang valid dan tanda tangannya cocok.
 - **Acceptance criteria:** tes manual update v(n-1) → v(n) berhasil dari kedua endpoint; dengan endpoint utama dimatikan, fallback tetap berjalan.
+- **Dependensi:** ENT-ADM-05 (untuk butir 2).
 
 #### ENT-REL-10 · Kebijakan versi & kanal LTS · P2 · S · 👤 · ⬜
 - **Lingkup:** SemVer ketat (breaking change pada data/policy = major), kanal **LTS** dengan dukungan 12 bulan dan hanya menerima security fix, serta jadwal EOL yang dipublikasikan.
@@ -642,8 +643,8 @@ Format setiap task:
 | Urutan | Task | Alasan |
 |---|---|---|
 | 1 | ENT-GOV-01 | CI harus hijau dulu |
-| 2 | ENT-REL-09, ENT-GOV-07 | Updater & link yang salah berisiko langsung bagi pengguna |
-| 3 | ENT-REL-04 | Prasyarat signing & SBOM |
+| 2 | ENT-REL-04 | Build rilis harus sama dengan yang dites CI; prasyarat signing & SBOM |
+| 3 | ENT-GOV-07 | Seragamkan identitas sebelum dokumen publik dibuat |
 | 4 | ENT-GOV-02..05, ENT-GOV-08 | Murah, langsung menaikkan kesan profesional |
 | 5 | ENT-QA-01, ENT-QA-02 | Jaring pengaman sebelum refactor besar |
 | 6 | ENT-OBS-01, ENT-OBS-02 | Dibutuhkan untuk debugging semua fitur berikutnya |
@@ -686,11 +687,10 @@ ENT-SEC-01 + M3 ─► ENT-SEC-02 (pentest) ─► ENT-DOC-02
 | 1 | Daftar Azure Trusted Signing / beli sertifikat OV | ENT-REL-01 | 1–3 minggu (verifikasi identitas) |
 | 2 | Daftar Apple Developer Program | ENT-REL-02 | 2–14 hari |
 | 3 | Siapkan email `security@…` | ENT-GOV-03 | 1 hari |
-| 4 | Putuskan nama owner GitHub yang benar (`cecep-azhar` vs `cecepazhar`) | ENT-GOV-07, ENT-REL-09 | – |
-| 5 | Putuskan nasib prompt AI di repo publik | ENT-GOV-02 | – |
-| 6 | Putuskan model tim: SaaS / self-hosted | ENT-IAM-01 | – |
-| 7 | Cari vendor pentest & anggarkan biayanya | ENT-SEC-02 | 4–8 minggu |
-| 8 | Review legal Kebijakan Privasi & DPA | ENT-CMP-06 | 2–4 minggu |
+| 4 | Putuskan nasib prompt AI di repo publik | ENT-GOV-02 | – |
+| 5 | Putuskan model tim: SaaS / self-hosted | ENT-IAM-01 | – |
+| 6 | Cari vendor pentest & anggarkan biayanya | ENT-SEC-02 | 4–8 minggu |
+| 7 | Review legal Kebijakan Privasi & DPA | ENT-CMP-06 | 2–4 minggu |
 
 ---
 
@@ -757,8 +757,8 @@ Diambil dari kode saat ini. Verifikasi ulang sebelum dipublikasikan.
 
 | Workstream | P0 | P1 | P2 | P3 | Total |
 |---|---|---|---|---|---|
-| WS-GOV | 1 | 4 | 3 | 0 | 8 |
-| WS-REL | 4 | 4 | 2 | 0 | 10 |
+| WS-GOV | 1 | 3 | 4 | 0 | 8 |
+| WS-REL | 3 | 5 | 2 | 0 | 10 |
 | WS-QA | 0 | 6 | 3 | 0 | 9 |
 | WS-OBS | 0 | 3 | 1 | 1 | 5 |
 | WS-SEC | 0 | 7 | 3 | 1 | 11 |
@@ -767,7 +767,7 @@ Diambil dari kode saat ini. Verifikasi ulang sebelum dipublikasikan.
 | WS-CMP | 0 | 6 | 1 | 1 | 8 |
 | WS-UX | 0 | 0 | 3 | 1 | 4 |
 | WS-DOC | 0 | 3 | 3 | 0 | 6 |
-| **Total** | **5** | **43** | **25** | **6** | **79** |
+| **Total** | **4** | **43** | **26** | **6** | **79** |
 
 ---
 
