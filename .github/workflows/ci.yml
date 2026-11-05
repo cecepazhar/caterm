@@ -18,6 +18,8 @@ on:
       - '.gitignore'
       - 'LICENSE'
   workflow_dispatch:
+  # Lets release.yml run the full CI suite on the tagged commit before packaging.
+  workflow_call:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -115,7 +117,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "24"
+          node-version-file: frontend/.nvmrc
           cache: npm
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci

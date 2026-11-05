@@ -5,11 +5,21 @@ on:
     tags:
       - 'v*'
 
+# Least privilege by default; only the packaging job may write the GitHub Release.
 permissions:
-  contents: write
+  contents: read
 
 jobs:
+  # Packaging only starts once the full CI suite passes on the tagged commit, so a
+  # release can never ship code that CI would reject.
+  ci:
+    uses: ./.github/workflows/ci.yml
+    secrets: inherit
+
   release:
+    needs: ci
+    permissions:
+      contents: write
     strategy:
       fail-fast: false
       matrix:
@@ -26,17 +36,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js & pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9
-
-      - name: Setup Node.js environment
+      # Same Node version and lockfile as CI, so the packaged frontend is the one CI tested.
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: 'pnpm'
-          cache-dependency-path: frontend/pnpm-lock.yaml
+          node-version-file: frontend/.nvmrc
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
 
       - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -55,9 +61,14 @@ jobs:
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libssl-dev pkg-config
 
       - name: Install frontend dependencies
-        run: |
-          cd frontend
-          pnpm install --frozen-lockfile || pnpm install
+        run: npm ci
+        working-directory: frontend
+
+      # tauri.conf.json has no beforeBuildCommand, so the bundle embeds whatever is in
+      # frontend/build; build it explicitly from the locked dependencies.
+      - name: Build frontend
+        run: npm run build
+        working-directory: frontend
 
       - name: Build and Package Tauri App
         uses: tauri-apps/tauri-action@v0
@@ -66,6 +77,9 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
+          projectPath: crates/caterm-app
+          # Tauri CLI pinned by frontend/package-lock.json (no global install).
+          tauriScript: npm --prefix ../../frontend exec -- tauri
           tagName: ${{ github.ref_name }}
           releaseName: 'CATerm ${{ github.ref_name }}'
           releaseBody: |

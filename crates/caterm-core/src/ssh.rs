@@ -51,12 +51,21 @@ pub struct ConnectionTestResult {
 /// core stays GUI-free and only knows about this callback).
 #[derive(Debug, Clone)]
 pub enum SshEvent {
-    Output { session_id: String, data: String },
+    Output {
+        session_id: String,
+        data: String,
+    },
     /// `unexpected` is true when the link failed (keepalives unanswered, transport error) and
     /// false for a normal end (the shell exited, the user disconnected). The UI auto-reconnects
     /// only the former.
-    Closed { session_id: String, unexpected: bool },
-    OsDetected { host_id: String, os: String },
+    Closed {
+        session_id: String,
+        unexpected: bool,
+    },
+    OsDetected {
+        host_id: String,
+        os: String,
+    },
 }
 
 type EventSink = Box<dyn Fn(SshEvent) + Send + Sync + 'static>;
@@ -484,7 +493,10 @@ pub fn clear_known_host(address: &str, port: Option<u16>) -> Result<bool, Caterm
 
     let mut paths_to_check = vec![kh_file];
     if let Some(base) = directories::BaseDirs::new() {
-        let legacy = base.data_dir().join("com.fathforce.caterm").join("known_hosts");
+        let legacy = base
+            .data_dir()
+            .join("com.fathforce.caterm")
+            .join("known_hosts");
         if !paths_to_check.contains(&legacy) {
             paths_to_check.push(legacy);
         }
@@ -575,7 +587,10 @@ fn authenticate(
                             return Ok(());
                         }
                     }
-                    Err(invalid(format!("Auth failed for user {}: {e}", host.username)))
+                    Err(invalid(format!(
+                        "Auth failed for user {}: {e}",
+                        host.username
+                    )))
                 }
             }
         }
@@ -645,7 +660,9 @@ fn authenticate_with_agent(sess: &ssh2::Session, username: &str) -> Result<(), C
         .map_err(|e| invalid(format!("Gagal membaca key dari SSH agent: {e}")))?;
     if identities.is_empty() {
         let _ = agent.disconnect();
-        return Err(invalid("SSH agent berjalan tetapi tidak berisi key (jalankan ssh-add)".to_string()));
+        return Err(invalid(
+            "SSH agent berjalan tetapi tidak berisi key (jalankan ssh-add)".to_string(),
+        ));
     }
     for identity in &identities {
         if agent.userauth(username, identity).is_ok() && sess.authenticated() {
@@ -2096,14 +2113,20 @@ mod tests {
         assert!(feed_audit_buffer(&mut buf, "s").is_empty());
         assert_eq!(feed_audit_buffer(&mut buf, "\r"), vec!["ls".to_string()]);
         // An injected snippet arrives as one chunk.
-        assert_eq!(feed_audit_buffer(&mut buf, "df -h\r"), vec!["df -h".to_string()]);
+        assert_eq!(
+            feed_audit_buffer(&mut buf, "df -h\r"),
+            vec!["df -h".to_string()]
+        );
         // A multi-line bracketed paste yields every line, markers stripped.
         assert_eq!(
             feed_audit_buffer(&mut buf, "\x1b[200~cd /tmp\nls -la\x1b[201~\r"),
             vec!["cd /tmp".to_string(), "ls -la".to_string()]
         );
         // Backspace and Ctrl+U edit the line.
-        assert_eq!(feed_audit_buffer(&mut buf, "lx\x7fs\r"), vec!["ls".to_string()]);
+        assert_eq!(
+            feed_audit_buffer(&mut buf, "lx\x7fs\r"),
+            vec!["ls".to_string()]
+        );
         assert!(feed_audit_buffer(&mut buf, "rm -rf x\x15").is_empty());
         assert!(buf.is_empty());
         // Arrow-key history recall can't be reconstructed: not logged.

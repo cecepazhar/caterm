@@ -285,7 +285,9 @@ fn migrate_hosts_options_column(conn: &Connection) -> Result<(), CatermError> {
     if !has_column {
         conn.execute_batch("ALTER TABLE hosts ADD COLUMN options TEXT")
             .map_err(|e| {
-                CatermError::Db(DbError::Generic(format!("gagal migrasi kolom options: {e}")))
+                CatermError::Db(DbError::Generic(format!(
+                    "gagal migrasi kolom options: {e}"
+                )))
             })?;
     }
     Ok(())

@@ -215,7 +215,9 @@ pub fn write_remote_file(host_id: &str, remote_path: &str, data: &[u8]) -> Resul
         }
         if let Err(e) = replace_remote(&sftp, tmp, target) {
             let _ = sftp.unlink(tmp);
-            return Err(sftp_err(format!("Failed to replace remote file {path}: {e}")));
+            return Err(sftp_err(format!(
+                "Failed to replace remote file {path}: {e}"
+            )));
         }
         Ok(())
     })
@@ -237,9 +239,9 @@ fn remove_remote_dir_recursive(sftp: &ssh2::Sftp, path: &Path) -> Result<(), Cat
         Err(_) => {
             // Not a listable directory: treat it as a file/link. Whatever happens, report it —
             // a permission error must not look like a successful delete.
-            return sftp.unlink(path).map_err(|e| {
-                sftp_err(format!("Failed to delete {}: {e}", path.display()))
-            });
+            return sftp
+                .unlink(path)
+                .map_err(|e| sftp_err(format!("Failed to delete {}: {e}", path.display())));
         }
     };
 
@@ -259,9 +261,8 @@ fn remove_remote_dir_recursive(sftp: &ssh2::Sftp, path: &Path) -> Result<(), Cat
         if is_dir {
             remove_remote_dir_recursive(sftp, &child)?;
         } else {
-            sftp.unlink(&child).map_err(|e| {
-                sftp_err(format!("Failed to delete {}: {e}", child.display()))
-            })?;
+            sftp.unlink(&child)
+                .map_err(|e| sftp_err(format!("Failed to delete {}: {e}", child.display())))?;
         }
     }
 
@@ -515,7 +516,11 @@ fn emit_progress<F>(
         return;
     }
     let secs = start.elapsed().as_secs_f64();
-    let speed_bps = if secs > 0.0 { (done as f64 / secs) as u64 } else { 0 };
+    let speed_bps = if secs > 0.0 {
+        (done as f64 / secs) as u64
+    } else {
+        0
+    };
     let mut cb = on_progress.lock();
     cb(SftpProgressPayload {
         transfer_id: id.to_string(),
@@ -613,7 +618,14 @@ where
                         .map_err(|e| sftp_err(format!("Failed to write remote chunk: {e}")))?;
                 }
                 done += n as u64;
-                emit_progress(&on_progress, &t_id, done, total_bytes, start, &mut last_emit);
+                emit_progress(
+                    &on_progress,
+                    &t_id,
+                    done,
+                    total_bytes,
+                    start,
+                    &mut last_emit,
+                );
             }
             if done != total_bytes {
                 return Err(sftp_err(format!(
@@ -635,7 +647,9 @@ where
         }
         if let Err(e) = replace_remote(&sftp, part, Path::new(&r_path)) {
             let _ = sftp.unlink(part);
-            return Err(sftp_err(format!("Failed to finalize remote file {r_path}: {e}")));
+            return Err(sftp_err(format!(
+                "Failed to finalize remote file {r_path}: {e}"
+            )));
         }
         // Keep the source's permission bits and modification time (best-effort: some
         // servers refuse setstat, which must not fail an otherwise complete upload).
@@ -709,7 +723,9 @@ where
                 .map_err(|e| sftp_err(format!("Failed to reopen {part_local}: {e}")))?
         } else {
             File::create(&part_local).map_err(|e| {
-                sftp_err(format!("Failed to create local destination {part_local}: {e}"))
+                sftp_err(format!(
+                    "Failed to create local destination {part_local}: {e}"
+                ))
             })?
         };
 
@@ -734,7 +750,14 @@ where
                         .map_err(|e| sftp_err(format!("Failed to write to local file: {e}")))?;
                 }
                 done += n as u64;
-                emit_progress(&on_progress, &t_id, done, total_bytes, start, &mut last_emit);
+                emit_progress(
+                    &on_progress,
+                    &t_id,
+                    done,
+                    total_bytes,
+                    start,
+                    &mut last_emit,
+                );
             }
             if total_bytes != 0 && done != total_bytes {
                 return Err(sftp_err(format!(
