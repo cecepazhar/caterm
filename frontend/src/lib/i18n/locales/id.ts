@@ -1088,6 +1088,7 @@ const id: Dictionary = {
       errPassphrase: 'Passphrase minimal 8 karakter.',
       creating: 'Membuat cadangan terenkripsi...',
       savedToast: 'Cadangan berhasil disimpan!',
+      savedToToast: 'Cadangan berhasil disimpan ke: {{path}}',
       exportFailed: 'Gagal mengekspor cadangan',
       importing: 'Mendekripsi dan mengimpor cadangan...',
       restored: 'Pemulihan berhasil! {{count}} item dipulihkan.',

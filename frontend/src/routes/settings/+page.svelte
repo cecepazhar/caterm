@@ -3,6 +3,8 @@
   import { page } from '$app/state';
   import { changeMasterPassword, MIN_VAULT_PASSWORD_LEN } from '$lib/api/vault';
   import { exportEncryptedBackup, importEncryptedBackup } from '$lib/api/backup';
+  import { save } from '@tauri-apps/plugin-dialog';
+  import { writeTextFile } from '@tauri-apps/plugin-fs';
   import AiSettingsForm from '$lib/components/AiSettingsForm.svelte';
   import ProfileAvatar from '$lib/components/ProfileAvatar.svelte';
   import AvatarPicker from '$lib/components/AvatarPicker.svelte';
@@ -384,17 +386,44 @@
     try {
       showToast(t('settings.backup.creating'), 'info');
       const b64 = await exportEncryptedBackup(backupPassphrase);
-      
-      const blob = new Blob([b64], { type: 'text/plain' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `caterm-backup-${new Date().toISOString().split('T')[0]}.catb`;
-      a.click();
-      URL.revokeObjectURL(url);
+      const defaultName = `caterm-backup-${new Date().toISOString().split('T')[0]}.catb`;
 
-      showToast(t('settings.backup.savedToast'), 'success');
-      backupPassphrase = '';
+      let saved = false;
+      try {
+        // Native save dialog (required inside the Tauri webview: the plain
+        // <a download> blob trick is silently ignored by webkit2gtk/WebView).
+        const filePath = await save({
+          defaultPath: defaultName,
+          filters: [
+            {
+              name: 'CATerM Encrypted Backup',
+              extensions: ['catb']
+            }
+          ]
+        });
+        if (filePath) {
+          await writeTextFile(filePath, b64);
+          saved = true;
+          showToast(t('settings.backup.savedToToast', { path: filePath }), 'success');
+          backupPassphrase = '';
+        }
+      } catch {
+        // Fallback to standard web download (browser builds)
+      }
+
+      if (!saved) {
+        const blob = new Blob([b64], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = defaultName;
+        a.click();
+        // Revoking immediately after click() is a race (see command-logs export):
+        // some webview engines cancel the download if the blob URL vanishes first.
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        showToast(t('settings.backup.savedToast'), 'success');
+        backupPassphrase = '';
+      }
     } catch (err: any) {
       showToast(err?.message || t('settings.backup.exportFailed'), 'error');
     }

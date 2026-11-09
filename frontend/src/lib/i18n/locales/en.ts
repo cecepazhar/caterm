@@ -1087,6 +1087,7 @@ const en = {
       errPassphrase: 'Passphrase must be at least 8 characters.',
       creating: 'Creating encrypted backup...',
       savedToast: 'Backup saved successfully!',
+      savedToToast: 'Backup saved to: {{path}}',
       exportFailed: 'Failed to export backup',
       importing: 'Decrypting and importing backup...',
       restored: 'Restore successful! Restored {{count}} items.',
