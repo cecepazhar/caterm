@@ -188,6 +188,22 @@ fn parse_auth_method(val: &str) -> Result<caterm_core::store::AuthMethod, String
 }
 
 fn main() {
+    // Setup signal handler for graceful shutdown on SIGINT / SIGTERM
+    #[cfg(unix)]
+    unsafe {
+        use std::sync::atomic::{AtomicBool, Ordering};
+        static SHUTDOWN_INITIATED: AtomicBool = AtomicBool::new(false);
+        extern "C" fn handle_signal(_: i32) {
+            if !SHUTDOWN_INITIATED.swap(true, Ordering::SeqCst) {
+                eprintln!("\nReceived interrupt signal, shutting down sessions...");
+                caterm_core::ssh::disconnect_all();
+                std::process::exit(130);
+            }
+        }
+        libc::signal(libc::SIGINT, handle_signal as usize);
+        libc::signal(libc::SIGTERM, handle_signal as usize);
+    }
+
     let cli = Cli::parse();
     let exit_code = match cli.command {
         Some(Commands::Env(flags)) => {

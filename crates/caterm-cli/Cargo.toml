@@ -18,6 +18,9 @@ serde.workspace = true
 serde_json.workspace = true
 sysinfo.workspace = true
 
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"
+
 # Private-memory accounting (T2-BOOT-06). sysinfo only exposes the *working set*, which
 # double-counts pages shared between WebView2's process tree and therefore cannot be used
 # as a budget figure. See crates/caterm-cli/src/bench.rs for the full rationale.

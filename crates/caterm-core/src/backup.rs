@@ -90,7 +90,7 @@ pub fn build_backup_payload_with_secrets(
     let investigations = investigations::list_investigations().unwrap_or_default();
     let totp = totp_store::list_totp_for_backup().unwrap_or_default();
     let command_logs = if include_secrets {
-        audit::get_logs(None, None, Some(10_000)).unwrap_or_default()
+        audit::get_logs(None, None, Some(1000)).unwrap_or_default()
     } else {
         Vec::new()
     };
@@ -194,8 +194,37 @@ pub fn apply_backup_payload(payload: VaultBackupPayload) -> Result<usize, Caterm
         imported_count += 1;
     }
 
-    for key in payload.keys {
-        let _ = keys::import_key(&key.name, &key.public_key, None);
+    if !payload.keys_with_private.is_empty() {
+        for key in payload.keys_with_private {
+            let private = key.private_key.unwrap_or_default();
+            let _ = keys::restore_key_with_private(
+                &key.id,
+                &key.name,
+                &key.algorithm,
+                &key.fingerprint,
+                &key.public_key,
+                &private,
+                &key.created_at,
+            );
+            imported_count += 1;
+        }
+    } else {
+        for key in payload.keys {
+            let _ = keys::restore_key_with_private(
+                &key.id,
+                &key.name,
+                &key.algorithm,
+                &key.fingerprint,
+                &key.public_key,
+                "",
+                &chrono::Utc::now().to_rfc3339(),
+            );
+            imported_count += 1;
+        }
+    }
+
+    for log in payload.command_logs {
+        let _ = audit::restore_log(&log);
         imported_count += 1;
     }
 

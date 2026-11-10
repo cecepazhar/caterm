@@ -14,11 +14,19 @@
   import { getAppearance, setReduceMotion } from '$lib/stores/appearance.svelte';
   import { getUpdater, checkForUpdates, installUpdate } from '$lib/stores/updater.svelte';
   import { APP_VERSION, releaseNotesUrl, pricingUrl, KOFI_URL } from '$lib/appInfo';
-  import { PRO_PRICING, formatUsd, type BillingInterval } from '$lib/pro/pricing';
+  import {
+    PRO_PRICING,
+    LICENSE_TERMS,
+    defaultCurrency,
+    displayPrice,
+    formatPrice,
+    type BillingInterval,
+    type Currency
+  } from '$lib/pro/pricing';
   import { openExternalUrl } from '$lib/utils/url';
   import { errorText } from '$lib/errors';
 	import { getPerformancePrefs, setPerformancePrefs, type PerformancePrefs } from '$lib/api/performance';
-  import { t, intlLocale } from '$lib/i18n/index.svelte';
+  import { t, intlLocale, getLocale } from '$lib/i18n/index.svelte';
   import ProLoginForm from '$lib/components/ProLoginForm.svelte';
   import { getPro, refreshProStatus, checkProServer, syncPro, setProStatus } from '$lib/stores/pro.svelte';
   import { proStartTrial, proAccount, proRevokeDevice, proLogout, proActivateLicense, proSyncVault, type ProDevice, type DeviceLimit, type SyncOutcome } from '$lib/api/pro';
@@ -229,9 +237,27 @@
 
   // Subscription tab
   let billing = $state<BillingInterval>('monthly');
+  // Pricing v4.1: IDR (Mayar / QRIS) or USD (Creem / Ko-fi); defaults to the UI language.
+  let currencyChoice = $state<Currency | null>(null);
+  const currency = $derived<Currency>(currencyChoice ?? defaultCurrency(getLocale()));
+  const subscriptionPrice = $derived(displayPrice(PRO_PRICING.subscription[billing], currency));
+  // Active-plan card. The licence only carries `tier` + `currentPeriodEnd` (no SKU price or
+  // interval), so the card shows the validity date instead of guessing a price.
+  const activeTier = $derived((pro.status?.license?.tier ?? '').toLowerCase());
+  const activeIsFounder = $derived(activeTier === 'founder');
+  const activeIsLifetime = $derived(activeIsFounder || activeTier === 'lifetime');
+  const activePlanName = $derived(
+    activeIsFounder
+      ? t('settings.subscription.activePlanFounder')
+      : activeTier === 'lifetime'
+        ? t('settings.subscription.activePlanLifetime')
+        : activeTier === 'team'
+          ? t('settings.subscription.activePlanTeam')
+          : t('settings.subscription.activePlanPro')
+  );
   const proFeatures = $derived([
     t('settings.subscription.featureSync', { devices: PRO_PRICING.syncDevices }),
-    t('settings.subscription.featureAi', { requests: PRO_PRICING.aiRequestsPerMonth }),
+    t('settings.subscription.featureAi'),
     t('settings.subscription.featureTeam', { extra: PRO_PRICING.maxMembers - 1, members: PRO_PRICING.maxMembers }),
     t('settings.subscription.featureLogs'),
     t('settings.subscription.featureCommunity')
@@ -245,7 +271,7 @@
 
   // Subscription only makes sense once the user has a CATerm account (Cloud): a purely local
   // vault has nothing to subscribe to. Hidden until sign-in, shown for both free-cloud and Pro.
-    const visibleTabs = $derived(TABS.filter((tab) => tab !== 'subscription' || pro.status?.signedIn));
+    const visibleTabs = $derived(TABS);
   const tabItems = $derived(
     visibleTabs.map((tab) => ({
       id: tab,
@@ -262,9 +288,7 @@
       void saveAllPerformancePrefs({ scrollbackLines: num });
     }
   });
-  $effect(() => {
-    if (activeTab === 'subscription' && pro.status && !pro.status.signedIn) activeTab = 'profile';
-  });
+// subscription tab is always available for license key activation and pro login
 
   const updater = getUpdater();
   const downloadPercent = $derived(
@@ -759,7 +783,7 @@
             <Input
               type="text"
               bind:value={licenseInput}
-              placeholder="e.g. CATERM-LIFE-FOUNDER-CECEP"
+              placeholder="e.g. CATM99-R64108-3"
               class="font-mono uppercase flex-1"
             />
             <Button
@@ -779,7 +803,7 @@
             <span class="text-xs text-neutral-500">Creator / Owner Quick Unlock:</span>
             <Button
               type="button"
-              onclick={() => handleActivateLicense('CATERM-LIFE-FOUNDER-CECEP')}
+              onclick={() => handleActivateLicense('CATM99-FOUNDR-7')}
               disabled={licenseBusy}
               variant="warning"
               size="sm"
@@ -802,24 +826,32 @@
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-neutral-200 dark:border-neutral-800">
             <div>
               <div class="flex items-center gap-2">
-                <span class="text-xs font-bold uppercase tracking-wider text-sky-600 dark:text-sky-400">Current Plan</span>
+                <span class="text-xs font-bold uppercase tracking-wider text-sky-600 dark:text-sky-400">{t('settings.subscription.activeLabel')}</span>
                 <Badge variant="success" size="xs">
-                  ACTIVE
+                  {t('settings.subscription.activeBadge')}
                 </Badge>
               </div>
               <h3 class="text-xl font-bold text-neutral-900 dark:text-white mt-1">
-                {pro.status?.license?.tier?.toUpperCase() === 'LIFETIME' ? 'CATerm Pro — Founder Lifetime' : 'CATerm Pro Edition'}
+                {activePlanName}
               </h3>
               <p class="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
-                Zero-knowledge encrypted cloud synchronization & AI Copilot active.
+                {t('settings.subscription.activeBody')}
               </p>
             </div>
             <div class="text-right sm:text-right shrink-0">
               <span class="text-2xl font-black text-neutral-900 dark:text-white">
-                {pro.status?.license?.tier?.toUpperCase() === 'LIFETIME' ? 'Lifetime Access' : '$6.00 / mo'}
+                {activeIsLifetime
+                  ? t('settings.subscription.activeLifetime')
+                  : pro.status?.license?.currentPeriodEnd
+                    ? t('settings.subscription.activeUntil', { date: formatProDate(pro.status.license.currentPeriodEnd) })
+                    : t('settings.subscription.activePeriodUnknown')}
               </span>
               <p class="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
-                {pro.status?.license?.tier?.toUpperCase() === 'LIFETIME' ? 'Never Expires · VIP Founder Tier' : 'Next billing cycle synced'}
+                {activeIsFounder
+                  ? t('settings.subscription.activeFounderNote')
+                  : activeIsLifetime
+                    ? t('settings.subscription.activeLifetimeNote')
+                    : t('settings.subscription.activeDevices', { devices: proDeviceLimit || PRO_PRICING.syncDevices })}
               </p>
             </div>
           </div>
@@ -854,7 +886,7 @@
               </div>
               <div class="flex items-center gap-2">
                 <svg class="w-4 h-4 text-emerald-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
-                <span>AI Ops Copilot & Prompt Studio</span>
+                <span>{t('settings.subscription.featureAi')}</span>
               </div>
               <div class="flex items-center gap-2">
                 <svg class="w-4 h-4 text-emerald-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
@@ -876,7 +908,7 @@
               <span class="font-semibold text-neutral-900 dark:text-white">{t('settings.subscription.freePlan')}</span>
               <Badge variant="neutral" size="xs">{t('settings.subscription.current')}</Badge>
             </div>
-            <div class="text-2xl font-bold text-neutral-900 dark:text-white">$0</div>
+            <div class="text-2xl font-bold text-neutral-900 dark:text-white">{formatPrice(0, currency)}</div>
             <p class="{MUTED} text-xs leading-relaxed">{t('settings.subscription.freeBody')}</p>
           </div>
 
@@ -884,45 +916,86 @@
           <div class="rounded-lg border-2 border-sky-500/50 bg-sky-50/60 dark:bg-sky-950/20 p-5 space-y-4">
             <div class="flex items-center justify-between gap-2 flex-wrap">
               <span class="font-semibold text-neutral-900 dark:text-white">{t('settings.subscription.proPlan')}</span>
-              <Badge variant="danger" size="xs">
-                {t('settings.subscription.introBadge', { percent: PRO_PRICING.introDiscountPercent, months: PRO_PRICING.introMonths })}
-              </Badge>
+              {#if PRO_PRICING.promoActive}
+                <Badge variant="danger" size="xs">{t('settings.subscription.promoBadge')}</Badge>
+              {/if}
             </div>
 
-            <div class="inline-flex items-center gap-2 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 p-1 text-xs">
-              <Button
-                type="button"
-                onclick={() => (billing = 'monthly')}
-                variant={billing === 'monthly' ? 'primary' : 'neutral'}
-                size="sm"
-              >
-                {t('settings.subscription.monthly')}
-              </Button>
-              <Button
-                type="button"
-                onclick={() => (billing = 'yearly')}
-                variant={billing === 'yearly' ? 'primary' : 'neutral'}
-                size="sm"
-              >
-                {t('settings.subscription.yearly')}
-                <span class="ml-1 text-[10px] font-semibold {billing === 'yearly' ? 'text-sky-100' : 'text-emerald-600 dark:text-emerald-400'}">{t('settings.subscription.saveYearly', { percent: PRO_PRICING.yearlyDiscountPercent })}</span>
-              </Button>
+            <div class="inline-flex items-center gap-2 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 p-1 text-xs" role="group" aria-label={t('settings.subscription.currency')}>
+              {#each ['IDR', 'USD'] as const as code (code)}
+                <Button
+                  type="button"
+                  onclick={() => (currencyChoice = code)}
+                  variant={currency === code ? 'primary' : 'neutral'}
+                  size="sm"
+                >
+                  {code === 'IDR' ? 'IDR (Rp)' : 'USD ($)'}
+                </Button>
+              {/each}
             </div>
 
-            <div>
+            <!-- Model A: License Key, 1 device (offline HWID) -->
+            <div class="space-y-2">
+              <p class="text-xs font-semibold text-neutral-900 dark:text-white">
+                {t('settings.subscription.licenseTitle', { devices: PRO_PRICING.license.devices })}
+              </p>
+              <ul class="space-y-1 text-xs">
+                {#each LICENSE_TERMS as term (term)}
+                  {@const price = displayPrice(PRO_PRICING.license[term], currency)}
+                  <li class="flex items-baseline justify-between gap-2">
+                    <span class="text-neutral-700 dark:text-neutral-300">{t(`settings.subscription.license_${term}`)}</span>
+                    <span class="flex items-baseline gap-1.5">
+                      {#if price.original}
+                        <span class="text-neutral-400 line-through">{price.original}</span>
+                      {/if}
+                      <span class="font-semibold text-neutral-900 dark:text-white">{price.current}</span>
+                    </span>
+                  </li>
+                {/each}
+              </ul>
+            </div>
+
+            <!-- Model B: Subscription, 5 devices (GCC cloud account) -->
+            <div class="space-y-2">
+              <p class="text-xs font-semibold text-neutral-900 dark:text-white">
+                {t('settings.subscription.subscriptionTitle', { devices: PRO_PRICING.subscription.devices })}
+              </p>
+              <div class="inline-flex items-center gap-2 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 p-1 text-xs">
+                <Button
+                  type="button"
+                  onclick={() => (billing = 'monthly')}
+                  variant={billing === 'monthly' ? 'primary' : 'neutral'}
+                  size="sm"
+                >
+                  {t('settings.subscription.monthly')}
+                </Button>
+                <Button
+                  type="button"
+                  onclick={() => (billing = 'yearly')}
+                  variant={billing === 'yearly' ? 'primary' : 'neutral'}
+                  size="sm"
+                >
+                  {t('settings.subscription.yearly')}
+                </Button>
+              </div>
               <div class="flex items-baseline gap-2">
-                <span class="text-sm text-neutral-400 line-through">{formatUsd(PRO_PRICING[billing].list)}</span>
-                <span class="text-3xl font-bold text-neutral-900 dark:text-white">{formatUsd(PRO_PRICING[billing].intro)}</span>
+                {#if subscriptionPrice.original}
+                  <span class="text-sm text-neutral-400 line-through">{subscriptionPrice.original}</span>
+                {/if}
+                <span class="text-3xl font-bold text-neutral-900 dark:text-white">{subscriptionPrice.current}</span>
                 <span class="text-sm text-neutral-500">{billing === 'monthly' ? t('settings.subscription.perMonth') : t('settings.subscription.perYear')}</span>
               </div>
-              <p class="text-xs {MUTED} mt-1">
-                {#if billing === 'monthly'}
-                  {t('settings.subscription.monthlyThen', { months: PRO_PRICING.introMonths, price: formatUsd(PRO_PRICING.monthly.list) })}
-                {:else}
-                  {t('settings.subscription.yearlyThen', { perMonth: formatUsd(PRO_PRICING.yearly.intro / 12), price: formatUsd(PRO_PRICING.yearly.list) })}
-                {/if}
-              </p>
+              {#if PRO_PRICING.promoActive && billing === 'monthly'}
+                <p class="text-xs {MUTED}">
+                  {t('settings.subscription.monthlyThen', {
+                    months: PRO_PRICING.subscription.promoMonths,
+                    price: formatPrice(PRO_PRICING.subscription.monthly[currency].normal, currency)
+                  })}
+                </p>
+              {/if}
             </div>
+
+            <p class="text-[11px] text-neutral-500">{t('settings.subscription.gatewayNote', { gateway: PRO_PRICING.gateway[currency] })}</p>
 
             <ul class="space-y-1.5 text-xs text-neutral-700 dark:text-neutral-300">
               {#each proFeatures as feature (feature)}

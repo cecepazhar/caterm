@@ -366,6 +366,13 @@ pub fn run_with_start(start: std::time::Instant) {
             commands_pro_security::pro_docker_probe_scan,
             commands_pro_security::pro_session_audit_verify,
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|_app_handle, event| {
+            if let tauri::RunEvent::Exit = event {
+                // Ensure all SSH child processes and PTY sessions are gracefully closed
+                // when the application shuts down or receives an exit signal.
+                caterm_core::ssh::disconnect_all();
+            }
+        });
 }

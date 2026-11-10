@@ -9,7 +9,7 @@
 - **Platforms:** Linux (AppImage / Standalone), Windows (.exe / installer), macOS (Apple Silicon & Intel)
 - **Website URL:** [https://caterm.fathforce.com](https://caterm.fathforce.com) (or GCC CATerm App)
 - **Repository:** [https://github.com/cecepazhar/caterm](https://github.com/cecepazhar/caterm)
-- **Pricing:** Free forever (Local-first Community) / $6/month Pro / $29-$99 Founder Lifetime Deal
+- **Pricing:** Free forever (Local-first Community) / $10/month Pro (Promo $4.9/mo) / $9.9 License Key Lifetime (Promo $3.9) / $149 Founder All-Package (3 Apps Lifetime)
 
 ---
 
@@ -30,7 +30,7 @@
 > - ⚡ **DevOps & SRE Diagnostics Lab:** Native, zero-dependency server diagnostics. Run Internet speedtests, QoS bufferbloat grading, Unixbench/sysbench scoring, and Mesh Matrix inter-node latency checks directly from your workstation without installing Python or external runtimes on remote servers.
 > - 👥 **Pro for Teams & P2P Envelope Sync:** 7-seat team sharing with zero-knowledge cryptographic envelopes (DEK/KEK architecture). Sync host entries and credentials peer-to-peer without intermediate servers reading your keys.
 >
-> The desktop core is 100% free and local. For Product Hunt launch day, we're offering **50% OFF** Pro subscriptions with code **`PH50`**, plus a strictly limited **$99 Founder Lifetime Deal** (first 100 seats).
+> The desktop core is 100% free and local. For Product Hunt launch day, we're offering Pro License Key at **$3.9** (normal $9.9) and Cloud Subscription at **$4.9/mo** (normal $10/mo), plus the **Founder All-Package at $149** ($129 flash launch) covering 3 flagship apps (CATerm + CAMark + CAShell) with 7 devices each.
 >
 > Would love your honest feedback, critique, and feature requests. What does your current server management setup look like?
 

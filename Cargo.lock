@@ -616,6 +616,7 @@ version = "2.1.41"
 dependencies = [
  "caterm-core",
  "clap",
+ "libc",
  "serde",
  "serde_json",
  "sysinfo",

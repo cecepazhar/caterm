@@ -60,3 +60,6 @@ flatpak/tools/.venv
 # Frontend uses npm only (package-lock.json); keep other lockfiles out
 frontend/pnpm-lock.yaml
 frontend/yarn.lock
+
+# Agent skills
+skills/

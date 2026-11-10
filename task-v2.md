@@ -74,12 +74,12 @@
 - [x] Eksekusi SSH non-interactive berurutan dengan output live streaming dan pelacakan audit di `command_logs` (event `AI_AUTOMATION`).
 
 ## 14. WinSCP Feature Parity Build-out
-- [ ] Fitur #1: Dukungan Protokol Non-SSH (SCP, FTP/FTPS, WebDAV, S3, RemoteFileSystem trait)
-- [ ] Fitur #2: Sinkronisasi Direktori (Two-way/one-way sync + file watcher notify)
-- [ ] Fitur #3: Manajemen Antrean Transfer (Queue & Resume + transfers.rs)
-- [ ] Fitur #4: Remote File Editor & Live Edit (CodeMirror 6 + RemoteFileEditor.svelte)
-- [ ] Fitur #5: Verifikasi Integritas (Checksum & Hash remote + local + UI)
-- [ ] Fitur #6: Pencarian File Remote (find + recursive walk SFTP + UI panel)
-- [ ] Fitur #7: Kompresi & Ekstraksi Remote (tar/zip via exec session + UI)
+- [x] Fitur #1: Dukungan Protokol Non-SSH (SCP, FTP/FTPS, WebDAV, S3, RemoteFileSystem trait)
+- [x] Fitur #2: Sinkronisasi Direktori (Two-way/one-way sync + file watcher notify)
+- [x] Fitur #3: Manajemen Antrean Transfer (Queue & Resume + transfers.rs)
+- [x] Fitur #4: Remote File Editor & Live Edit (CodeMirror 6 + RemoteFileEditor.svelte)
+- [x] Fitur #5: Verifikasi Integritas (Checksum & Hash remote + local + UI)
+- [x] Fitur #6: Pencarian File Remote (find + recursive walk SFTP + UI panel)
+- [x] Fitur #7: Kompresi & Ekstraksi Remote (tar/zip via exec session + UI)
 
 

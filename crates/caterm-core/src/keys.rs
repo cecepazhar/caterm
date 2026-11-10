@@ -226,7 +226,12 @@ pub fn restore_key_with_private(
 ) -> Result<(), CatermError> {
     let data_info = crate::paths::resolve_data_dir()?;
     let key = crate::vault::load_or_create_local_key(&data_info.path)?;
-    let encrypted_secret = crate::secret::encrypt(&key, private_key)?;
+    let encrypted_secret = if !private_key.is_empty() {
+        crate::secret::encrypt(&key, private_key)?
+    } else {
+        // Preserves public-only key entry if private key was absent
+        crate::secret::encrypt(&key, "")?
+    };
 
     let conn = crate::db::open()?;
     init_table(&conn)?;

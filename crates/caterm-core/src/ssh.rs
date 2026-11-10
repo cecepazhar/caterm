@@ -26,6 +26,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::io::{Read, Write};
 use std::path::Path;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::{Duration, Instant};
@@ -117,12 +118,33 @@ pub(crate) struct SessionHandle {
     /// it — `ssh2::Channel` already carries its own size via `request_pty_size`, this is the
     /// local-session equivalent.
     pub(crate) pty_master: Option<Arc<Mutex<Box<dyn portable_pty::MasterPty + Send>>>>,
+    /// Cooperative stop flag for reader/writer threads (PTY cleanup). Set by `disconnect`
+    /// or `Drop` so spawned threads can exit instead of spinning on a removed session.
+    pub(crate) stop: Arc<AtomicBool>,
     pub(crate) host_id: String,
 }
 
 /// How much trailing output text `last_output_tail` keeps. Only needs to cover the tail end of
 /// one prompt line ("[sudo] password for alice: "), not a whole screen.
 const OUTPUT_TAIL_CAPACITY: usize = 200;
+
+impl Drop for SessionHandle {
+    fn drop(&mut self) {
+        // Cooperative stop for reader/writer threads.
+        self.stop.store(true, Ordering::Relaxed);
+        if let Some(channel) = &self.channel
+            && let Ok(mut ch) = channel.lock()
+        {
+            let _ = ch.close();
+        }
+        if let Some(child) = &self.child
+            && let Ok(mut ch) = child.lock()
+        {
+            let _ = ch.kill();
+        }
+        // pty_master dropped automatically; reader/writer threads exit via EOF/kill.
+    }
+}
 
 /// Caps how long a burst of PTY output is allowed to accumulate before being flushed as one
 /// `SshEvent::Output`, when the remote keeps handing over more bytes read after read (`cat` on a
@@ -1126,6 +1148,7 @@ fn connect_local() -> Result<SshSession, CatermError> {
         });
     });
 
+    let stop = Arc::new(AtomicBool::new(false));
     let handle = SessionHandle {
         tx,
         output_buffer,
@@ -1134,6 +1157,7 @@ fn connect_local() -> Result<SshSession, CatermError> {
         channel: None,
         child: Some(Arc::new(Mutex::new(child))),
         pty_master: Some(Arc::new(Mutex::new(pty_pair.master))),
+        stop,
         host_id: "local".to_string(),
     };
 
@@ -1352,6 +1376,7 @@ pub fn connect(host_id: &str) -> Result<SshSession, CatermError> {
         channel: Some(channel_arc),
         child: None,
         pty_master: None,
+        stop: Arc::new(AtomicBool::new(false)),
         host_id: host.id.clone(),
     };
 
@@ -1547,6 +1572,15 @@ pub fn clear_exec_sessions() {
     }
 }
 
+/// Disconnect all active SSH and local PTY sessions.
+/// Drops every handle in SESSIONS (triggering SessionHandle::drop) and clears EXEC_SESSIONS.
+pub fn disconnect_all() {
+    clear_exec_sessions();
+    if let Ok(mut sessions) = SESSIONS.lock() {
+        sessions.clear();
+    }
+}
+
 /// Disconnect and remove active SSH session.
 pub fn disconnect(session_id: &str) -> Result<(), CatermError> {
     require_non_empty("session_id", session_id)?;
@@ -1554,6 +1588,8 @@ pub fn disconnect(session_id: &str) -> Result<(), CatermError> {
     if let Ok(mut sessions) = SESSIONS.lock()
         && let Some(handle) = sessions.remove(session_id)
     {
+        // Signal cooperative stop to reader/writer threads before tearing down transport.
+        handle.stop.store(true, Ordering::Relaxed);
         if let Some(channel) = &handle.channel
             && let Ok(mut ch) = channel.lock()
         {
@@ -1563,11 +1599,11 @@ pub fn disconnect(session_id: &str) -> Result<(), CatermError> {
             && let Ok(mut ch) = child.lock()
         {
             let _ = ch.kill();
-            emit(SshEvent::Closed {
-                session_id: session_id.to_string(),
-                unexpected: false,
-            });
         }
+        emit(SshEvent::Closed {
+            session_id: session_id.to_string(),
+            unexpected: false,
+        });
     }
     Ok(())
 }
@@ -1978,6 +2014,7 @@ mod tests {
             channel: None,
             child: None,
             pty_master: None,
+            stop: Arc::new(AtomicBool::new(false)),
             host_id: "host-under-test".to_string(),
         };
         SESSIONS
