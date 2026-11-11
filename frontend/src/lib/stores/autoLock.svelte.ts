@@ -8,7 +8,7 @@
 const STORAGE_KEY = 'caterm.autoLockMinutes';
 /** Allowed choices in Settings. 0 = never. */
 export const AUTO_LOCK_CHOICES = [0, 1, 5, 15, 30, 60] as const;
-export const DEFAULT_AUTO_LOCK_MINUTES = 15;
+export const DEFAULT_AUTO_LOCK_MINUTES = 0;
 
 function load(): number {
   try {

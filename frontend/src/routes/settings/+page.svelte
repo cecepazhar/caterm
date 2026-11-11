@@ -691,7 +691,9 @@
           <h2 class="text-lg font-semibold text-neutral-900 dark:text-white">{t('settings.ai.title')}</h2>
           <p class="{MUTED} text-sm">{t('settings.ai.subtitle')}</p>
         </div>
-        <AiSettingsForm />
+        <ProGate title="AI Provider & Routing Matrix Pro" description="Konfigurasi model LLM pihak ketiga via BYOK (Bring Your Own Key) dan routing cerdas memerlukan akun CATerm Pro.">
+          <AiSettingsForm />
+        </ProGate>
       </Card>
     </div>
   {:else if activeTab === 'subscription'}

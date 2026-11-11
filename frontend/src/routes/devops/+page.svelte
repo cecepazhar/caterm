@@ -286,57 +286,61 @@
   <!-- TAB 2: SERVER HARDWARE BENCHMARK -->
   {#if activeTab === 'benchmark'}
     <div class="space-y-6">
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl bg-white dark:bg-neutral-900/60 border border-neutral-200 dark:border-neutral-800">
-        <div>
-          <h3 class="text-sm font-bold text-neutral-900 dark:text-white">{t('devops.benchmarkTitle')}</h3>
-          <p class="text-xs text-neutral-500">{t('devops.benchmarkDesc')}</p>
-        </div>
-        <Button
-          variant="primary"
-          size="sm"
-          onclick={startServerBenchmark}
-          disabled={isRunningBench || !selectedHostId}
-          loading={isRunningBench}
-          class="h-8 px-3 rounded-lg text-xs font-semibold flex items-center gap-1.5"
-        >
-          <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3"/></svg>
-          <span>{t('devops.runBenchmark')}</span>
-        </Button>
-      </div>
+      <ProGate title="Server Hardware Benchmark Pro" description="Benchmark CPU multi-core, bandwidth RAM, dan IOPS storage disk server remote memerlukan lisensi CATerm Pro.">
+        <div class="space-y-6">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl bg-white dark:bg-neutral-900/60 border border-neutral-200 dark:border-neutral-800">
+            <div>
+              <h3 class="text-sm font-bold text-neutral-900 dark:text-white">{t('devops.benchmarkTitle')}</h3>
+              <p class="text-xs text-neutral-500">{t('devops.benchmarkDesc')}</p>
+            </div>
+            <Button
+              variant="primary"
+              size="sm"
+              onclick={startServerBenchmark}
+              disabled={isRunningBench || !selectedHostId}
+              loading={isRunningBench}
+              class="h-8 px-3 rounded-lg text-xs font-semibold flex items-center gap-1.5"
+            >
+              <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3"/></svg>
+              <span>{t('devops.runBenchmark')}</span>
+            </Button>
+          </div>
 
-      {#if benchResult}
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div class="p-5 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900/60 shadow-xs">
-            <span class="text-xs font-semibold text-neutral-500 uppercase">CPU Single-Core</span>
-            <div class="text-2xl font-black text-neutral-900 dark:text-white mt-1">{benchResult.cpuSingleScore} <span class="text-xs font-normal text-neutral-400">pts</span></div>
-          </div>
-          <div class="p-5 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900/60 shadow-xs">
-            <span class="text-xs font-semibold text-neutral-500 uppercase">CPU Multi-Core</span>
-            <div class="text-2xl font-black text-amber-500 mt-1">{benchResult.cpuMultiScore} <span class="text-xs font-normal text-neutral-400">pts</span></div>
-          </div>
-          <div class="p-5 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900/60 shadow-xs">
-            <span class="text-xs font-semibold text-neutral-500 uppercase">RAM Bandwidth</span>
-            <div class="text-2xl font-black text-sky-500 mt-1">{benchResult.ramBandwidthMbps} <span class="text-xs font-normal text-neutral-400">MB/s</span></div>
-          </div>
-          <div class="p-5 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900/60 shadow-xs">
-            <span class="text-xs font-semibold text-neutral-500 uppercase">Disk I/O Write</span>
-            <div class="text-2xl font-black text-emerald-500 mt-1">{benchResult.diskWriteMbps1m} <span class="text-xs font-normal text-neutral-400">MB/s</span></div>
-          </div>
-        </div>
+          {#if benchResult}
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div class="p-5 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900/60 shadow-xs">
+                <span class="text-xs font-semibold text-neutral-500 uppercase">CPU Single-Core</span>
+                <div class="text-2xl font-black text-neutral-900 dark:text-white mt-1">{benchResult.cpuSingleScore} <span class="text-xs font-normal text-neutral-400">pts</span></div>
+              </div>
+              <div class="p-5 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900/60 shadow-xs">
+                <span class="text-xs font-semibold text-neutral-500 uppercase">CPU Multi-Core</span>
+                <div class="text-2xl font-black text-amber-500 mt-1">{benchResult.cpuMultiScore} <span class="text-xs font-normal text-neutral-400">pts</span></div>
+              </div>
+              <div class="p-5 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900/60 shadow-xs">
+                <span class="text-xs font-semibold text-neutral-500 uppercase">RAM Bandwidth</span>
+                <div class="text-2xl font-black text-sky-500 mt-1">{benchResult.ramBandwidthMbps} <span class="text-xs font-normal text-neutral-400">MB/s</span></div>
+              </div>
+              <div class="p-5 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900/60 shadow-xs">
+                <span class="text-xs font-semibold text-neutral-500 uppercase">Disk I/O Write</span>
+                <div class="text-2xl font-black text-emerald-500 mt-1">{benchResult.diskWriteMbps1m} <span class="text-xs font-normal text-neutral-400">MB/s</span></div>
+              </div>
+            </div>
 
-        <div class="p-5 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900/60 space-y-3">
-          <h4 class="text-xs font-bold uppercase tracking-wider text-neutral-500">Hardware Profile Target</h4>
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs font-mono">
-            <div class="p-3 rounded-xl bg-neutral-50 dark:bg-neutral-800/50">Details: <strong>{benchResult.details || 'Standard'}</strong></div>
-            <div class="p-3 rounded-xl bg-neutral-50 dark:bg-neutral-800/50">Core Count: <strong>{benchResult.cpuCores} Cores</strong></div>
-            <div class="p-3 rounded-xl bg-neutral-50 dark:bg-neutral-800/50">Disk IOPS 4K: <strong>{benchResult.diskWriteIops4k} IOPS</strong></div>
-          </div>
+            <div class="p-5 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900/60 space-y-3">
+              <h4 class="text-xs font-bold uppercase tracking-wider text-neutral-500">Hardware Profile Target</h4>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs font-mono">
+                <div class="p-3 rounded-xl bg-neutral-50 dark:bg-neutral-800/50">Details: <strong>{benchResult.details || 'Standard'}</strong></div>
+                <div class="p-3 rounded-xl bg-neutral-50 dark:bg-neutral-800/50">Core Count: <strong>{benchResult.cpuCores} Cores</strong></div>
+                <div class="p-3 rounded-xl bg-neutral-50 dark:bg-neutral-800/50">Disk IOPS 4K: <strong>{benchResult.diskWriteIops4k} IOPS</strong></div>
+              </div>
+            </div>
+          {:else}
+            <div class="py-16 text-center text-neutral-400 text-xs bg-white dark:bg-neutral-900/40 rounded-2xl border border-neutral-200 dark:border-neutral-800">
+              Belum ada benchmark dijalankan. Tekan "Jalankan Server Benchmark".
+            </div>
+          {/if}
         </div>
-      {:else}
-        <div class="py-16 text-center text-neutral-400 text-xs bg-white dark:bg-neutral-900/40 rounded-2xl border border-neutral-200 dark:border-neutral-800">
-          Belum ada benchmark dijalankan. Tekan "Jalankan Server Benchmark".
-        </div>
-      {/if}
+      </ProGate>
     </div>
   {/if}
 

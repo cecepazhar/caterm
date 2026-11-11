@@ -844,7 +844,8 @@ SSH Hardening Non-Pass: ${securityReport.hardeningChecklist.filter((h) => h.stat
   <!-- TAB 7: EPHEMERAL KEYS -->
   {#if activeTab === 'ephemeral'}
     <div class="space-y-6">
-      <Card variant="primary" size="md">
+      <ProGate title="Ephemeral SSH Keys Pro" description="Pembuatan kunci SSH sekali-pakai (disposable) dengan batas waktu auto-revoke memerlukan lisensi CATerm Pro.">
+        <Card variant="primary" size="md">
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div class="flex items-center gap-2">
@@ -898,25 +899,25 @@ SSH Hardening Non-Pass: ${securityReport.hardeningChecklist.filter((h) => h.stat
             loading={isGeneratingEphemeral}
             class="h-9 px-3.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-xs"
           >
-            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-1.5 1.5L14 9l-1.5-1.5L11 9l-1.5-1.5L8 9c-3.3 0-6 2.7-6 6s2.7 6 6 6 6-2.7 6-6c0-.8-.2-1.5-.5-2.2L22 4.2V2h-2.2z"/><circle cx="8" cy="15" r="1.5"/></svg>
-            <span>{t('security.generateKey')}</span>
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-2-2l2 2"/><path d="M15.5 8.5l-4-4a2.828 2.828 0 00-4 4l1.5 1.5L2 17v5h5l7-7 1.5 1.5a2.828 2.828 0 004-4l-4-4z"/></svg>
+            <span>{t('security.generateEphemeralKey')}</span>
           </Button>
         </div>
 
         {#if newGeneratedPubkey}
-          <div class="p-3.5 rounded-xl bg-neutral-100 dark:bg-neutral-800/80 border border-neutral-200 dark:border-neutral-700 text-xs space-y-2 mt-4">
+          <div class="p-4 rounded-xl border border-sky-500/30 bg-sky-500/10 space-y-2">
             <div class="flex items-center justify-between">
-              <span class="font-bold text-neutral-900 dark:text-white">{t('security.pubkeyHeader')}</span>
+              <span class="text-xs font-bold text-sky-400">{t('security.keyGenerated')}</span>
               <Button
                 variant="secondary"
                 size="sm"
                 class="h-7 text-xs"
                 onclick={() => {
-                  navigator.clipboard.writeText(newGeneratedPubkey || '');
+                  navigator.clipboard.writeText(newGeneratedPubkey);
                   showToast(t('security.pubkeyCopied'), 'success');
                 }}
               >
-                Copy Key
+                {t('security.copyPubkey')}
               </Button>
             </div>
             <pre class="font-mono text-[11px] p-2 rounded bg-neutral-900/80 text-neutral-300 overflow-x-auto whitespace-pre-wrap">{newGeneratedPubkey}</pre>
@@ -958,6 +959,7 @@ SSH Hardening Non-Pass: ${securityReport.hardeningChecklist.filter((h) => h.stat
           {/if}
         </div>
       </Card>
+      </ProGate>
     </div>
   {/if}
 
@@ -1059,7 +1061,8 @@ SSH Hardening Non-Pass: ${securityReport.hardeningChecklist.filter((h) => h.stat
   <!-- TAB 9: DOCKER DAEMON PROBE -->
   {#if activeTab === 'docker'}
     <div class="space-y-6">
-      <Card variant="primary" size="md">
+      <ProGate title="Docker Daemon Security Probe Pro" description="Pemeriksaan celah keamanan soket Docker daemon remote dan audit privilege container memerlukan lisensi CATerm Pro.">
+        <Card variant="primary" size="md">
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div class="flex items-center gap-2">
@@ -1112,9 +1115,9 @@ SSH Hardening Non-Pass: ${securityReport.hardeningChecklist.filter((h) => h.stat
             {:else}
               <div class="space-y-2">
                 {#each dockerReport.findings as f}
-                  <div class="p-3.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-800/40 space-y-1.5 text-xs">
+                  <div class="p-3.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-800/40 space-y-1.5">
                     <div class="flex items-center justify-between">
-                      <span class="font-bold text-neutral-900 dark:text-white">{f.title}</span>
+                      <span class="font-bold text-xs text-neutral-900 dark:text-white">{f.title}</span>
                       <Badge variant={f.severity === 'critical' ? 'danger' : 'warning'} size="xs">
                         {f.severity}
                       </Badge>
@@ -1130,6 +1133,7 @@ SSH Hardening Non-Pass: ${securityReport.hardeningChecklist.filter((h) => h.stat
           </div>
         {/if}
       </Card>
+      </ProGate>
     </div>
   {/if}
 </div>

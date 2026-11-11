@@ -22,6 +22,8 @@
   import { showToast } from '$lib/stores/uiNotifications.svelte';
   import { errorText } from '$lib/errors';
   import { t } from '$lib/i18n/index.svelte';
+  import { getPro } from '$lib/stores/pro.svelte';
+  import ProGate from '$lib/components/ProGate.svelte';
 
   let { onClose }: { onClose: () => void } = $props();
 
@@ -62,6 +64,7 @@
   const allHosts = $derived([localTerminalHost(), ...hosts]);
   const targetHost = $derived(allHosts.find((h) => h.id === targetHostId) || (targetHostId === LOCAL_HOST_ID ? localTerminalHost() : undefined));
   const activeSession = $derived(getActiveSession());
+  const pro = getPro();
 
   onMount(async () => {
     try {
@@ -540,6 +543,16 @@
     {/if}
 
     <!-- Terminal Controls: Target Host & Execution Mode -->
+    {#if !pro.isPro}
+      <div class="flex-1 p-6 flex flex-col items-center justify-center">
+        <ProGate
+          title="Hana AI DevOps Copilot (BYOK)"
+          description="Akses asisten AI pintar untuk diagnosa server, perbaikan sintaks perintah, dan automasi terminal memerlukan lisensi CATerm Pro (dengan API key BYOK Anda sendiri)."
+        >
+          <div></div>
+        </ProGate>
+      </div>
+    {:else}
     <div class="px-3.5 py-2.5 border-b border-neutral-800/80 bg-neutral-950/40 flex items-center gap-2.5 shrink-0 text-xs">
       <div class="flex-1 flex items-center gap-1.5 min-w-0">
         <span class="text-[10px] font-semibold text-neutral-400 shrink-0">Host:</span>
@@ -706,5 +719,6 @@
         </Button>
       </form>
     </div>
+    {/if}
   </aside>
 {/if}
