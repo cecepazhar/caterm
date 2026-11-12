@@ -109,10 +109,7 @@
   }
 
   function handleTypeChange() {
-    if (formType === 'caterm_hosted') {
-      formBaseUrl = 'https://ai.caterm.com/v1';
-      formModel = 'caterm-omni-fast';
-    } else if (formType === 'anthropic') {
+    if (formType === 'anthropic') {
       formBaseUrl = 'https://api.anthropic.com/v1';
       formModel = 'claude-3-7-sonnet';
     } else if (formType === 'openai_compatible') {
@@ -152,10 +149,6 @@
   }
 
   async function handleDeleteProvider(p: AiProvider) {
-    if (p.id === 'caterm-hosted') {
-      showToast('Built-in CATerm Hosted provider cannot be deleted.', 'error');
-      return;
-    }
     const confirmed = await confirmModal(
       `Delete AI Provider "${p.name}"? This action cannot be undone.`
     );
@@ -205,7 +198,7 @@
         <div>
           <h2 class="text-base font-semibold text-neutral-900 dark:text-white">Registered AI Providers</h2>
           <p class="{MUTED} text-xs mt-0.5">
-            BYO API keys (Anthropic, OpenAI, DeepSeek, Ollama) and CATerm Pro Hosted AI. All keys are encrypted at rest with SQLCipher Argon2id.
+            BYOK (Bring Your Own Key) — zero data logging. Anthropic, OpenAI, DeepSeek, Ollama. All keys are encrypted at rest with SQLCipher Argon2id.
           </p>
         </div>
         <Button
@@ -239,21 +232,16 @@
               <tr class="hover:bg-neutral-50 dark:hover:bg-neutral-800/30 transition-colors">
                 <td class="px-4 py-3 font-medium text-neutral-900 dark:text-white">
                   {p.name}
-                  {#if p.id === 'caterm-hosted'}
-                    <Badge variant="info" size="xs" class="ml-1.5">DEFAULT</Badge>
-                  {/if}
                 </td>
                 <td class="px-4 py-3 font-mono text-neutral-600 dark:text-neutral-300">
-                  <Badge variant={p.provider_type === 'caterm_hosted' ? 'brand' : p.provider_type === 'anthropic' ? 'warning' : p.provider_type === 'ollama' ? 'success' : 'info'} size="xs">
+                  <Badge variant={p.provider_type === 'anthropic' ? 'warning' : p.provider_type === 'ollama' ? 'success' : 'info'} size="xs">
                     {p.provider_type}
                   </Badge>
                 </td>
                 <td class="px-4 py-3 font-mono text-neutral-500 dark:text-neutral-400 truncate max-w-xs">{p.base_url}</td>
                 <td class="px-4 py-3 font-mono text-neutral-800 dark:text-neutral-200">{p.default_model}</td>
                 <td class="px-4 py-3">
-                  {#if p.provider_type === 'caterm_hosted'}
-                    <span class="text-neutral-500 dark:text-neutral-400">Pro Token Handshake</span>
-                  {:else if p.provider_type === 'ollama'}
+                  {#if p.provider_type === 'ollama'}
                     <span class="text-emerald-600 dark:text-emerald-400">No Key Needed (Local)</span>
                   {:else if p.has_api_key}
                     <Badge variant="success" size="xs">Encrypted in Vault</Badge>
@@ -274,15 +262,13 @@
                   >
                     Edit
                   </Button>
-                  {#if p.id !== 'caterm-hosted'}
-                    <Button
-                      onclick={() => handleDeleteProvider(p)}
-                      variant="danger"
-                      size="sm"
-                    >
-                      Delete
-                    </Button>
-                  {/if}
+                  <Button
+                    onclick={() => handleDeleteProvider(p)}
+                    variant="danger"
+                    size="sm"
+                  >
+                    Delete
+                  </Button>
                 </td>
               </tr>
             {/each}
@@ -430,7 +416,6 @@
     <div>
       <label for="provider-type-select" class={LABEL}>Provider Protocol / Type</label>
       <select id="provider-type-select" bind:value={formType} onchange={handleTypeChange} class={INPUT}>
-        <option value="caterm_hosted">CATerm Hosted AI (OmniRoute Pro)</option>
         <option value="anthropic">Anthropic Messages API (/v1/messages)</option>
         <option value="openai_compatible">OpenAI Compatible (OpenAI, DeepSeek, Groq)</option>
         <option value="ollama">Local Ollama (/api/chat)</option>
@@ -447,7 +432,7 @@
       bind:value={formModel}
     />
 
-    {#if formType !== 'ollama' && formType !== 'caterm_hosted'}
+    {#if formType !== 'ollama'}
       <Input
         type="password"
         label="API Key {editingProviderId ? '(Leave blank to keep current key)' : ''}"

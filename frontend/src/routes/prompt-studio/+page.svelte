@@ -9,16 +9,13 @@
     getAiSettings,
     aiGeneratePlan,
     aiExecuteStep,
-    getProAiUsage,
     type AiPlanStep,
     type AiExecutionPlan,
     type AiExecutionResult,
-    type AiSettings,
-    type ProAiUsage
+    type AiSettings
   } from '$lib/api/ai';
-  import { proErrorMessage } from '$lib/pro/errors';
   import { t } from '$lib/i18n/index.svelte';
-  import { PageHeader, Button, Badge, Card, Textarea, ProgressBar } from '@cecepazhar/caui';
+  import { PageHeader, Button, Badge, Card, Textarea } from '@cecepazhar/caui';
 
   interface ExtendedStep extends AiPlanStep {
     enabled: boolean;
@@ -41,47 +38,6 @@
   };
 
   let settings = $state<AiSettings>({ ...DEFAULT_SETTINGS });
-
-  // Hosted AI (CATerm Pro pooled quota via OmniRoute) vs. Bring-your-own key. Persisted per
-  // device only — it's a local preference, not something the account carries around.
-  const AI_MODE_KEY = 'caterm_ai_mode';
-  let aiMode = $state<'byo' | 'hosted'>('byo');
-  let hostedUsage = $state<ProAiUsage | null>(null);
-  let isLoadingHostedUsage = $state(false);
-
-  try {
-    const savedMode = localStorage.getItem(AI_MODE_KEY);
-    if (savedMode === 'hosted' || savedMode === 'byo') aiMode = savedMode;
-  } catch {
-    // Private browsing / storage blocked: default to BYO.
-  }
-
-  async function loadHostedUsage() {
-    isLoadingHostedUsage = true;
-    try {
-      hostedUsage = await getProAiUsage();
-    } catch {
-      hostedUsage = null;
-    } finally {
-      isLoadingHostedUsage = false;
-    }
-  }
-
-  function setAiMode(mode: 'byo' | 'hosted') {
-    aiMode = mode;
-    try {
-      localStorage.setItem(AI_MODE_KEY, mode);
-    } catch {
-      // ignore
-    }
-    if (mode === 'hosted' && !hostedUsage) {
-      void loadHostedUsage();
-    }
-  }
-
-  let hostedQuotaExceeded = $derived(
-    hostedUsage !== null && hostedUsage.entitled && hostedUsage.remaining <= 0
-  );
 
   // Prompt & Plan state
   let goal = $state('');
@@ -109,9 +65,7 @@
   );
 
   onMount(async () => {
-    const tasks = [loadHosts(), loadSettings()];
-    if (aiMode === 'hosted') tasks.push(loadHostedUsage());
-    await Promise.all(tasks);
+    await Promise.all([loadHosts(), loadSettings()]);
   });
 
   async function loadHosts() {
@@ -459,19 +413,9 @@
     isGenerating = true;
     try {
       let resultPlan: AiExecutionPlan;
-      const hosted = aiMode === 'hosted';
       try {
-        resultPlan = await aiGeneratePlan(goal, selectedHostId || undefined, hosted);
-        if (hosted) void loadHostedUsage(); // refresh the quota bar after a counted request
+        resultPlan = await aiGeneratePlan(goal, selectedHostId || undefined);
       } catch (err) {
-        if (hosted) {
-          // Unlike BYO, a hosted failure (quota exhausted, not entitled, gateway down) is
-          // surfaced rather than papered over with a fake template plan — the request was
-          // meant to spend real pooled quota, so silence here would just be confusing.
-          showToast(proErrorMessage(err), 'error');
-          void loadHostedUsage();
-          return;
-        }
         // BYO backend unreachable entirely — fall back to the in-page template planner.
         // Marked as `builtin` so the badge on the plan says so instead of implying the model
         // wrote it.
@@ -659,63 +603,8 @@
       placeholder={t('promptStudio.goalPlaceholder')}
     />
 
-    <!-- AI Mode: hosted pooled quota (CATerm Pro) vs. bring-your-own key -->
-    <div class="flex flex-wrap items-center gap-3 p-3 rounded-lg bg-neutral-50 dark:bg-neutral-950/60 border border-neutral-200 dark:border-neutral-800">
-      <div class="inline-flex items-center gap-1.5 rounded-lg border border-neutral-200 dark:border-neutral-800 p-1" role="tablist">
-        <Button
-          type="button"
-          variant={aiMode === 'byo' ? 'primary' : 'neutral'}
-          size="sm"
-          onclick={() => setAiMode('byo')}
-        >
-          {t('promptStudio.byoAi')}
-        </Button>
-        <Button
-          type="button"
-          variant={aiMode === 'hosted' ? 'primary' : 'neutral'}
-          size="sm"
-          onclick={() => setAiMode('hosted')}
-        >
-          {t('promptStudio.hostedAi')}
-        </Button>
-      </div>
-
-      {#if aiMode === 'byo'}
-        <span class="text-xs text-neutral-500 dark:text-neutral-400">{t('promptStudio.byoAiHint')}</span>
-      {:else if isLoadingHostedUsage}
-        <span class="text-xs text-neutral-400 animate-pulse">{t('common.loading')}</span>
-      {:else if hostedUsage && !hostedUsage.enabled}
-        <span class="text-xs text-amber-600 dark:text-amber-500">{t('promptStudio.hostedUnavailable')}</span>
-      {:else if hostedUsage && !hostedUsage.entitled}
-        <span class="text-xs text-amber-600 dark:text-amber-500">{t('promptStudio.hostedNotEntitled')}</span>
-      {:else if hostedUsage}
-        <div class="flex-1 min-w-[180px] flex items-center gap-2">
-          <ProgressBar
-            value={hostedUsage.used}
-            max={Math.max(hostedUsage.limit, 1)}
-            variant={hostedQuotaExceeded ? 'danger' : 'brand'}
-            size="sm"
-            class="flex-1"
-          />
-          <span class="text-xs whitespace-nowrap {hostedQuotaExceeded ? 'text-rose-600 dark:text-rose-400 font-semibold' : 'text-neutral-500 dark:text-neutral-400'}">
-            {t(hostedUsage.pooled ? 'promptStudio.hostedQuotaPooled' : 'promptStudio.hostedQuota', {
-              used: hostedUsage.used,
-              limit: hostedUsage.limit
-            })}
-          </span>
-        </div>
-      {:else}
-        <span class="text-xs text-neutral-500 dark:text-neutral-400">{t('promptStudio.hostedAiHint')}</span>
-      {/if}
-    </div>
-
-    {#if aiMode === 'hosted' && hostedQuotaExceeded}
-      <p class="text-xs text-rose-600 dark:text-rose-400">
-        {t('promptStudio.hostedQuotaExceeded', {
-          date: hostedUsage ? new Date(hostedUsage.resetsAt * 1000).toLocaleDateString() : ''
-        })}
-      </p>
-    {/if}
+    <!-- AI is 100% BYOK (Bring Your Own Key) — zero data logging -->
+    <p class="text-xs text-neutral-500 dark:text-neutral-400">{t('promptStudio.byoAiHint')}</p>
 
     <!-- Quick Prompt Suggestion Chips -->
     <div class="space-y-1.5">
@@ -738,17 +627,13 @@
     <div class="flex items-center justify-between pt-2">
       <div class="text-xs text-neutral-500 dark:text-neutral-400 flex items-center gap-1.5">
         <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-        {#if aiMode === 'hosted'}
-          {t('promptStudio.hostedAi')}
-        {:else}
-          {t('promptStudio.activeModel')} <span class="font-mono text-neutral-700 dark:text-neutral-300 font-semibold">{settings.model}</span>
-        {/if}
+        {t('promptStudio.activeModel')} <span class="font-mono text-neutral-700 dark:text-neutral-300 font-semibold">{settings.model}</span>
       </div>
 
       <Button
         type="button"
         onclick={handleGeneratePlan}
-        disabled={isGenerating || !goal.trim() || (aiMode === 'hosted' && hostedQuotaExceeded)}
+        disabled={isGenerating || !goal.trim()}
         loading={isGenerating}
         variant="primary"
         size="md"

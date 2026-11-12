@@ -16,7 +16,7 @@ export const PAYPAL_URL = 'https://paypal.me/cecepazhar';
 
 /**
  * Pricing page for the signed-in CATerm account: the landing page passes the account id on to
- * the checkout gateway (Mayar for IDR, Creem / Ko-fi for USD) as checkout custom data, so the subscription lands on this account whatever email
+ * the checkout gateway (Creem) as checkout custom data, so the subscription lands on this account whatever email
  * is typed at checkout. Only the opaque account id travels, never the email.
  */
 export function pricingUrl(accountId?: string | null): string {

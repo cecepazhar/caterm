@@ -26,8 +26,9 @@
   import { openExternalUrl } from '$lib/utils/url';
   import { errorText } from '$lib/errors';
 	import { getPerformancePrefs, setPerformancePrefs, type PerformancePrefs } from '$lib/api/performance';
-  import { t, intlLocale, getLocale } from '$lib/i18n/index.svelte';
+  import { t, intlLocale } from '$lib/i18n/index.svelte';
   import ProLoginForm from '$lib/components/ProLoginForm.svelte';
+  import ProGate from '$lib/components/ProGate.svelte';
   import { getPro, refreshProStatus, checkProServer, syncPro, setProStatus } from '$lib/stores/pro.svelte';
   import { proStartTrial, proAccount, proRevokeDevice, proLogout, proActivateLicense, proSyncVault, type ProDevice, type DeviceLimit, type SyncOutcome } from '$lib/api/pro';
   import { proErrorMessage } from '$lib/pro/errors';
@@ -237,9 +238,8 @@
 
   // Subscription tab
   let billing = $state<BillingInterval>('monthly');
-  // Pricing v4.1: IDR (Mayar / QRIS) or USD (Creem / Ko-fi); defaults to the UI language.
-  let currencyChoice = $state<Currency | null>(null);
-  const currency = $derived<Currency>(currencyChoice ?? defaultCurrency(getLocale()));
+  // Pricing v5.1: USD only, Creem is the only gateway.
+  const currency: Currency = defaultCurrency();
   const subscriptionPrice = $derived(displayPrice(PRO_PRICING.subscription[billing], currency));
   // Active-plan card. The licence only carries `tier` + `currentPeriodEnd` (no SKU price or
   // interval), so the card shows the validity date instead of guessing a price.
@@ -923,18 +923,6 @@
               {/if}
             </div>
 
-            <div class="inline-flex items-center gap-2 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 p-1 text-xs" role="group" aria-label={t('settings.subscription.currency')}>
-              {#each ['IDR', 'USD'] as const as code (code)}
-                <Button
-                  type="button"
-                  onclick={() => (currencyChoice = code)}
-                  variant={currency === code ? 'primary' : 'neutral'}
-                  size="sm"
-                >
-                  {code === 'IDR' ? 'IDR (Rp)' : 'USD ($)'}
-                </Button>
-              {/each}
-            </div>
 
             <!-- Model A: License Key, 1 device (offline HWID) -->
             <div class="space-y-2">
