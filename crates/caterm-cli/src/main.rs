@@ -196,7 +196,7 @@ fn main() {
         extern "C" fn handle_signal(_: i32) {
             if !SHUTDOWN_INITIATED.swap(true, Ordering::SeqCst) {
                 eprintln!("\nReceived interrupt signal, shutting down sessions...");
-                caterm_core::ssh::disconnect_all();
+                let _ = caterm_core::ssh::disconnect_all();
                 std::process::exit(130);
             }
         }

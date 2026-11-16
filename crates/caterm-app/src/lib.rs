@@ -372,7 +372,7 @@ pub fn run_with_start(start: std::time::Instant) {
             if let tauri::RunEvent::Exit = event {
                 // Ensure all SSH child processes and PTY sessions are gracefully closed
                 // when the application shuts down or receives an exit signal.
-                caterm_core::ssh::disconnect_all();
+                let _ = caterm_core::ssh::disconnect_all();
             }
         });
 }

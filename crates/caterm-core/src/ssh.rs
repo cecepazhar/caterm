@@ -1574,11 +1574,12 @@ pub fn clear_exec_sessions() {
 
 /// Disconnect all active SSH and local PTY sessions.
 /// Drops every handle in SESSIONS (triggering SessionHandle::drop) and clears EXEC_SESSIONS.
-pub fn disconnect_all() {
+pub fn disconnect_all() -> Result<(), CatermError> {
     clear_exec_sessions();
     if let Ok(mut sessions) = SESSIONS.lock() {
         sessions.clear();
     }
+    Ok(())
 }
 
 /// Disconnect and remove active SSH session.
