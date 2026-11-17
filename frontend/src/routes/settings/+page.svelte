@@ -209,6 +209,11 @@
     }
   }
 
+  // Alias for the GCC Cloud Hub "Keluar Akun" button (reuses the guarded sign-out flow).
+  function handleProLogout() {
+    signOutPro();
+  }
+
   let licenseInput = $state('');
   let licenseBusy = $state(false);
 
@@ -586,6 +591,79 @@
 
     </Card>
 
+    <!-- License Key Activation (moved to Profile, next to PRO feature) -->
+    {#if !pro.isPro}
+      <div class="{SUBCARD} space-y-4">
+        <div>
+          <p class="text-sm font-semibold text-neutral-900 dark:text-white">Aktivasi License Key</p>
+          <p class="{MUTED} text-xs mt-0.5">Aktifkan CATerm Pro dengan kode lisensi dari Mayar, Ko-fi, atau Founder Lifetime.</p>
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-2">
+          <Input
+            type="text"
+            bind:value={licenseInput}
+            placeholder="e.g. CATM99-R64108-3"
+            class="font-mono uppercase flex-1"
+          />
+          <Button
+            type="button"
+            onclick={() => handleActivateLicense()}
+            disabled={licenseBusy || !licenseInput.trim()}
+            loading={licenseBusy}
+            variant="primary"
+            size="md"
+            class="shrink-0"
+          >
+            Aktivasi Lisensi
+          </Button>
+        </div>
+
+        <div class="pt-3 border-t border-neutral-200 dark:border-neutral-800 flex flex-wrap items-center justify-between gap-2">
+          <span class="text-xs text-neutral-500">Creator / Owner Quick Unlock:</span>
+          <Button
+            type="button"
+            onclick={() => handleActivateLicense('CATM99-FOUNDR-7')}
+            disabled={licenseBusy}
+            variant="warning"
+            size="sm"
+            class="flex items-center gap-1.5"
+          >
+            <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm14 3c0 .6-.4 1-1 1H6c-.6 0-1-.4-1-1v-1h14v1z"/></svg>
+            <span>Activate Founder Lifetime (Cecep Azhar)</span>
+          </Button>
+        </div>
+      </div>
+    {/if}
+
+    <!-- Akun GCC Cloud Hub (login email+password, reuse ProLoginForm inline) -->
+    <div class="{SUBCARD} space-y-4">
+      <p class="text-sm font-semibold text-neutral-900 dark:text-white flex items-center gap-2">
+        <span>☁️</span>
+        <span>Akun GCC Cloud Hub</span>
+      </p>
+
+      {#if pro.status?.signedIn && pro.status?.account}
+        <div class="flex items-center justify-between p-3 rounded-lg bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800">
+          <div>
+            <p class="text-xs font-bold text-neutral-900 dark:text-white">{pro.status.account.name}</p>
+            <p class="text-xs {MUTED}">{pro.status.account.email}</p>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onclick={handleProLogout}
+            class="text-rose-600 dark:text-rose-400 border-rose-500/30"
+          >
+            Keluar Akun
+          </Button>
+        </div>
+      {:else}
+        <ProLoginForm onSignedIn={handleProSignedIn} />
+      {/if}
+    </div>
+
     <!-- PRO Ambient Underglow Lighting Card -->
     <AmbientSettingsCard defaultAccent="#ef4444" appName="CATerm" />
   {:else if activeTab === 'updates'}
@@ -773,51 +851,7 @@
         {/if}
       </div>
 
-      <!-- License Key Activation Card -->
-      {#if !pro.isPro}
-        <div class="{SUBCARD} space-y-4">
-          <div>
-            <p class="text-sm font-semibold text-neutral-900 dark:text-white">Activate License Key</p>
-            <p class="text-xs {MUTED} mt-0.5">Activate CATerm Pro with your license key from Mayar, Ko-fi, or Founder Lifetime.</p>
-          </div>
-
-          <div class="flex flex-col sm:flex-row gap-2">
-            <Input
-              type="text"
-              bind:value={licenseInput}
-              placeholder="e.g. CATM99-R64108-3"
-              class="font-mono uppercase flex-1"
-            />
-            <Button
-              type="button"
-              onclick={() => handleActivateLicense()}
-              disabled={licenseBusy || !licenseInput.trim()}
-              loading={licenseBusy}
-              variant="primary"
-              size="md"
-              class="shrink-0"
-            >
-              Activate License
-            </Button>
-          </div>
-
-          <div class="pt-3 border-t border-neutral-200 dark:border-neutral-800 flex flex-wrap items-center justify-between gap-2">
-            <span class="text-xs text-neutral-500">Creator / Owner Quick Unlock:</span>
-            <Button
-              type="button"
-              onclick={() => handleActivateLicense('CATM99-FOUNDR-7')}
-              disabled={licenseBusy}
-              variant="warning"
-              size="sm"
-              class="flex items-center gap-1.5"
-            >
-              <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm14 3c0 .6-.4 1-1 1H6c-.6 0-1-.4-1-1v-1h14v1z"/></svg>
-              <span>Activate Founder Lifetime (Cecep Azhar)</span>
-            </Button>
-          </div>
-        </div>
-      {/if}
-
+      <!-- License key activation moved to the Profile tab (next to the PRO feature). -->
       {#if pro.status?.signedIn && !pro.status.pending}
         <ProTeamPanel onOutcome={handleOutcome} />
       {/if}
