@@ -27,6 +27,10 @@ use sha2::{Digest, Sha256};
 use std::time::Duration;
 
 const DEFAULT_API_BASE: &str = "https://gcc.fathforce.com/api/caterm/pro/v1";
+/// Core GCC API for key-based license activation (same endpoint CASHell/CAMark use).
+/// This path is always registered (no separate module config needed), so it works
+/// even when the catermpro module is not enabled.
+const CORE_API_BASE: &str = "https://gcc.fathforce.com/api/v1";
 const CLIENT_VERSION: &str = env!("CARGO_PKG_VERSION");
 /// NTP jitter we tolerate before treating a clock that went backwards as tampering.
 const CLOCK_DRIFT_TOLERANCE_SECS: i64 = 300;
@@ -295,6 +299,27 @@ fn request_with_token(
     let mut response = result.map_err(|_| pro_err("NETWORK"))?;
     let status = response.status().as_u16();
     let text = response.body_mut().read_to_string().unwrap_or_default();
+    let value = serde_json::from_str(&text).unwrap_or(Value::Null);
+    Ok((status, value))
+}
+
+/// POST to the CORE GCC API (same /api/v1/licenses/* endpoints CASHell & CAMark use).
+/// The core endpoints are always registered regardless of catermpro module config,
+/// so this is the reliable path for key-based activation without a signed-in account.
+fn core_request(path: &str, body: Option<&Value>) -> Result<(u16, Value), CatermError> {
+    let agent: ureq::Agent = ureq::Agent::config_builder()
+        .timeout_global(Some(HTTP_TIMEOUT))
+        .http_status_as_error(false)
+        .build()
+        .into();
+    let url = format!("{CORE_API_BASE}{path}");
+    let mut resp = agent
+        .post(&url)
+        .header("Content-Type", "application/json")
+        .send_json(body.cloned().unwrap_or_else(|| json!({})))
+        .map_err(|_| pro_err("NETWORK"))?;
+    let status = resp.status().as_u16();
+    let text = resp.body_mut().read_to_string().unwrap_or_default();
     let value = serde_json::from_str(&text).unwrap_or(Value::Null);
     Ok((status, value))
 }
@@ -1143,18 +1168,19 @@ pub fn activate_license_key(key: &str) -> Result<ProStatus, CatermError> {
     }
 
     // Try authenticated activation first (user is signed in, heartbeat path).
-    // If NOT_SIGNED_IN, fall back to the public key-based endpoint
-    // POST /licenses/activate which needs no account at all — it validates the
-    // license key and binds the device by HWID, returning the same signed
-    // Ed25519 token. This is the "buy a key, activate on any device" flow.
+    // If NOT_SIGNED_IN, fall back to the CORE GCC API at /api/v1/licenses/activate —
+    // the same public key-based endpoint CASHell and CAMark use. This path is
+    // always registered (no separate module config), so it works without the
+    // catermpro module being enabled.
     let result = authed(&conn, "POST", "/license/heartbeat", Some(&body));
     let (status, value) = match result {
         Ok(r) => r,
         Err(e) if e.to_string().contains("NOT_SIGNED_IN") => {
-            // Not signed in — activate via the public key-based endpoint.
-            // Build the request body the public endpoint expects.
+            // Not signed in — activate via the CORE GCC API.
+            // Core expects: { license_key, device_id, device_name, platform }
+            // Response:    { success, data: { license_key, plan_tier, activation_token, ... } }
             let hwid = body.get("hwid").and_then(Value::as_str).unwrap_or_default();
-            let device_label = body
+            let device_name = body
                 .get("device_name")
                 .and_then(Value::as_str)
                 .unwrap_or_default();
@@ -1162,44 +1188,66 @@ pub fn activate_license_key(key: &str) -> Result<ProStatus, CatermError> {
                 .get("os")
                 .and_then(Value::as_str)
                 .unwrap_or_default();
-            let pub_body = json!({
+            let core_body = json!({
                 "license_key": clean_key,
                 "device_id": hwid,
-                "device_label": device_label,
+                "device_name": device_name,
                 "platform": platform,
             });
-            let (pub_status, pub_value) = request("POST", "/licenses/activate", None, Some(&pub_body))?;
+            let (core_status, core_value) = core_request("/licenses/activate", Some(&core_body))?;
 
-            // Normalize the public response into the authenticated shape so
-            // apply_license_response can process it uniformly.
-            // Public: { success, tier, status, entitled, expires_at, token, ... }
-            // Auth:   { license: { status, tier, entitled, ... }, token: {...} }
-            let normalized = if pub_status == 200 {
-                let tier = pub_value.get("tier").and_then(Value::as_str).unwrap_or("");
-                let lic_status = pub_value
-                    .get("status")
+            // Normalize the core API response into the catermpro authenticated shape
+            // so apply_license_response can process it uniformly.
+            // Core:  { success, data: { license_key, plan_tier, activation_token, ... } }
+            // Catermpro auth: { license: { status, tier, entitled, ... }, token: {...} }
+            //
+            // The core API returns an HMAC-SHA256 activation_token (not an Ed25519
+            // signed token), so we store it as the "token" and rely on the
+            // activation_token for offline verification.
+            let normalized = if core_status == 200 {
+                let data = core_value.get("data").cloned().unwrap_or(Value::Null);
+                let plan_tier = data
+                    .get("plan_tier")
                     .and_then(Value::as_str)
-                    .unwrap_or("active");
-                let entitled = pub_value
-                    .get("entitled")
-                    .and_then(Value::as_bool)
-                    .unwrap_or(false);
-                let expires_at = pub_value.get("expires_at").cloned();
-                let grace = pub_value.get("grace_expires_at").cloned();
+                    .unwrap_or("pro");
+                let activation_token = data
+                    .get("activation_token")
+                    .and_then(Value::as_str)
+                    .map(|t| json!({ "payload": t, "signature": "", "key_version": 0 }));
+                let license_key = data
+                    .get("license_key")
+                    .and_then(Value::as_str)
+                    .unwrap_or(&clean_key);
+                let expires_at = data.get("expires_at").cloned();
                 json!({
                     "license": {
-                        "status": lic_status,
-                        "tier": tier,
+                        "status": "active",
+                        "tier": plan_tier,
                         "trial_ends_at": null,
-                        "current_period_end": expires_at.or(grace),
-                        "entitled": entitled,
+                        "current_period_end": expires_at,
+                        "entitled": true,
+                        "license_key": license_key,
                     },
-                    "token": pub_value.get("token").cloned().unwrap_or(Value::Null),
+                    "token": activation_token.unwrap_or(Value::Null),
                 })
             } else {
-                pub_value
+                // Error response from core API: { error: { message }, success: false }
+                let err_code = core_value
+                    .get("error")
+                    .and_then(|e| e.get("message"))
+                    .and_then(Value::as_str)
+                    .map(|m| m.to_string())
+                    .unwrap_or_else(|| format!("HTTP_{core_status}"));
+                json!({ "error": err_code, "success": false })
             };
-            (pub_status, normalized)
+            if core_status != 200 {
+                let err_code = normalized
+                    .get("error")
+                    .and_then(Value::as_str)
+                    .unwrap_or("ACTIVATION_FAILED");
+                return Err(pro_err(err_code));
+            }
+            (core_status, normalized)
         }
         Err(e) => return Err(e),
     };
