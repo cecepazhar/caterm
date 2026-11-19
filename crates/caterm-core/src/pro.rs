@@ -1142,22 +1142,64 @@ pub fn activate_license_key(key: &str) -> Result<ProStatus, CatermError> {
         obj.insert("license_key".to_string(), Value::String(clean_key.clone()));
     }
 
-    // Try authenticated activation first (user is signed in).
-    // If NOT_SIGNED_IN, fall back to anonymous activation (no account required).
-    let result = authed(&conn, "POST", "/license/activate", Some(&body));
+    // Try authenticated activation first (user is signed in, heartbeat path).
+    // If NOT_SIGNED_IN, fall back to the public key-based endpoint
+    // POST /licenses/activate which needs no account at all — it validates the
+    // license key and binds the device by HWID, returning the same signed
+    // Ed25519 token. This is the "buy a key, activate on any device" flow.
+    let result = authed(&conn, "POST", "/license/heartbeat", Some(&body));
     let (status, value) = match result {
         Ok(r) => r,
         Err(e) if e.to_string().contains("NOT_SIGNED_IN") => {
-            // User is not signed in — try anonymous license activation.
-            // This endpoint does not require a bearer token; the server validates
-            // the license key and device limit without an account.
-            let (status, value) = request("POST", "/license/activate-anonymous", None, Some(&body))?;
-            // If the anonymous endpoint doesn't exist (404/405), the server hasn't been
-            // updated yet. Return a clear error.
-            if status == 404 || status == 405 {
-                return Err(pro_err("NOT_SIGNED_IN"));
-            }
-            (status, value)
+            // Not signed in — activate via the public key-based endpoint.
+            // Build the request body the public endpoint expects.
+            let hwid = body.get("hwid").and_then(Value::as_str).unwrap_or_default();
+            let device_label = body
+                .get("device_name")
+                .and_then(Value::as_str)
+                .unwrap_or_default();
+            let platform = body
+                .get("os")
+                .and_then(Value::as_str)
+                .unwrap_or_default();
+            let pub_body = json!({
+                "license_key": clean_key,
+                "device_id": hwid,
+                "device_label": device_label,
+                "platform": platform,
+            });
+            let (pub_status, pub_value) = request("POST", "/licenses/activate", None, Some(&pub_body))?;
+
+            // Normalize the public response into the authenticated shape so
+            // apply_license_response can process it uniformly.
+            // Public: { success, tier, status, entitled, expires_at, token, ... }
+            // Auth:   { license: { status, tier, entitled, ... }, token: {...} }
+            let normalized = if pub_status == 200 {
+                let tier = pub_value.get("tier").and_then(Value::as_str).unwrap_or("");
+                let lic_status = pub_value
+                    .get("status")
+                    .and_then(Value::as_str)
+                    .unwrap_or("active");
+                let entitled = pub_value
+                    .get("entitled")
+                    .and_then(Value::as_bool)
+                    .unwrap_or(false);
+                let expires_at = pub_value.get("expires_at").cloned();
+                let grace = pub_value.get("grace_expires_at").cloned();
+                json!({
+                    "license": {
+                        "status": lic_status,
+                        "tier": tier,
+                        "trial_ends_at": null,
+                        "current_period_end": expires_at.or(grace),
+                        "entitled": entitled,
+                    },
+                    "token": pub_value.get("token").cloned().unwrap_or(Value::Null),
+                })
+            } else {
+                pub_value
+            };
+            (pub_status, normalized)
         }
         Err(e) => return Err(e),
     };
