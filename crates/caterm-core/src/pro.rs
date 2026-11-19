@@ -1139,9 +1139,28 @@ pub fn activate_license_key(key: &str) -> Result<ProStatus, CatermError> {
     ensure_table(&conn)?;
     let mut body = device_body(&hwid()?);
     if let Some(obj) = body.as_object_mut() {
-        obj.insert("license_key".to_string(), Value::String(clean_key));
+        obj.insert("license_key".to_string(), Value::String(clean_key.clone()));
     }
-    let (status, value) = authed(&conn, "POST", "/license/activate", Some(&body))?;
+
+    // Try authenticated activation first (user is signed in).
+    // If NOT_SIGNED_IN, fall back to anonymous activation (no account required).
+    let result = authed(&conn, "POST", "/license/activate", Some(&body));
+    let (status, value) = match result {
+        Ok(r) => r,
+        Err(e) if e.to_string().contains("NOT_SIGNED_IN") => {
+            // User is not signed in — try anonymous license activation.
+            // This endpoint does not require a bearer token; the server validates
+            // the license key and device limit without an account.
+            let (status, value) = request("POST", "/license/activate-anonymous", None, Some(&body))?;
+            // If the anonymous endpoint doesn't exist (404/405), the server hasn't been
+            // updated yet. Return a clear error.
+            if status == 404 || status == 405 {
+                return Err(pro_err("NOT_SIGNED_IN"));
+            }
+            (status, value)
+        }
+        Err(e) => return Err(e),
+    };
     Ok(apply_license_response(&conn, status, &value)?.status)
 }
 

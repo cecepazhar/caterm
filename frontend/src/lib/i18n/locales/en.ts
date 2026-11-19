@@ -1600,7 +1600,7 @@ const en = {
       PASSWORD_MISMATCH: 'The passwords don\'t match.',
       TRIAL_ALREADY_USED: 'A trial was already used on this account or this device.',
       SESSION_EXPIRED: 'Your session expired. Sign in again.',
-      NOT_SIGNED_IN: 'Sign in to your CATerm account first.',
+      NOT_SIGNED_IN: 'License activation requires a server connection. Please check your network or try again later.',
       RATE_LIMITED: 'Too many attempts. Wait a minute and try again.',
       NETWORK: 'Can\'t reach the CATerm server. Check your connection.',
       NOT_FOUND: 'That item no longer exists.',

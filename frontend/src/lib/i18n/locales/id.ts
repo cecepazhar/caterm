@@ -1601,7 +1601,7 @@ const id: Dictionary = {
       PASSWORD_MISMATCH: 'Password tidak sama.',
       TRIAL_ALREADY_USED: 'Trial sudah pernah dipakai di akun atau perangkat ini.',
       SESSION_EXPIRED: 'Sesi Anda berakhir. Silakan masuk lagi.',
-      NOT_SIGNED_IN: 'Masuk ke akun CATerm terlebih dahulu.',
+      NOT_SIGNED_IN: 'Aktivasi lisensi membutuhkan koneksi server. Periksa jaringan Anda atau coba lagi.',
       RATE_LIMITED: 'Terlalu banyak percobaan. Tunggu sebentar lalu coba lagi.',
       NETWORK: 'Tidak bisa terhubung ke server CATerm. Periksa koneksi Anda.',
       NOT_FOUND: 'Item itu sudah tidak ada.',
