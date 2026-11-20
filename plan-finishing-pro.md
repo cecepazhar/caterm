@@ -94,7 +94,7 @@ Untuk melayani pasar domestik (Indonesia) dan internasional secara optimal:
 
 ### Phase 2: GCC Server Licensing & Key Matching
 1. **Ed25519 Key Pair Synchronization:**
-   - Validasi key pair Ed25519 GCC Server (`CATERM_PRO_PRIVATE_KEY_V1`) menghasilkan tanda tangan yang lolos verifikasi public key `4aed277ac7b92ee58778d3c5233ebda741c652c753e3dae7127f367dbb58d92f` di `caterm-core/src/pro.rs`.
+   - Validasi key pair Ed25519 GCC Server (`CATERM_PRO_PRIVATE_KEY_V1`) menghasilkan tanda tangan yang lolos verifikasi public key `ac5b9954c8dc7648131e9682a90999de4d38a15deb00095eee4f6be9521e1dcf` di `caterm-core/src/pro.rs`.
 2. **Mayar & Ko-fi Webhook Processor:**
    - Route `POST /api/caterm/pro/v1/webhook/mayar`:
      - Verifikasi signature HMAC Mayar.

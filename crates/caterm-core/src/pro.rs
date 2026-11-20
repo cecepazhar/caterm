@@ -72,7 +72,7 @@ fn public_key(version: u32) -> Option<VerifyingKey> {
         1 => option_env!("CA_LICENSE_PUBKEY_V1")
             .or(option_env!("CATERM_PRO_LICENSE_PUBKEY_V1"))
             .or(Some(
-            "4aed277ac7b92ee58778d3c5233ebda741c652c753e3dae7127f367dbb58d92f",
+            "ac5b9954c8dc7648131e9682a90999de4d38a15deb00095eee4f6be9521e1dcf",
         )),
         2 => option_env!("CA_LICENSE_PUBKEY_V2").or(option_env!("CATERM_PRO_LICENSE_PUBKEY_V2")),
         _ => None,
