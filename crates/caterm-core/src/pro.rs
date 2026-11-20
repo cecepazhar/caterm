@@ -1063,7 +1063,50 @@ pub fn status() -> Result<ProStatus, CatermError> {
         .as_ref()
         .map(|(p, s, v)| (p.as_str(), s.as_str(), *v));
     let (raw_entitlement, seen) = evaluate(token, public_key, &hwid, state.last_seen, now());
-    let entitlement = raw_entitlement;
+    // When the token is HMAC-based (key_version=0 from core API activation),
+    // Ed25519 verification fails with KEY_NOT_CONFIGURED. In that case, fall
+    // back to the server-stored license status: if the license says "active"
+    // and "entitled", treat it as Valid. This honors the server's decision
+    // without requiring an Ed25519-signed token.
+    let entitlement = if matches!(
+        &raw_entitlement,
+        Entitlement::Invalid { reason } if reason == "KEY_NOT_CONFIGURED"
+    )
+    && state
+        .license
+        .as_ref()
+        .and_then(|l| l.get("status"))
+        .and_then(Value::as_str)
+        == Some("active")
+    && state
+        .license
+        .as_ref()
+        .and_then(|l| l.get("entitled"))
+        .and_then(Value::as_bool)
+        == Some(true)
+    {
+        let lic = state.license.as_ref().unwrap();
+        let tier = lic.get("tier").and_then(Value::as_str).unwrap_or("pro");
+        let features = lic.get("features").cloned().unwrap_or(Value::Null);
+        let expires_at = lic
+            .get("current_period_end")
+            .and_then(Value::as_i64)
+            .unwrap_or(i64::MAX);
+        let features_vec: Vec<String> = if let Some(arr) = features.as_array() {
+            arr.iter()
+                .filter_map(|v| v.as_str().map(String::from))
+                .collect()
+        } else {
+            vec![features.as_str().unwrap_or("").to_string()]
+        };
+        Entitlement::Valid {
+            expires_at,
+            tier: tier.to_string(),
+            features: features_vec,
+        }
+    } else {
+        raw_entitlement
+    };
     if seen != state.last_seen {
         conn.execute(
             "UPDATE pro_state SET last_seen_wall_clock = ?1 WHERE id = 1",
@@ -1227,6 +1270,7 @@ pub fn activate_license_key(key: &str) -> Result<ProStatus, CatermError> {
                         "current_period_end": expires_at,
                         "entitled": true,
                         "license_key": license_key,
+                        "features": ["cloud_sync"],
                     },
                     "token": activation_token.unwrap_or(Value::Null),
                 })
