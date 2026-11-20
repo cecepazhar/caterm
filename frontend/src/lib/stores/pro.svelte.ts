@@ -28,17 +28,9 @@ export function getPro() {
     },
     /** This account's own Pro plan or trial is valid on this device. */
     get isPro() {
-      const ent = status?.entitlement;
-      if (ent?.state === 'valid') return true;
-      if (status?.license && status.signedIn) return true;
-      // Fallback: if local profile is set to pro, consider Pro active on this client device
-      if (typeof localStorage !== 'undefined') {
-        try {
-          const raw = localStorage.getItem('caterm_profile_v1');
-          if (raw && JSON.parse(raw).plan === 'pro') return true;
-        } catch {}
-      }
-      return false;
+      // GCC License v2: only the backend's verdict on the Ed25519-signed token counts. Licence
+      // JSON, sign-in state and localStorage are editable on this machine and never grant Pro.
+      return status?.entitlement?.state === 'valid';
     },
     /** Access through someone else's team only (free account in an entitled team). */
     get isTeamMember() {
@@ -58,9 +50,7 @@ export function getPro() {
 export async function refreshProStatus(): Promise<void> {
   try {
     status = await proStatus();
-    if (status?.entitlement?.state === 'valid' || (status?.license && status?.signedIn)) {
-      setProfilePlan('pro');
-    }
+    setProfilePlan(status?.entitlement?.state === 'valid' ? 'pro' : 'free');
   } catch {
     // Browser preview or vault locked mid-call: keep last in-memory status.
     // The backend pro_status() already falls back to pro_cache.json when the vault is
@@ -110,29 +100,24 @@ export async function onVaultUnlocked(): Promise<void> {
   }
   await refreshProStatus();
   void checkProServer();
-  if (status?.signedIn) {
+  if (status?.signedIn || status?.license) {
+    // License-key activations (no account) refresh their 14-day token through the core API.
     void syncPro().catch(() => {});
-    void proSyncVault().catch(() => {});
   }
+  if (status?.signedIn) void proSyncVault().catch(() => {});
   if (syncTimer) clearInterval(syncTimer);
   syncTimer = setInterval(() => {
-    if (status?.signedIn) {
-      void syncPro().catch(() => {});
-      void proSyncVault().catch(() => {});
-    }
+    if (status?.signedIn || status?.license) void syncPro().catch(() => {});
+    if (status?.signedIn) void proSyncVault().catch(() => {});
   }, SYNC_INTERVAL_MS);
 }
 
-/** Vault locked or app signed out.
- * Keep the current status if a cached Pro entitlement is still valid (server-confirmed
- * license, signed token, or founder/lifetime override). Only clear when the user is
- * unsigned-out or the cache/entitlement is actually gone.
- */
+/** Vault locked or app signed out: keep the status only while its signed entitlement is valid. */
 export function onVaultLocked(): void {
   if (syncTimer) clearInterval(syncTimer);
   syncTimer = null;
   const ent = status?.entitlement;
-  const cachedValid = ent?.state === 'valid' || (status?.license != null && status?.signedIn);
+  const cachedValid = ent?.state === 'valid';
   if (!cachedValid) {
     status = null;
   }

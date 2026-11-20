@@ -69,10 +69,12 @@ fn api_base() -> String {
 /// Debug builds also accept `CATERM_PRO_LICENSE_PUBKEY` at runtime, for a local GCC.
 fn public_key(version: u32) -> Option<VerifyingKey> {
     let compiled = match version {
-        1 => option_env!("CATERM_PRO_LICENSE_PUBKEY_V1").or(Some(
+        1 => option_env!("CA_LICENSE_PUBKEY_V1")
+            .or(option_env!("CATERM_PRO_LICENSE_PUBKEY_V1"))
+            .or(Some(
             "4aed277ac7b92ee58778d3c5233ebda741c652c753e3dae7127f367dbb58d92f",
         )),
-        2 => option_env!("CATERM_PRO_LICENSE_PUBKEY_V2"),
+        2 => option_env!("CA_LICENSE_PUBKEY_V2").or(option_env!("CATERM_PRO_LICENSE_PUBKEY_V2")),
         _ => None,
     };
     #[cfg(debug_assertions)]
@@ -92,11 +94,20 @@ pub fn key_configured() -> bool {
 
 #[derive(Debug, Clone, Deserialize)]
 struct TokenPayload {
+    /// 2 = GCC License v2 (core `/api/v1/licenses/*`); absent on catermpro account tokens.
+    #[serde(default)]
+    v: u32,
+    /// v2 only: the SKUs this licence unlocks (`ALL_ACCESS` founders get every product).
+    #[serde(default)]
+    products: Vec<String>,
     hwid: String,
     tier: String,
     features: Vec<String>,
     exp: i64,
 }
+
+/// This app's SKU in GCC License v2 tokens.
+const PRODUCT_SKU: &str = "CATERM";
 
 /// The signed token as the server sends it. `payload` is the exact signed string.
 #[derive(Debug, Clone, Deserialize)]
@@ -171,6 +182,15 @@ fn evaluate(
             );
         }
     };
+    if claims.v >= 2 && !claims.products.iter().any(|p| p == PRODUCT_SKU) {
+        // A valid licence for another CA product (e.g. CASHell) does not unlock CATerm.
+        return (
+            Entitlement::Invalid {
+                reason: "OTHER_PRODUCT".into(),
+            },
+            last_seen,
+        );
+    }
     if claims.hwid != hwid {
         // A database copied from another machine carries that machine's token.
         return (
@@ -977,48 +997,6 @@ pub fn is_pro() -> bool {
         .unwrap_or(false)
 }
 
-/// If the token is HMAC-based (key_version=0) and Ed25519 verification fails with
-/// KEY_NOT_CONFIGURED, fall back to the stored license status. This honors the
-/// core API's activation decision without requiring an Ed25519-signed token.
-fn apply_license_fallback(
-    raw_entitlement: Entitlement,
-    license: Option<&Value>,
-) -> Entitlement {
-    if matches!(
-        &raw_entitlement,
-        Entitlement::Invalid { reason } if reason == "KEY_NOT_CONFIGURED"
-    )
-    && license
-        .and_then(|l| l.get("status"))
-        .and_then(Value::as_str)
-        == Some("active")
-    && license
-        .and_then(|l| l.get("entitled"))
-        .and_then(Value::as_bool)
-        == Some(true)
-    {
-        let lic = license.unwrap();
-        let tier = lic.get("tier").and_then(Value::as_str).unwrap_or("pro");
-        let features_val = lic.get("features").cloned().unwrap_or(Value::Null);
-        let expires_at = lic
-            .get("current_period_end")
-            .and_then(Value::as_i64)
-            .unwrap_or(i64::MAX);
-        let features_vec: Vec<String> = if let Some(arr) = features_val.as_array() {
-            arr.iter().filter_map(|v| v.as_str().map(String::from)).collect()
-        } else {
-            vec![features_val.as_str().unwrap_or("").to_string()]
-        };
-        Entitlement::Valid {
-            expires_at,
-            tier: tier.to_string(),
-            features: features_vec,
-        }
-    } else {
-        raw_entitlement
-    }
-}
-
 /// Offline status: what this device is entitled to right now, from the stored signed token.
 pub fn status() -> Result<ProStatus, CatermError> {
     if !crate::vault::is_unlocked().unwrap_or(false) {
@@ -1036,8 +1014,7 @@ pub fn status() -> Result<ProStatus, CatermError> {
                 .as_ref()
                 .map(|t| (t.payload.as_str(), t.signature.as_str(), t.key_version));
             let hwid = hwid().unwrap_or_default();
-            let (raw_entitlement, _) = evaluate(token, public_key, &hwid, now(), now());
-            let entitlement = apply_license_fallback(raw_entitlement, pending.license.as_ref());
+            let (entitlement, _) = evaluate(token, public_key, &hwid, now(), now());
             return Ok(ProStatus {
                 signed_in: true,
                 pending: true,
@@ -1061,8 +1038,7 @@ pub fn status() -> Result<ProStatus, CatermError> {
                 .token
                 .as_ref()
                 .map(|(p, s, v)| (p.as_str(), s.as_str(), *v));
-            let (raw_entitlement, _) = evaluate(token, public_key, &hwid, cached.last_seen, now());
-            let entitlement = apply_license_fallback(raw_entitlement, cached.license.as_ref());
+            let (entitlement, _) = evaluate(token, public_key, &hwid, cached.last_seen, now());
             return Ok(ProStatus {
                 signed_in: true,
                 pending: false,
@@ -1104,8 +1080,7 @@ pub fn status() -> Result<ProStatus, CatermError> {
         .token
         .as_ref()
         .map(|(p, s, v)| (p.as_str(), s.as_str(), *v));
-    let (raw_entitlement, seen) = evaluate(token, public_key, &hwid, state.last_seen, now());
-    let entitlement = apply_license_fallback(raw_entitlement, state.license.as_ref());
+    let (entitlement, seen) = evaluate(token, public_key, &hwid, state.last_seen, now());
     if seen != state.last_seen {
         conn.execute(
             "UPDATE pro_state SET last_seen_wall_clock = ?1 WHERE id = 1",
@@ -1114,7 +1089,7 @@ pub fn status() -> Result<ProStatus, CatermError> {
         .map_err(db_err)?;
     }
     Ok(ProStatus {
-        signed_in: true,
+        signed_in: !state.refresh_token.is_empty(),
         pending: false,
         account: account_from(&state.account),
         license: state
@@ -1163,6 +1138,13 @@ fn apply_license_response(
 /// Heartbeat: activates this device (if a slot is free) and refreshes the offline token.
 pub fn sync() -> Result<SyncOutcome, CatermError> {
     let conn = open_db()?;
+    if let Some(state) = load_state(&conn)?
+        && state.refresh_token.is_empty()
+    {
+        // License-key activation without an account: refresh through the core API. Calling
+        // the account heartbeat here would try /auth/refresh and wipe the local licence.
+        return refresh_license_key(&conn, &state);
+    }
     let body = device_body(&hwid()?);
     let (status, value) = authed(&conn, "POST", "/license/heartbeat", Some(&body))?;
     apply_license_response(&conn, status, &value)
@@ -1175,10 +1157,11 @@ pub fn start_trial() -> Result<SyncOutcome, CatermError> {
     apply_license_response(&conn, status, &value)
 }
 
-/// Redeems a license key. The key is never trusted on the client: the server validates it,
-/// binds it to this device and returns a signed token, which `status()` then verifies offline
-/// against the compiled-in public key. Requires a signed-in account. Fails closed — if the
-/// server has no such key (or no `/license/activate` route), nothing is granted.
+/// Redeems a license key through GCC's core API (`POST /api/v1/licenses/activate`, GCC License
+/// v2). No account is needed. The key is never trusted on the client: the server validates it,
+/// binds it to this device and returns an Ed25519 `signed_token`, which is verified here before
+/// it is stored and again by `status()` on every launch. Fails closed — no valid signed token,
+/// no Pro.
 pub fn activate_license_key(key: &str) -> Result<ProStatus, CatermError> {
     let clean_key = key.trim().to_uppercase();
     if clean_key.is_empty() {
@@ -1204,97 +1187,137 @@ pub fn activate_license_key(key: &str) -> Result<ProStatus, CatermError> {
 
     let conn = open_db()?;
     ensure_table(&conn)?;
-    let mut body = device_body(&hwid()?);
-    if let Some(obj) = body.as_object_mut() {
-        obj.insert("license_key".to_string(), Value::String(clean_key.clone()));
+    let hwid = hwid()?;
+    let body = json!({
+        "license_key": clean_key,
+        "device_id": hwid,
+        "device_name": device_name(),
+        "platform": std::env::consts::OS,
+    });
+    let (status, value) = core_request("/licenses/activate", Some(&body))?;
+    if status != 200 {
+        return Err(core_error(status, &value));
     }
+    let data = value.get("data").cloned().unwrap_or(Value::Null);
+    store_core_grant(&conn, &clean_key, &data, &hwid)?;
+    self::status()
+}
 
-    // Try authenticated activation first (user is signed in, heartbeat path).
-    // If NOT_SIGNED_IN, fall back to the CORE GCC API at /api/v1/licenses/activate —
-    // the same public key-based endpoint CASHell and CAMark use. This path is
-    // always registered (no separate module config), so it works without the
-    // catermpro module being enabled.
-    let result = authed(&conn, "POST", "/license/heartbeat", Some(&body));
-    let (status, value) = match result {
-        Ok(r) => r,
-        Err(e) if e.to_string().contains("NOT_SIGNED_IN") => {
-            // Not signed in — activate via the CORE GCC API.
-            // Core expects: { license_key, device_id, device_name, platform }
-            // Response:    { success, data: { license_key, plan_tier, activation_token, ... } }
-            let hwid = body.get("hwid").and_then(Value::as_str).unwrap_or_default();
-            let device_name = body
-                .get("device_name")
-                .and_then(Value::as_str)
-                .unwrap_or_default();
-            let platform = body
-                .get("os")
-                .and_then(Value::as_str)
-                .unwrap_or_default();
-            let core_body = json!({
-                "license_key": clean_key,
-                "device_id": hwid,
-                "device_name": device_name,
-                "platform": platform,
-            });
-            let (core_status, core_value) = core_request("/licenses/activate", Some(&core_body))?;
+/// Refreshes a license-key (no account) activation through `POST /api/v1/licenses/verify`,
+/// which returns a new 14-day `signed_token` while the licence is valid on this device.
+fn refresh_license_key(conn: &Connection, state: &StoredState) -> Result<SyncOutcome, CatermError> {
+    let key = state
+        .license
+        .as_ref()
+        .and_then(|l| l.get("license_key"))
+        .and_then(Value::as_str)
+        .map(str::to_string)
+        .ok_or_else(|| pro_err("NOT_SIGNED_IN"))?;
+    let hwid = hwid()?;
+    let (status, value) = core_request(
+        "/licenses/verify",
+        Some(&json!({ "license_key": key, "device_id": hwid })),
+    )?;
+    if status != 200 {
+        return Err(core_error(status, &value));
+    }
+    let data = value.get("data").cloned().unwrap_or(Value::Null);
+    let valid = data.get("valid").and_then(Value::as_bool) == Some(true);
+    let registered = data.get("device_registered").and_then(Value::as_bool) == Some(true);
+    if !valid || !registered {
+        // Revoked, refunded, expired or device removed: drop the token so Pro ends now.
+        save_key_license(conn, &license_view(&key, &data, false), None)?;
+        return Ok(SyncOutcome {
+            status: self::status()?,
+            device_limit: None,
+        });
+    }
+    store_core_grant(conn, &key, &data, &hwid)?;
+    Ok(SyncOutcome {
+        status: self::status()?,
+        device_limit: None,
+    })
+}
 
-            // Normalize the core API response into the catermpro authenticated shape
-            // so apply_license_response can process it uniformly.
-            // Core:  { success, data: { license_key, plan_tier, activation_token, ... } }
-            // Catermpro auth: { license: { status, tier, entitled, ... }, token: {...} }
-            //
-            // The core API returns an HMAC-SHA256 activation_token (not an Ed25519
-            // signed token), so we store it as the "token" and rely on the
-            // activation_token for offline verification.
-            let normalized = if core_status == 200 {
-                let data = core_value.get("data").cloned().unwrap_or(Value::Null);
-                let plan_tier = data
-                    .get("plan_tier")
-                    .and_then(Value::as_str)
-                    .unwrap_or("pro");
-                let activation_token = data
-                    .get("activation_token")
-                    .and_then(Value::as_str)
-                    .map(|t| json!({ "payload": t, "signature": "", "key_version": 0 }));
-                let license_key = data
-                    .get("license_key")
-                    .and_then(Value::as_str)
-                    .unwrap_or(&clean_key);
-                let expires_at = data.get("expires_at").cloned();
-                json!({
-                    "license": {
-                        "status": "active",
-                        "tier": plan_tier,
-                        "trial_ends_at": null,
-                        "current_period_end": expires_at,
-                        "entitled": true,
-                        "license_key": license_key,
-                        "features": ["cloud_sync"],
-                    },
-                    "token": activation_token.unwrap_or(Value::Null),
-                })
-            } else {
-                // Error response from core API: { error: { message }, success: false }
-                let err_code = core_value
-                    .get("error")
-                    .and_then(|e| e.get("message"))
-                    .and_then(Value::as_str)
-                    .map(|m| m.to_string())
-                    .unwrap_or_else(|| format!("HTTP_{core_status}"));
-                json!({ "error": err_code, "success": false })
-            };
-            if core_status != 200 {
-                let err_code = normalized
-                    .get("error")
-                    .and_then(Value::as_str)
-                    .unwrap_or("ACTIVATION_FAILED");
-                return Err(pro_err(err_code));
-            }
-            (core_status, normalized)
-        }
-        Err(e) => return Err(e),
-    };
-    Ok(apply_license_response(&conn, status, &value)?.status)
+/// Verifies the core API's `signed_token` for this device and stores it. Nothing is stored
+/// unless the token verifies against the compiled-in public key.
+fn store_core_grant(
+    conn: &Connection,
+    key: &str,
+    data: &Value,
+    hwid: &str,
+) -> Result<(), CatermError> {
+    let token: SignedToken = data
+        .get("signed_token")
+        .filter(|t| !t.is_null())
+        .and_then(|t| serde_json::from_value(t.clone()).ok())
+        .ok_or_else(|| pro_err("LICENSE_SIGNING_UNAVAILABLE"))?;
+    let (entitlement, _) = evaluate(
+        Some((token.payload.as_str(), token.signature.as_str(), token.key_version)),
+        public_key,
+        hwid,
+        now(),
+        now(),
+    );
+    if let Entitlement::Invalid { reason } | Entitlement::RevalidationRequired { reason } = &entitlement {
+        return Err(pro_err(format!("INVALID_LICENSE_TOKEN: {reason}")));
+    }
+    if entitlement == Entitlement::Expired {
+        return Err(pro_err("LICENSE_EXPIRED"));
+    }
+    save_key_license(conn, &license_view(key, data, true), Some(&token))
+}
+
+/// Display-only licence info for the UI. Never used to decide entitlement.
+fn license_view(key: &str, data: &Value, active: bool) -> Value {
+    json!({
+        "status": if active { "active" } else { data.get("status").and_then(Value::as_str).unwrap_or("inactive") },
+        "tier": data.get("plan_tier").cloned().unwrap_or(Value::Null),
+        "license_key": key,
+        "current_period_end": data.get("expires_at").cloned().unwrap_or(Value::Null),
+        "max_devices": data.get("max_devices").cloned().unwrap_or(Value::Null),
+    })
+}
+
+/// Upserts the licence + token. Keeps an existing account session (if any) untouched; without
+/// one the row has an empty refresh token, which marks a license-key-only activation.
+fn save_key_license(
+    conn: &Connection,
+    license: &Value,
+    token: Option<&SignedToken>,
+) -> Result<(), CatermError> {
+    ensure_table(conn)?;
+    conn.execute(
+        "INSERT INTO pro_state (id, account_json, refresh_token, license_json, token_payload,
+                                token_signature, token_key_version, last_sync_at)
+         VALUES (1, 'null', '', ?1, ?2, ?3, ?4, ?5)
+         ON CONFLICT(id) DO UPDATE SET license_json = excluded.license_json,
+             token_payload = excluded.token_payload, token_signature = excluded.token_signature,
+             token_key_version = excluded.token_key_version, last_sync_at = excluded.last_sync_at",
+        params![
+            license.to_string(),
+            token.map(|t| t.payload.clone()),
+            token.map(|t| t.signature.clone()),
+            token.map(|t| t.key_version),
+            now()
+        ],
+    )
+    .map_err(db_err)?;
+    persist_pro_cache(conn);
+    Ok(())
+}
+
+/// Core API errors are `{ success: false, error: { message } }`.
+fn core_error(status: u16, body: &Value) -> CatermError {
+    let message = body
+        .get("error")
+        .and_then(|e| e.get("message").or(Some(e)))
+        .and_then(Value::as_str);
+    match (status, message) {
+        (404, _) => pro_err("LICENSE_NOT_FOUND"),
+        (_, Some(m)) => pro_err(m.to_string()),
+        _ => pro_err(format!("HTTP_{status}")),
+    }
 }
 
 pub fn account_details() -> Result<AccountDetails, CatermError> {
@@ -1547,6 +1570,63 @@ pub fn logout() -> Result<(), CatermError> {
 mod tests {
     use super::*;
     use ed25519_dalek::{Signer, SigningKey};
+
+    /// Regression (C-2): an unsigned token plus a hand-edited license JSON in the local cache
+    /// must never grant Pro. Only a server Ed25519 signature may.
+    #[test]
+    fn forged_unsigned_token_with_active_license_json_is_not_pro() {
+        let forged_token = Some(("anything", "", 0u32));
+        let forged_license = json!({ "status": "active", "entitled": true, "tier": "pro" });
+        // The licence JSON is stored next to the token; it must play no part in the decision.
+        let _ = &forged_license;
+        let (ent, _) = evaluate(forged_token, public_key, "hwid", 0, 0);
+        assert!(
+            !matches!(ent, Entitlement::Valid { .. }),
+            "forged cache granted Pro: {ent:?}"
+        );
+    }
+
+    fn v2_token(hwid: &str, exp: i64, products: &[&str]) -> (String, String) {
+        let payload = json!({ "v": 2, "lic_id": "l", "sku": products.first().copied().unwrap_or(""),
+            "products": products, "tier": "lifetime", "features": ["pro"], "hwid": hwid,
+            "max_devices": 1, "iat": 0, "exp": exp, "lic_exp": 0, "nonce": "n" })
+        .to_string();
+        let sig = STANDARD.encode(key().sign(payload.as_bytes()).to_bytes());
+        (payload, sig)
+    }
+
+    fn test_key(_: u32) -> Option<VerifyingKey> {
+        Some(key().verifying_key())
+    }
+
+    #[test]
+    fn v2_token_for_caterm_is_pro() {
+        let (p, s) = v2_token("dev", 1_000, &["CATERM"]);
+        let (ent, _) = evaluate(Some((&p, &s, 1)), test_key, "dev", 0, 10);
+        assert!(matches!(ent, Entitlement::Valid { .. }), "{ent:?}");
+    }
+
+    #[test]
+    fn v2_all_access_founder_token_is_pro() {
+        let (p, s) = v2_token("dev", 1_000, &["CATERM", "CAMARK", "CASHELL"]);
+        let (ent, _) = evaluate(Some((&p, &s, 1)), test_key, "dev", 0, 10);
+        assert!(matches!(ent, Entitlement::Valid { .. }), "{ent:?}");
+    }
+
+    #[test]
+    fn v2_token_for_another_product_is_not_pro() {
+        let (p, s) = v2_token("dev", 1_000, &["CASHELL"]);
+        let (ent, _) = evaluate(Some((&p, &s, 1)), test_key, "dev", 0, 10);
+        assert_eq!(ent, Entitlement::Invalid { reason: "OTHER_PRODUCT".into() });
+    }
+
+    #[test]
+    fn v2_token_with_tampered_products_is_not_pro() {
+        let (p, s) = v2_token("dev", 1_000, &["CASHELL"]);
+        let forged = p.replace("CASHELL", "CATERM");
+        let (ent, _) = evaluate(Some((&forged, &s, 1)), test_key, "dev", 0, 10);
+        assert!(!matches!(ent, Entitlement::Valid { .. }), "{ent:?}");
+    }
 
     fn key() -> SigningKey {
         SigningKey::from_bytes(&[7u8; 32])
