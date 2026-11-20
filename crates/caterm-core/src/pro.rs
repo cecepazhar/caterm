@@ -977,6 +977,48 @@ pub fn is_pro() -> bool {
         .unwrap_or(false)
 }
 
+/// If the token is HMAC-based (key_version=0) and Ed25519 verification fails with
+/// KEY_NOT_CONFIGURED, fall back to the stored license status. This honors the
+/// core API's activation decision without requiring an Ed25519-signed token.
+fn apply_license_fallback(
+    raw_entitlement: Entitlement,
+    license: Option<&Value>,
+) -> Entitlement {
+    if matches!(
+        &raw_entitlement,
+        Entitlement::Invalid { reason } if reason == "KEY_NOT_CONFIGURED"
+    )
+    && license
+        .and_then(|l| l.get("status"))
+        .and_then(Value::as_str)
+        == Some("active")
+    && license
+        .and_then(|l| l.get("entitled"))
+        .and_then(Value::as_bool)
+        == Some(true)
+    {
+        let lic = license.unwrap();
+        let tier = lic.get("tier").and_then(Value::as_str).unwrap_or("pro");
+        let features_val = lic.get("features").cloned().unwrap_or(Value::Null);
+        let expires_at = lic
+            .get("current_period_end")
+            .and_then(Value::as_i64)
+            .unwrap_or(i64::MAX);
+        let features_vec: Vec<String> = if let Some(arr) = features_val.as_array() {
+            arr.iter().filter_map(|v| v.as_str().map(String::from)).collect()
+        } else {
+            vec![features_val.as_str().unwrap_or("").to_string()]
+        };
+        Entitlement::Valid {
+            expires_at,
+            tier: tier.to_string(),
+            features: features_vec,
+        }
+    } else {
+        raw_entitlement
+    }
+}
+
 /// Offline status: what this device is entitled to right now, from the stored signed token.
 pub fn status() -> Result<ProStatus, CatermError> {
     if !crate::vault::is_unlocked().unwrap_or(false) {
@@ -995,7 +1037,7 @@ pub fn status() -> Result<ProStatus, CatermError> {
                 .map(|t| (t.payload.as_str(), t.signature.as_str(), t.key_version));
             let hwid = hwid().unwrap_or_default();
             let (raw_entitlement, _) = evaluate(token, public_key, &hwid, now(), now());
-            let entitlement = raw_entitlement;
+            let entitlement = apply_license_fallback(raw_entitlement, pending.license.as_ref());
             return Ok(ProStatus {
                 signed_in: true,
                 pending: true,
@@ -1020,7 +1062,7 @@ pub fn status() -> Result<ProStatus, CatermError> {
                 .as_ref()
                 .map(|(p, s, v)| (p.as_str(), s.as_str(), *v));
             let (raw_entitlement, _) = evaluate(token, public_key, &hwid, cached.last_seen, now());
-            let entitlement = raw_entitlement;
+            let entitlement = apply_license_fallback(raw_entitlement, cached.license.as_ref());
             return Ok(ProStatus {
                 signed_in: true,
                 pending: false,
@@ -1063,50 +1105,7 @@ pub fn status() -> Result<ProStatus, CatermError> {
         .as_ref()
         .map(|(p, s, v)| (p.as_str(), s.as_str(), *v));
     let (raw_entitlement, seen) = evaluate(token, public_key, &hwid, state.last_seen, now());
-    // When the token is HMAC-based (key_version=0 from core API activation),
-    // Ed25519 verification fails with KEY_NOT_CONFIGURED. In that case, fall
-    // back to the server-stored license status: if the license says "active"
-    // and "entitled", treat it as Valid. This honors the server's decision
-    // without requiring an Ed25519-signed token.
-    let entitlement = if matches!(
-        &raw_entitlement,
-        Entitlement::Invalid { reason } if reason == "KEY_NOT_CONFIGURED"
-    )
-    && state
-        .license
-        .as_ref()
-        .and_then(|l| l.get("status"))
-        .and_then(Value::as_str)
-        == Some("active")
-    && state
-        .license
-        .as_ref()
-        .and_then(|l| l.get("entitled"))
-        .and_then(Value::as_bool)
-        == Some(true)
-    {
-        let lic = state.license.as_ref().unwrap();
-        let tier = lic.get("tier").and_then(Value::as_str).unwrap_or("pro");
-        let features = lic.get("features").cloned().unwrap_or(Value::Null);
-        let expires_at = lic
-            .get("current_period_end")
-            .and_then(Value::as_i64)
-            .unwrap_or(i64::MAX);
-        let features_vec: Vec<String> = if let Some(arr) = features.as_array() {
-            arr.iter()
-                .filter_map(|v| v.as_str().map(String::from))
-                .collect()
-        } else {
-            vec![features.as_str().unwrap_or("").to_string()]
-        };
-        Entitlement::Valid {
-            expires_at,
-            tier: tier.to_string(),
-            features: features_vec,
-        }
-    } else {
-        raw_entitlement
-    };
+    let entitlement = apply_license_fallback(raw_entitlement, state.license.as_ref());
     if seen != state.last_seen {
         conn.execute(
             "UPDATE pro_state SET last_seen_wall_clock = ?1 WHERE id = 1",
