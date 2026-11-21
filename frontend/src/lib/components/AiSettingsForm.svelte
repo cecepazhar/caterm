@@ -13,9 +13,9 @@
 
   const DEFAULT_SETTINGS: AiSettings = {
     provider: 'custom',
-    base_url: 'http://100.76.150.46:3007/v1',
+    base_url: '',
     api_key: '',
-    model: 'claude-3-5-sonnet'
+    model: ''
   };
 
   let settings = $state<AiSettings>({ ...DEFAULT_SETTINGS });
@@ -102,7 +102,7 @@
       type="text"
       bind:value={settings.base_url}
       disabled={isLoading}
-      placeholder="http://100.76.150.46:3007/v1"
+      placeholder="https://api.example.com/v1"
       class="w-full font-mono bg-neutral-50 dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-800 rounded-lg px-3 py-2 text-xs md:text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-violet-500 transition-colors"
     />
     <p class="text-[11px] text-neutral-500 mt-1">

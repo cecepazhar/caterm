@@ -32,9 +32,9 @@
   // AI Settings state
   const DEFAULT_SETTINGS: AiSettings = {
     provider: 'custom',
-    base_url: 'http://100.76.150.46:3007/v1',
+    base_url: '',
     api_key: '',
-    model: 'deepseek-chat'
+    model: ''
   };
 
   let settings = $state<AiSettings>({ ...DEFAULT_SETTINGS });

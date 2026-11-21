@@ -52,9 +52,9 @@
   ];
 
   const tableData = [
-    { host: 'Hostinger VPS (100.76.150.46)', status: 'online', cpu: '12%', memory: '3.4 / 8.0 GB', uptime: '42d 18h' },
-    { host: 'X1 ThinkPad (100.78.73.124)', status: 'online', cpu: '24%', memory: '7.8 / 16.0 GB', uptime: '6d 04h' },
-    { host: 'pc-gerlink (100.64.12.89)', status: 'idle', cpu: '4%', memory: '2.1 / 16.0 GB', uptime: '18d 22h' },
+    { host: 'Demo VPS (192.0.2.10)', status: 'online', cpu: '12%', memory: '3.4 / 8.0 GB', uptime: '42d 18h' },
+    { host: 'Demo ThinkPad (192.0.2.11)', status: 'online', cpu: '24%', memory: '7.8 / 16.0 GB', uptime: '6d 04h' },
+    { host: 'Demo Workstation (192.0.2.12)', status: 'idle', cpu: '4%', memory: '2.1 / 16.0 GB', uptime: '18d 22h' },
     { host: 'AWS Backup Node (ap-southeast-1)', status: 'offline', cpu: '0%', memory: '0.0 / 4.0 GB', uptime: 'Offline' },
   ];
 
@@ -193,7 +193,7 @@
 
       <Card title="3. Form Inputs" description="Monochrome input controls with search icon slots.">
         <div class="space-y-3">
-          <Input bind:value={testInputValue} placeholder="e.g. 100.76.150.46 or user@host" />
+          <Input bind:value={testInputValue} placeholder="e.g. 192.0.2.10 or user@host" />
           <Input placeholder="Search logs, sessions, commands...">
             {#snippet leadingIcon()}
               <Icon name="search" size={14} class="text-neutral-400" />
