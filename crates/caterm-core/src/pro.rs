@@ -964,23 +964,23 @@ pub fn commit_pending() -> Result<bool, CatermError> {
     // If the app was closed before unlocking the vault, in-memory PENDING was lost.
     // Recover the cached session from pro_cache.json if pro_state is empty.
     let conn = open_db()?;
-    if load_state(&conn)?.is_none() {
-        if let Some(cached) = read_pro_cache() {
-            let session = Session {
-                account: cached.account,
-                refresh_token: cached.refresh_token,
-                access_token: String::new(),
-                access_expires_at: 0,
-                license: cached.license,
-                token: cached.token.map(|(p, s, v)| SignedToken {
-                    payload: p,
-                    signature: s,
-                    key_version: v,
-                }),
-            };
-            save_session(&conn, &session)?;
-            return Ok(true);
-        }
+    if load_state(&conn)?.is_none()
+        && let Some(cached) = read_pro_cache()
+    {
+        let session = Session {
+            account: cached.account,
+            refresh_token: cached.refresh_token,
+            access_token: String::new(),
+            access_expires_at: 0,
+            license: cached.license,
+            token: cached.token.map(|(p, s, v)| SignedToken {
+                payload: p,
+                signature: s,
+                key_version: v,
+            }),
+        };
+        save_session(&conn, &session)?;
+        return Ok(true);
     }
     Ok(false)
 }
