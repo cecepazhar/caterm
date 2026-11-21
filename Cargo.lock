@@ -587,7 +587,7 @@ dependencies = [
 
 [[package]]
 name = "caterm-app"
-version = "2.1.43"
+version = "2.1.44"
 dependencies = [
  "async-trait",
  "caterm-core",
@@ -612,7 +612,7 @@ dependencies = [
 
 [[package]]
 name = "caterm-cli"
-version = "2.1.43"
+version = "2.1.44"
 dependencies = [
  "caterm-core",
  "clap",
@@ -625,7 +625,7 @@ dependencies = [
 
 [[package]]
 name = "caterm-core"
-version = "2.1.43"
+version = "2.1.44"
 dependencies = [
  "aes-gcm",
  "anyhow",
@@ -664,7 +664,7 @@ dependencies = [
 
 [[package]]
 name = "caterm-pro"
-version = "2.1.43"
+version = "2.1.44"
 dependencies = [
  "aes-gcm",
  "base64 0.22.1",
