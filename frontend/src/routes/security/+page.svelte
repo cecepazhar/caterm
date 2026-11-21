@@ -913,7 +913,7 @@ SSH Hardening Non-Pass: ${securityReport.hardeningChecklist.filter((h) => h.stat
                 size="sm"
                 class="h-7 text-xs"
                 onclick={() => {
-                  navigator.clipboard.writeText(newGeneratedPubkey);
+                  navigator.clipboard.writeText(newGeneratedPubkey || '');
                   showToast(t('security.pubkeyCopied'), 'success');
                 }}
               >
