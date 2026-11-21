@@ -282,7 +282,19 @@ pub(crate) fn get_ai_settings_in(conn: &Connection) -> Result<AiSettings, Caterm
     });
 
     match res {
-        Ok(settings) => Ok(settings),
+        Ok(settings) => {
+            // Decrypt the API key if it was stored encrypted. Backward-compat: a
+            // legacy plaintext value (no "gcm1:" prefix) is returned as-is.
+            let local_key = crate::vault::load_or_create_local_key(
+                &crate::paths::resolve_data_dir()?.path,
+            )
+            .ok();
+            let api_key = match local_key.as_deref() {
+                Some(key_hex) => crate::secret::decrypt(key_hex, &settings.api_key).unwrap_or(settings.api_key),
+                None => settings.api_key,
+            };
+            Ok(AiSettings { api_key, ..settings })
+        }
         Err(rusqlite::Error::QueryReturnedNoRows) => Ok(AiSettings::default()),
         Err(e) => Err(CatermError::Db(DbError::Generic(format!(
             "Failed to load AI settings: {e}"
@@ -294,12 +306,22 @@ pub(crate) fn save_ai_settings_in(
     conn: &Connection,
     settings: AiSettings,
 ) -> Result<AiSettings, CatermError> {
+    // Encrypt the API key at rest (NFR §B.9 / K-B). An empty key stores empty.
+    let key_hex = crate::vault::load_or_create_local_key(
+        &crate::paths::resolve_data_dir()?.path,
+    )?;
+    let api_key_enc = if settings.api_key.is_empty() {
+        String::new()
+    } else {
+        crate::secret::encrypt(&key_hex, &settings.api_key)?
+    };
+
     conn.execute(
         "INSERT OR REPLACE INTO ai_settings (id, provider, api_key, base_url, model)
          VALUES ('default', ?1, ?2, ?3, ?4);",
         params![
             settings.provider,
-            settings.api_key,
+            api_key_enc,
             settings.base_url,
             settings.model
         ],
