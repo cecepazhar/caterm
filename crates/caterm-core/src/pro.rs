@@ -1315,6 +1315,10 @@ fn core_error(status: u16, body: &Value) -> CatermError {
         .and_then(Value::as_str);
     match (status, message) {
         (404, _) => pro_err("LICENSE_NOT_FOUND"),
+        // GCC's wording is English prose; the UI translates only the code.
+        (_, Some(m)) if m.to_ascii_lowercase().contains("device limit") => {
+            pro_err("DEVICE_LIMIT_EXCEEDED")
+        }
         (_, Some(m)) => pro_err(m.to_string()),
         _ => pro_err(format!("HTTP_{status}")),
     }
@@ -1550,18 +1554,33 @@ pub fn sync_vault() -> Result<bool, CatermError> {
     }
 }
 
-/// Signs out on this device: revokes the refresh token on the server (best effort — being
-/// offline must not keep someone signed in) and forgets the local session and licence.
+/// Body for `POST /licenses/deactivate`. Only a licence-key-only activation (empty refresh
+/// token) frees its device slot this way; an account session signs out through `/auth/logout`.
+fn key_deactivation_body(state: &StoredState, hwid: &str) -> Option<Value> {
+    if !state.refresh_token.is_empty() {
+        return None;
+    }
+    let key = state.license.as_ref()?.get("license_key")?.as_str()?;
+    Some(json!({ "license_key": key, "device_id": hwid }))
+}
+
+/// Signs out on this device: releases the device slot / revokes the refresh token on the
+/// server (best effort — being offline must not keep someone signed in) and forgets the local
+/// session and licence. A key that could not be released offline can still be freed by support.
 pub fn logout() -> Result<(), CatermError> {
     *PENDING.lock() = None;
     let conn = open_db()?;
     if let Some(state) = load_state(&conn)? {
-        let _ = request(
-            "POST",
-            "/auth/logout",
-            None,
-            Some(&json!({ "refresh_token": state.refresh_token })),
-        );
+        if let Some(body) = hwid().ok().and_then(|h| key_deactivation_body(&state, &h)) {
+            let _ = core_request("/licenses/deactivate", Some(&body));
+        } else if !state.refresh_token.is_empty() {
+            let _ = request(
+                "POST",
+                "/auth/logout",
+                None,
+                Some(&json!({ "refresh_token": state.refresh_token })),
+            );
+        }
     }
     clear_local(&conn)
 }
@@ -1776,6 +1795,55 @@ mod tests {
         for bad in ["", "../account", "a/b", "a?b=c", "a b"] {
             assert!(path_id(bad).is_err(), "{bad}");
         }
+    }
+
+    #[test]
+    fn core_device_limit_message_becomes_translatable_code() {
+        let body = json!({ "success": false, "error": { "message": "maximum device limit reached (max 3 devices)" } });
+        assert_eq!(
+            core_error(400, &body).to_string(),
+            pro_err("DEVICE_LIMIT_EXCEEDED").to_string()
+        );
+    }
+
+    #[test]
+    fn core_other_messages_pass_through() {
+        let body = json!({ "success": false, "error": { "message": "license sudah kedaluwarsa" } });
+        assert_eq!(
+            core_error(400, &body).to_string(),
+            pro_err("license sudah kedaluwarsa").to_string()
+        );
+    }
+
+    fn stored(refresh_token: &str, license: Option<Value>) -> StoredState {
+        StoredState {
+            account: Value::Null,
+            refresh_token: refresh_token.to_string(),
+            license,
+            token: None,
+            last_seen: 0,
+            last_sync_at: None,
+        }
+    }
+
+    #[test]
+    fn key_only_activation_is_released_on_server_at_sign_out() {
+        let state = stored("", Some(json!({ "license_key": "CATM99-AAAAAA-9" })));
+        let body = key_deactivation_body(&state, "hw-1").expect("key-only licence deactivates");
+        assert_eq!(body["license_key"], "CATM99-AAAAAA-9");
+        assert_eq!(body["device_id"], "hw-1");
+    }
+
+    #[test]
+    fn account_session_never_calls_key_deactivation() {
+        let state = stored("refresh-token", Some(json!({ "license_key": "CATM99-AAAAAA-9" })));
+        assert!(key_deactivation_body(&state, "hw-1").is_none());
+    }
+
+    #[test]
+    fn no_stored_key_means_nothing_to_deactivate() {
+        assert!(key_deactivation_body(&stored("", None), "hw-1").is_none());
+        assert!(key_deactivation_body(&stored("", Some(json!({ "tier": "pro" }))), "hw-1").is_none());
     }
 
     #[test]

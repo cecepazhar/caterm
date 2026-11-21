@@ -209,6 +209,25 @@
     }
   }
 
+  async function releaseKeyDevice() {
+    const ok = await confirmModal(
+      t('pro.account.deactivateKeyConfirm'),
+      t('pro.account.deactivateKeyTitle'),
+      true,
+      t('pro.account.deactivateKey'),
+      t('common.cancel')
+    );
+    if (!ok) return;
+    try {
+      await proLogout();
+      setProfilePlan('free');
+      await refreshProStatus();
+      showToast(t('pro.account.keyDeactivated'), 'info');
+    } catch (err) {
+      showToast(proErrorMessage(err), 'error');
+    }
+  }
+
   // Alias for the GCC Cloud Hub "Keluar Akun" button (reuses the guarded sign-out flow).
   function handleProLogout() {
     signOutPro();
@@ -619,20 +638,19 @@
           </Button>
         </div>
 
-        <div class="pt-3 border-t border-neutral-200 dark:border-neutral-800 flex flex-wrap items-center justify-between gap-2">
-          <span class="text-xs text-neutral-500">Creator / Owner Quick Unlock:</span>
-          <Button
-            type="button"
-            onclick={() => handleActivateLicense('CATM99-FOUNDR-7')}
-            disabled={licenseBusy}
-            variant="warning"
-            size="sm"
-            class="flex items-center gap-1.5"
-          >
-            <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm14 3c0 .6-.4 1-1 1H6c-.6 0-1-.4-1-1v-1h14v1z"/></svg>
-            <span>Activate Founder Lifetime (Cecep Azhar)</span>
-          </Button>
+      </div>
+    {/if}
+
+    <!-- License key active on this device (no account): free the slot to move to another computer -->
+    {#if pro.isPro && !pro.status?.signedIn}
+      <div class="{SUBCARD} flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div class="min-w-0">
+          <p class="text-sm font-semibold text-neutral-900 dark:text-white">{t('pro.account.keyActiveTitle')}</p>
+          <p class="{MUTED} text-xs mt-0.5">{t('pro.account.keyActiveBody')}</p>
         </div>
+        <Button type="button" onclick={releaseKeyDevice} variant="danger" size="sm" class="shrink-0">
+          {t('pro.account.deactivateKey')}
+        </Button>
       </div>
     {/if}
 
