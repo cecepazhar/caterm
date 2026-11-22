@@ -21,10 +21,10 @@ impl HabitLearner {
         }
 
         // Only learn from successful commands (exit code 0 or unknown)
-        if let Some(code) = exit_code {
-            if code != 0 {
-                return Ok(None);
-            }
+        if let Some(code) = exit_code
+            && code != 0
+        {
+            return Ok(None);
         }
 
         let learned = if trimmed.contains("podman-compose")

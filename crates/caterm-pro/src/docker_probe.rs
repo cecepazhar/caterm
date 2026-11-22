@@ -106,9 +106,10 @@ pub fn run_docker_security_probe(
     let docker_socket_found = socket_perms.is_some() || Path::new(&socket_path).exists();
 
     // Check socket permissions (0666 / world writable is a severe vulnerability)
-    if let Some(ref p) = socket_perms {
-        if p.ends_with("66") || p == "666" || p == "777" {
-            findings.push(DockerSecurityFinding {
+    if let Some(ref p) = socket_perms
+        && (p.ends_with("66") || p == "666" || p == "777")
+    {
+        findings.push(DockerSecurityFinding {
                 id: "DOCKER-SOCK-WORLD-RW".into(),
                 title: "World-Writable Docker Socket".into(),
                 description: format!("The Docker socket at {socket_path} has permissions {p}, allowing any non-root user to gain root privilege escalation."),
@@ -116,8 +117,7 @@ pub fn run_docker_security_probe(
                 affected_resource: socket_path.clone(),
                 recommendation: "Restrict socket permissions: sudo chmod 660 /var/run/docker.sock && sudo chown root:docker /var/run/docker.sock".into(),
             });
-            score -= 40;
-        }
+        score -= 40;
     }
 
     // Check if unauthenticated Docker TCP (2375/2376) is exposed locally
@@ -241,7 +241,7 @@ pub fn run_docker_security_probe(
         }
     }
 
-    let final_score = score.max(0).min(100) as u32;
+    let final_score = score.clamp(0, 100) as u32;
 
     DockerProbeReport {
         timestamp: now,

@@ -105,30 +105,27 @@ impl<'a> Dispatcher<'a> {
                 // If fallback provider configured, attempt fallback
                 if let (Some(fb_id), Some(fb_model)) =
                     (&rule.fallback_provider_id, &rule.fallback_model)
+                    && let Ok(Some(fallback_provider)) = get_provider(self.conn, fb_id)
+                    && fallback_provider.is_active
+                    && let Ok(content) = Self::execute_provider_call(
+                        &fallback_provider,
+                        fb_model,
+                        &assembled.system_prompt,
+                        &assembled.user_prompt,
+                        rule.temperature,
+                        rule.max_tokens,
+                        timeout,
+                    )
                 {
-                    if let Ok(Some(fallback_provider)) = get_provider(self.conn, fb_id) {
-                        if fallback_provider.is_active {
-                            if let Ok(content) = Self::execute_provider_call(
-                                &fallback_provider,
-                                fb_model,
-                                &assembled.system_prompt,
-                                &assembled.user_prompt,
-                                rule.temperature,
-                                rule.max_tokens,
-                                timeout,
-                            ) {
-                                return Ok(DispatchResult {
-                                    content,
-                                    provider_id: fallback_provider.id,
-                                    provider_type: fallback_provider.provider_type,
-                                    model: fb_model.clone(),
-                                    fell_back: true,
-                                    prompt_tokens: None,
-                                    completion_tokens: None,
-                                });
-                            }
-                        }
-                    }
+                    return Ok(DispatchResult {
+                        content,
+                        provider_id: fallback_provider.id,
+                        provider_type: fallback_provider.provider_type,
+                        model: fb_model.clone(),
+                        fell_back: true,
+                        prompt_tokens: None,
+                        completion_tokens: None,
+                    });
                 }
 
                 // If fallback failed or absent, return primary error
@@ -351,10 +348,9 @@ impl<'a> Dispatcher<'a> {
                 .and_then(|choice| choice.get("message"))
                 .and_then(|msg| msg.get("content"))
                 .and_then(Value::as_str)
+                && !content.trim().is_empty()
             {
-                if !content.trim().is_empty() {
-                    return Ok(content.to_string());
-                }
+                return Ok(content.to_string());
             }
         }
 
@@ -367,21 +363,19 @@ impl<'a> Dispatcher<'a> {
                 if data_str == "[DONE]" {
                     break;
                 }
-                if let Ok(chunk) = serde_json::from_str::<Value>(data_str) {
-                    if let Some(delta) = chunk
+                if let Ok(chunk) = serde_json::from_str::<Value>(data_str)
+                    && let Some(delta) = chunk
                         .get("choices")
                         .and_then(Value::as_array)
                         .and_then(|arr| arr.first())
                         .and_then(|c| c.get("delta"))
+                {
+                    if let Some(text) = delta.get("content").and_then(Value::as_str) {
+                        accumulated_text.push_str(text);
+                    } else if let Some(thought) = delta.get("reasoning").and_then(Value::as_str)
+                        && accumulated_text.is_empty()
                     {
-                        if let Some(text) = delta.get("content").and_then(Value::as_str) {
-                            accumulated_text.push_str(text);
-                        } else if let Some(thought) = delta.get("reasoning").and_then(Value::as_str)
-                        {
-                            if accumulated_text.is_empty() {
-                                accumulated_text.push_str(thought);
-                            }
-                        }
+                        accumulated_text.push_str(thought);
                     }
                 }
             }

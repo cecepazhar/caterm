@@ -187,7 +187,7 @@ fn parse_auth_method(val: &str) -> Result<caterm_core::store::AuthMethod, String
     }
 }
 
-fn main() {
+fn main() -> std::process::ExitCode {
     // Setup signal handler for graceful shutdown on SIGINT / SIGTERM
     #[cfg(unix)]
     unsafe {
@@ -197,11 +197,13 @@ fn main() {
             if !SHUTDOWN_INITIATED.swap(true, Ordering::SeqCst) {
                 eprintln!("\nReceived interrupt signal, shutting down sessions...");
                 let _ = caterm_core::ssh::disconnect_all();
-                std::process::exit(130);
+                unsafe {
+                    libc::_exit(130);
+                }
             }
         }
-        libc::signal(libc::SIGINT, handle_signal as usize);
-        libc::signal(libc::SIGTERM, handle_signal as usize);
+        libc::signal(libc::SIGINT, handle_signal as *const () as usize);
+        libc::signal(libc::SIGTERM, handle_signal as *const () as usize);
     }
 
     let cli = Cli::parse();
@@ -235,9 +237,10 @@ fn main() {
         None => 0,
     };
 
-    #[allow(clippy::disallowed_methods)]
     if exit_code != 0 {
-        std::process::exit(exit_code);
+        std::process::ExitCode::from(exit_code as u8)
+    } else {
+        std::process::ExitCode::SUCCESS
     }
 }
 

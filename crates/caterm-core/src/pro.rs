@@ -72,8 +72,8 @@ fn public_key(version: u32) -> Option<VerifyingKey> {
         1 => option_env!("CA_LICENSE_PUBKEY_V1")
             .or(option_env!("CATERM_PRO_LICENSE_PUBKEY_V1"))
             .or(Some(
-            "ac5b9954c8dc7648131e9682a90999de4d38a15deb00095eee4f6be9521e1dcf",
-        )),
+                "ac5b9954c8dc7648131e9682a90999de4d38a15deb00095eee4f6be9521e1dcf",
+            )),
         2 => option_env!("CA_LICENSE_PUBKEY_V2").or(option_env!("CATERM_PRO_LICENSE_PUBKEY_V2")),
         _ => None,
     };
@@ -1253,13 +1253,19 @@ fn store_core_grant(
         .and_then(|t| serde_json::from_value(t.clone()).ok())
         .ok_or_else(|| pro_err("LICENSE_SIGNING_UNAVAILABLE"))?;
     let (entitlement, _) = evaluate(
-        Some((token.payload.as_str(), token.signature.as_str(), token.key_version)),
+        Some((
+            token.payload.as_str(),
+            token.signature.as_str(),
+            token.key_version,
+        )),
         public_key,
         hwid,
         now(),
         now(),
     );
-    if let Entitlement::Invalid { reason } | Entitlement::RevalidationRequired { reason } = &entitlement {
+    if let Entitlement::Invalid { reason } | Entitlement::RevalidationRequired { reason } =
+        &entitlement
+    {
         return Err(pro_err(format!("INVALID_LICENSE_TOKEN: {reason}")));
     }
     if entitlement == Entitlement::Expired {
@@ -1606,10 +1612,11 @@ mod tests {
     }
 
     fn v2_token(hwid: &str, exp: i64, products: &[&str]) -> (String, String) {
-        let payload = json!({ "v": 2, "lic_id": "l", "sku": products.first().copied().unwrap_or(""),
+        let payload =
+            json!({ "v": 2, "lic_id": "l", "sku": products.first().copied().unwrap_or(""),
             "products": products, "tier": "lifetime", "features": ["pro"], "hwid": hwid,
             "max_devices": 1, "iat": 0, "exp": exp, "lic_exp": 0, "nonce": "n" })
-        .to_string();
+            .to_string();
         let sig = STANDARD.encode(key().sign(payload.as_bytes()).to_bytes());
         (payload, sig)
     }
@@ -1636,7 +1643,12 @@ mod tests {
     fn v2_token_for_another_product_is_not_pro() {
         let (p, s) = v2_token("dev", 1_000, &["CASHELL"]);
         let (ent, _) = evaluate(Some((&p, &s, 1)), test_key, "dev", 0, 10);
-        assert_eq!(ent, Entitlement::Invalid { reason: "OTHER_PRODUCT".into() });
+        assert_eq!(
+            ent,
+            Entitlement::Invalid {
+                reason: "OTHER_PRODUCT".into()
+            }
+        );
     }
 
     #[test]
@@ -1836,14 +1848,19 @@ mod tests {
 
     #[test]
     fn account_session_never_calls_key_deactivation() {
-        let state = stored("refresh-token", Some(json!({ "license_key": "CATM99-AAAAAA-9" })));
+        let state = stored(
+            "refresh-token",
+            Some(json!({ "license_key": "CATM99-AAAAAA-9" })),
+        );
         assert!(key_deactivation_body(&state, "hw-1").is_none());
     }
 
     #[test]
     fn no_stored_key_means_nothing_to_deactivate() {
         assert!(key_deactivation_body(&stored("", None), "hw-1").is_none());
-        assert!(key_deactivation_body(&stored("", Some(json!({ "tier": "pro" }))), "hw-1").is_none());
+        assert!(
+            key_deactivation_body(&stored("", Some(json!({ "tier": "pro" }))), "hw-1").is_none()
+        );
     }
 
     #[test]

@@ -114,12 +114,11 @@ impl<'a> ContextBuilder<'a> {
 
         // STAGE 3: Environment Constraints & Host Metadata
         let mut env_lines = Vec::new();
-        if let Some(p) = &persona {
-            if let Some(c) = &p.environment_constraints {
-                if !c.trim().is_empty() {
-                    env_lines.push(format!("Platform: {}", c.trim()));
-                }
-            }
+        if let Some(p) = &persona
+            && let Some(c) = &p.environment_constraints
+            && !c.trim().is_empty()
+        {
+            env_lines.push(format!("Platform: {}", c.trim()));
         }
         if let Some(t) = terminal_ctx {
             if let Some(h) = &t.host_label {
@@ -160,35 +159,35 @@ impl<'a> ContextBuilder<'a> {
         let mut sanitized_lines_count = 0;
         let mut user_prompt_body = self.scrubber.scrub(user_query);
 
-        if let Some(t) = terminal_ctx {
-            if !t.tail_lines.is_empty() {
-                // Tail at most 40 lines
-                let line_count = t.tail_lines.len();
-                let start_idx = line_count.saturating_sub(40);
-                let tail: Vec<String> = t.tail_lines.iter().skip(start_idx).cloned().collect();
+        if let Some(t) = terminal_ctx
+            && !t.tail_lines.is_empty()
+        {
+            // Tail at most 40 lines
+            let line_count = t.tail_lines.len();
+            let start_idx = line_count.saturating_sub(40);
+            let tail: Vec<String> = t.tail_lines.iter().skip(start_idx).cloned().collect();
 
-                let mut scrubbed = self.scrubber.scrub_lines(&tail);
-                sanitized_lines_count = scrubbed.len();
+            let mut scrubbed = self.scrubber.scrub_lines(&tail);
+            sanitized_lines_count = scrubbed.len();
 
-                // Approximate budget clamping: 1 token ~ 4 chars. Cap terminal lines to 60% of budget.
-                let char_budget = ((max_tokens_budget as usize) * 4 * 60) / 100;
-                let mut total_chars = scrubbed.iter().map(|l| l.len()).sum::<usize>();
-                while total_chars > char_budget && scrubbed.len() > 5 {
-                    if !scrubbed.is_empty() {
-                        scrubbed.remove(0);
-                    }
-                    total_chars = scrubbed.iter().map(|l| l.len()).sum::<usize>();
+            // Approximate budget clamping: 1 token ~ 4 chars. Cap terminal lines to 60% of budget.
+            let char_budget = ((max_tokens_budget as usize) * 4 * 60) / 100;
+            let mut total_chars = scrubbed.iter().map(|l| l.len()).sum::<usize>();
+            while total_chars > char_budget && scrubbed.len() > 5 {
+                if !scrubbed.is_empty() {
+                    scrubbed.remove(0);
                 }
-
-                let mut term_sec = String::from("\n[RELEVANT TERMINAL OUTPUT (SANITIZED)]\n");
-                for line in scrubbed {
-                    term_sec.push_str(&format!("{line}\n"));
-                }
-                if let Some(code) = t.exit_code {
-                    term_sec.push_str(&format!("Exit Code: {code}\n"));
-                }
-                user_prompt_body.push_str(&term_sec);
+                total_chars = scrubbed.iter().map(|l| l.len()).sum::<usize>();
             }
+
+            let mut term_sec = String::from("\n[RELEVANT TERMINAL OUTPUT (SANITIZED)]\n");
+            for line in scrubbed {
+                term_sec.push_str(&format!("{line}\n"));
+            }
+            if let Some(code) = t.exit_code {
+                term_sec.push_str(&format!("Exit Code: {code}\n"));
+            }
+            user_prompt_body.push_str(&term_sec);
         }
 
         // STAGE 6: Assemble final system prompt and user prompt

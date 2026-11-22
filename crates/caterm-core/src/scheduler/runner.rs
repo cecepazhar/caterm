@@ -22,21 +22,21 @@ pub fn apply_retention_policy(dir_path: &Path, retention_count: u32) -> Result<u
         let path = entry.path();
         if path.is_file() {
             // Exclude temporary .part files from retention count
-            if let Some(ext) = path.extension().and_then(|s| s.to_str()) {
-                if ext == "part" {
-                    continue;
-                }
+            if let Some(ext) = path.extension().and_then(|s| s.to_str())
+                && ext == "part"
+            {
+                continue;
             }
-            if let Ok(meta) = entry.metadata() {
-                if let Ok(modified) = meta.modified() {
-                    entries.push((path, modified));
-                }
+            if let Ok(meta) = entry.metadata()
+                && let Ok(modified) = meta.modified()
+            {
+                entries.push((path, modified));
             }
         }
     }
 
     // Sort descending by modified time (newest first)
-    entries.sort_by(|a, b| b.1.cmp(&a.1));
+    entries.sort_by_key(|a| std::cmp::Reverse(a.1));
 
     let max_keep = retention_count as usize;
     let mut deleted_count = 0;

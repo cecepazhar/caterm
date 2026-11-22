@@ -772,22 +772,22 @@ echo "===BENCH_END==="
                     .max(1);
             }
             "CPU_SINGLE" => {
-                if let (Some(t0), Some(t1)) = (parts.get(1), parts.get(2)) {
-                    if let (Ok(start), Ok(end)) = (t0.parse::<u128>(), t1.parse::<u128>()) {
-                        let diff_ms = (end.saturating_sub(start) as f64) / 1_000_000.0;
-                        if diff_ms > 0.0 {
-                            cpu_single_score = (100_000.0 / diff_ms).clamp(100.0, 99999.0);
-                        }
+                if let (Some(t0), Some(t1)) = (parts.get(1), parts.get(2))
+                    && let (Ok(start), Ok(end)) = (t0.parse::<u128>(), t1.parse::<u128>())
+                {
+                    let diff_ms = (end.saturating_sub(start) as f64) / 1_000_000.0;
+                    if diff_ms > 0.0 {
+                        cpu_single_score = (100_000.0 / diff_ms).clamp(100.0, 99999.0);
                     }
                 }
             }
             "CPU_MULTI" => {
-                if let (Some(t0), Some(t1)) = (parts.get(1), parts.get(2)) {
-                    if let (Ok(start), Ok(end)) = (t0.parse::<u128>(), t1.parse::<u128>()) {
-                        let diff_ms = (end.saturating_sub(start) as f64) / 1_000_000.0;
-                        if diff_ms > 0.0 {
-                            cpu_multi_score = (250_000.0 / diff_ms).clamp(200.0, 99999.0);
-                        }
+                if let (Some(t0), Some(t1)) = (parts.get(1), parts.get(2))
+                    && let (Ok(start), Ok(end)) = (t0.parse::<u128>(), t1.parse::<u128>())
+                {
+                    let diff_ms = (end.saturating_sub(start) as f64) / 1_000_000.0;
+                    if diff_ms > 0.0 {
+                        cpu_multi_score = (250_000.0 / diff_ms).clamp(200.0, 99999.0);
                     }
                 }
             }
@@ -893,22 +893,22 @@ echo "===SPEED_END==="
         let line = line.trim();
         if line.starts_with("DOWN_TIME|") {
             let parts: Vec<&str> = line.split('|').collect();
-            if let (Some(t0), Some(t1)) = (parts.get(1), parts.get(2)) {
-                if let (Ok(s), Ok(e)) = (t0.parse::<u128>(), t1.parse::<u128>()) {
-                    let sec = (e.saturating_sub(s) as f64) / 1_000_000_000.0;
-                    if sec > 0.1 {
-                        dl_mbps = (80.0 / sec).clamp(1.0, 9999.0);
-                    }
+            if let (Some(t0), Some(t1)) = (parts.get(1), parts.get(2))
+                && let (Ok(s), Ok(e)) = (t0.parse::<u128>(), t1.parse::<u128>())
+            {
+                let sec = (e.saturating_sub(s) as f64) / 1_000_000_000.0;
+                if sec > 0.1 {
+                    dl_mbps = (80.0 / sec).clamp(1.0, 9999.0);
                 }
             }
         } else if line.starts_with("UP_TIME|") {
             let parts: Vec<&str> = line.split('|').collect();
-            if let (Some(t0), Some(t1)) = (parts.get(1), parts.get(2)) {
-                if let (Ok(s), Ok(e)) = (t0.parse::<u128>(), t1.parse::<u128>()) {
-                    let sec = (e.saturating_sub(s) as f64) / 1_000_000_000.0;
-                    if sec > 0.1 {
-                        ul_mbps = (16.0 / sec).clamp(1.0, 9999.0);
-                    }
+            if let (Some(t0), Some(t1)) = (parts.get(1), parts.get(2))
+                && let (Ok(s), Ok(e)) = (t0.parse::<u128>(), t1.parse::<u128>())
+            {
+                let sec = (e.saturating_sub(s) as f64) / 1_000_000_000.0;
+                if sec > 0.1 {
+                    ul_mbps = (16.0 / sec).clamp(1.0, 9999.0);
                 }
             }
         } else if line.contains("rtt min/avg/max/mdev") || line.contains("round-trip") {
@@ -1459,30 +1459,30 @@ fn parse_ping_summary(lines: &[String]) -> (f64, f64, f64, f64) {
     let mut max = 0.0;
 
     for line in lines {
-        if line.contains("% packet loss") {
-            if let Some(idx) = line.find('%') {
-                let start = line[..idx].rfind(' ').map(|i| i + 1).unwrap_or(0);
-                loss = line[start..idx].parse::<f64>().unwrap_or(0.0);
-            }
+        if line.contains("% packet loss")
+            && let Some(idx) = line.find('%')
+        {
+            let start = line[..idx].rfind(' ').map(|i| i + 1).unwrap_or(0);
+            loss = line[start..idx].parse::<f64>().unwrap_or(0.0);
         }
-        if line.starts_with("rtt ") || line.starts_with("round-trip ") {
-            if let Some(eq_idx) = line.find('=') {
-                let stats = line[eq_idx + 1..].trim();
-                let parts: Vec<&str> = stats.split('/').collect();
-                if parts.len() >= 3 {
-                    min = parts
-                        .first()
-                        .and_then(|p| p.trim().parse::<f64>().ok())
-                        .unwrap_or(0.0);
-                    avg = parts
-                        .get(1)
-                        .and_then(|p| p.trim().parse::<f64>().ok())
-                        .unwrap_or(0.0);
-                    max = parts
-                        .get(2)
-                        .and_then(|p| p.trim().parse::<f64>().ok())
-                        .unwrap_or(0.0);
-                }
+        if (line.starts_with("rtt ") || line.starts_with("round-trip "))
+            && let Some(eq_idx) = line.find('=')
+        {
+            let stats = line[eq_idx + 1..].trim();
+            let parts: Vec<&str> = stats.split('/').collect();
+            if parts.len() >= 3 {
+                min = parts
+                    .first()
+                    .and_then(|p| p.trim().parse::<f64>().ok())
+                    .unwrap_or(0.0);
+                avg = parts
+                    .get(1)
+                    .and_then(|p| p.trim().parse::<f64>().ok())
+                    .unwrap_or(0.0);
+                max = parts
+                    .get(2)
+                    .and_then(|p| p.trim().parse::<f64>().ok())
+                    .unwrap_or(0.0);
             }
         }
     }

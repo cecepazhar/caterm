@@ -118,9 +118,9 @@ pub fn list_ephemeral_keys() -> Vec<EphemeralKeyStatus> {
             let remaining = k.expires_at - now;
             let is_expired = remaining <= 0;
             let created_dt =
-                chrono::DateTime::from_timestamp(k.created_at, 0).unwrap_or_else(|| Utc::now());
+                chrono::DateTime::from_timestamp(k.created_at, 0).unwrap_or_else(Utc::now);
             let expires_dt =
-                chrono::DateTime::from_timestamp(k.expires_at, 0).unwrap_or_else(|| Utc::now());
+                chrono::DateTime::from_timestamp(k.expires_at, 0).unwrap_or_else(Utc::now);
 
             EphemeralKeyStatus {
                 id: k.id.clone(),
@@ -171,13 +171,12 @@ pub fn sanitize_authorized_keys(content: &str, current_time: i64) -> (String, us
         if let Some(pos) = trimmed.find("caterm-ephemeral-") {
             let marker = &trimmed[pos..];
             let token = marker.split_whitespace().next().unwrap_or("");
-            if let Some(last_part) = token.split('-').last() {
-                if let Ok(exp) = last_part.parse::<i64>() {
-                    if current_time >= exp {
-                        removed_count += 1;
-                        continue;
-                    }
-                }
+            if let Some(last_part) = token.split('-').next_back()
+                && let Ok(exp) = last_part.parse::<i64>()
+                && current_time >= exp
+            {
+                removed_count += 1;
+                continue;
             }
         }
         cleaned_lines.push(line);

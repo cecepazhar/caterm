@@ -42,10 +42,8 @@ pub fn get_providers(conn: &Connection) -> Result<Vec<AiProviderConfig>, CatermE
         .map_err(|e| CatermError::Db(DbError::Generic(format!("execute providers query: {e}"))))?;
 
     let mut list = Vec::new();
-    for r in rows {
-        if let Ok(item) = r {
-            list.push(item);
-        }
+    for item in rows.flatten() {
+        list.push(item);
     }
     Ok(list)
 }
@@ -158,10 +156,8 @@ pub fn get_routing_matrix(conn: &Connection) -> Result<Vec<TaskRouteRule>, Cater
         .map_err(|e| CatermError::Db(DbError::Generic(format!("execute matrix query: {e}"))))?;
 
     let mut list = Vec::new();
-    for r in rows {
-        if let Ok(item) = r {
-            list.push(item);
-        }
+    for item in rows.flatten() {
+        list.push(item);
     }
     Ok(list)
 }
@@ -253,10 +249,8 @@ pub fn get_personas(conn: &Connection) -> Result<Vec<SystemPersona>, CatermError
         .map_err(|e| CatermError::Db(DbError::Generic(format!("execute personas query: {e}"))))?;
 
     let mut list = Vec::new();
-    for r in rows {
-        if let Ok(item) = r {
-            list.push(item);
-        }
+    for item in rows.flatten() {
+        list.push(item);
     }
     Ok(list)
 }
@@ -411,10 +405,8 @@ pub fn get_habits(conn: &Connection) -> Result<Vec<HabitFact>, CatermError> {
         .map_err(|e| CatermError::Db(DbError::Generic(format!("execute habits query: {e}"))))?;
 
     let mut list = Vec::new();
-    for r in rows {
-        if let Ok(item) = r {
-            list.push(item);
-        }
+    for item in rows.flatten() {
+        list.push(item);
     }
     Ok(list)
 }
@@ -560,10 +552,8 @@ pub fn search_relevant_habits(
             })?;
 
         let mut results = Vec::new();
-        for r in rows {
-            if let Ok(item) = r {
-                results.push(item);
-            }
+        for item in rows.flatten() {
+            results.push(item);
         }
         return Ok(results);
     }
@@ -602,10 +592,8 @@ pub fn search_relevant_habits(
     match rows {
         Ok(mapped) => {
             let mut results = Vec::new();
-            for r in mapped {
-                if let Ok(item) = r {
-                    results.push(item);
-                }
+            for item in mapped.flatten() {
+                results.push(item);
             }
             if !results.is_empty() {
                 return Ok(results);
@@ -649,10 +637,8 @@ pub fn search_relevant_habits(
         .map_err(|e| CatermError::Db(DbError::Generic(format!("execute like query: {e}"))))?;
 
     let mut results = Vec::new();
-    for r in rows {
-        if let Ok(item) = r {
-            results.push(item);
-        }
+    for item in rows.flatten() {
+        results.push(item);
     }
     Ok(results)
 }
@@ -696,10 +682,8 @@ pub fn get_skills(conn: &Connection) -> Result<Vec<CustomSkill>, CatermError> {
         .map_err(|e| CatermError::Db(DbError::Generic(format!("execute skills query: {e}"))))?;
 
     let mut list = Vec::new();
-    for r in rows {
-        if let Ok(item) = r {
-            list.push(item);
-        }
+    for item in rows.flatten() {
+        list.push(item);
     }
     Ok(list)
 }

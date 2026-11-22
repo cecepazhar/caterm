@@ -72,29 +72,26 @@ fn check_ssh_directory() -> (Vec<LaptopPostureFinding>, usize) {
         if let Ok(entries) = fs::read_dir(&ssh_dir) {
             for entry in entries.flatten() {
                 let path = entry.path();
-                if let Ok(file_type) = entry.file_type() {
-                    if file_type.is_file() {
-                        let filename = path.file_name().unwrap_or_default().to_string_lossy();
-                        if filename.starts_with("id_") && !filename.ends_with(".pub") {
-                            scanned_keys += 1;
-                            if let Ok(meta) = fs::metadata(&path) {
-                                let mode = meta.permissions().mode() & 0o777;
-                                if mode != 0o600 && mode != 0o400 {
-                                    findings.push(LaptopPostureFinding {
-                                        id: format!("SSH_KEY_PERMS_{}", filename),
-                                        title: format!(
-                                            "Overly Permissive Private Key ({})",
-                                            filename
-                                        ),
-                                        description: format!(
-                                            "Private key file `{}` has mode {:o} (recommended: 600).",
-                                            filename, mode
-                                        ),
-                                        severity: AuditSeverity::Critical,
-                                        recommendation: format!("Run `chmod 600 ~/.ssh/{}`", filename),
-                                        details: Some(format!("Path: {}", path.display())),
-                                    });
-                                }
+                if let Ok(file_type) = entry.file_type()
+                    && file_type.is_file()
+                {
+                    let filename = path.file_name().unwrap_or_default().to_string_lossy();
+                    if filename.starts_with("id_") && !filename.ends_with(".pub") {
+                        scanned_keys += 1;
+                        if let Ok(meta) = fs::metadata(&path) {
+                            let mode = meta.permissions().mode() & 0o777;
+                            if mode != 0o600 && mode != 0o400 {
+                                findings.push(LaptopPostureFinding {
+                                    id: format!("SSH_KEY_PERMS_{}", filename),
+                                    title: format!("Overly Permissive Private Key ({})", filename),
+                                    description: format!(
+                                        "Private key file `{}` has mode {:o} (recommended: 600).",
+                                        filename, mode
+                                    ),
+                                    severity: AuditSeverity::Critical,
+                                    recommendation: format!("Run `chmod 600 ~/.ssh/{}`", filename),
+                                    details: Some(format!("Path: {}", path.display())),
+                                });
                             }
                         }
                     }
@@ -244,7 +241,7 @@ pub fn run_laptop_posture_scan() -> LaptopPostureReport {
             AuditSeverity::Info => score -= 1,
         }
     }
-    let overall_score = score.max(0).min(100) as u32;
+    let overall_score = score.clamp(0, 100) as u32;
 
     LaptopPostureReport {
         timestamp: chrono::Utc::now().to_rfc3339(),

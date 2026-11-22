@@ -21,12 +21,20 @@ impl TaskType {
     }
 
     /// # Infallible — parses enum variant from string with fallback to SshCommand.
-    pub fn from_str(s: &str) -> Self {
+    pub fn parse_str(s: &str) -> Self {
         match s.to_lowercase().as_str() {
             "sftp_backup" => Self::SftpBackup,
             "local_script" => Self::LocalScript,
             _ => Self::SshCommand,
         }
+    }
+}
+
+impl std::str::FromStr for TaskType {
+    type Err = std::convert::Infallible;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Self::parse_str(s))
     }
 }
 
@@ -53,7 +61,7 @@ impl TaskStatus {
     }
 
     /// # Infallible — parses enum variant from string with fallback to Failed.
-    pub fn from_str(s: &str) -> Self {
+    pub fn parse_str(s: &str) -> Self {
         match s.to_lowercase().as_str() {
             "success" => Self::Success,
             "failed" => Self::Failed,
@@ -62,6 +70,14 @@ impl TaskStatus {
             "cancelled" => Self::Cancelled,
             _ => Self::Failed,
         }
+    }
+}
+
+impl std::str::FromStr for TaskStatus {
+    type Err = std::convert::Infallible;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Self::parse_str(s))
     }
 }
 

@@ -146,16 +146,16 @@ pub fn save_totp_entry(input: TotpEntryInput) -> Result<TotpEntryRecord, CatermE
     let mut raw_secret = input.secret.unwrap_or_default().trim().to_string();
 
     // Support pasting raw otpauth:// URI directly
-    if raw_secret.starts_with("otpauth://") {
-        if let Ok(parsed) = parse_otpauth_uri(&raw_secret) {
-            if label.is_empty() {
-                label = parsed.label;
-            }
-            if issuer.is_none() {
-                issuer = parsed.issuer;
-            }
-            raw_secret = parsed.secret;
+    if raw_secret.starts_with("otpauth://")
+        && let Ok(parsed) = parse_otpauth_uri(&raw_secret)
+    {
+        if label.is_empty() {
+            label = parsed.label;
         }
+        if issuer.is_none() {
+            issuer = parsed.issuer;
+        }
+        raw_secret = parsed.secret;
     }
 
     if label.is_empty() {

@@ -433,21 +433,20 @@ fn migrate_ai_routing_and_memory(conn: &Connection, data_dir: &Path) -> Result<(
                     r.get::<_, String>(2)?,
                 ))
             },
-        ) {
-            if !old_key.is_empty() {
-                // Encrypt the copied key at rest (NFR §B.9) so the "_encrypted"
-                // column truly holds ciphertext. Best-effort: skip if the local
-                // key or encryption is unavailable — never fail the migration.
-                let local_key = crate::vault::load_or_create_local_key(data_dir).ok();
-                let api_key_enc = match local_key.as_deref() {
-                    Some(k) => crate::secret::encrypt(k, &old_key).unwrap_or(old_key),
-                    None => old_key,
-                };
-                let _ = conn.execute(
+        ) && !old_key.is_empty()
+        {
+            // Encrypt the copied key at rest (NFR §B.9) so the "_encrypted"
+            // column truly holds ciphertext. Best-effort: skip if the local
+            // key or encryption is unavailable — never fail the migration.
+            let local_key = crate::vault::load_or_create_local_key(data_dir).ok();
+            let api_key_enc = match local_key.as_deref() {
+                Some(k) => crate::secret::encrypt(k, &old_key).unwrap_or(old_key),
+                None => old_key,
+            };
+            let _ = conn.execute(
                     "UPDATE ai_providers SET api_key_encrypted = ?1, base_url = ?2, default_model = ?3 WHERE id = 'byo-openai'",
                     rusqlite::params![api_key_enc, old_url, old_model],
                 );
-            }
         }
     }
 

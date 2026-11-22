@@ -62,13 +62,13 @@ pub fn resolve_data_dir() -> Result<DataDirInfo, CatermError> {
 /// mutating the real process environment (`std::env::set_var` in tests is a data-race
 /// hazard across parallel test threads — the same reason it's banned in `clippy.toml`).
 fn resolve_data_dir_with(env_override: Option<&str>) -> Result<DataDirInfo, CatermError> {
-    if let Ok(lock) = CUSTOM_DATA_DIR.read() {
-        if let Some(ref dir) = *lock {
-            return Ok(DataDirInfo {
-                path: dir.clone(),
-                source: DataDirSource::EnvOverride,
-            });
-        }
+    if let Ok(lock) = CUSTOM_DATA_DIR.read()
+        && let Some(ref dir) = *lock
+    {
+        return Ok(DataDirInfo {
+            path: dir.clone(),
+            source: DataDirSource::EnvOverride,
+        });
     }
 
     if let Some(dir) = env_override {

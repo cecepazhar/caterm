@@ -536,40 +536,40 @@ pub fn clear_known_host(address: &str, port: Option<u16>) -> Result<bool, Caterm
     let pattern_bracket = format!("[{address}]:");
 
     for p in paths_to_check {
-        if p.exists() {
-            if let Ok(content) = std::fs::read_to_string(&p) {
-                let mut new_lines = Vec::new();
-                let mut file_changed = false;
-                for line in content.lines() {
-                    let trimmed = line.trim();
-                    if trimmed.is_empty() || trimmed.starts_with('#') {
-                        new_lines.push(line.to_string());
-                        continue;
-                    }
-                    let first_token = trimmed.split_whitespace().next().unwrap_or("");
-                    let matches = first_token == pattern1
-                        || first_token == address
-                        || (port.is_none() && first_token.starts_with(&pattern_bracket))
-                        || first_token.split(',').any(|part| {
-                            part == pattern1
-                                || part == address
-                                || (port.is_none() && part.starts_with(&pattern_bracket))
-                        });
+        if p.exists()
+            && let Ok(content) = std::fs::read_to_string(&p)
+        {
+            let mut new_lines = Vec::new();
+            let mut file_changed = false;
+            for line in content.lines() {
+                let trimmed = line.trim();
+                if trimmed.is_empty() || trimmed.starts_with('#') {
+                    new_lines.push(line.to_string());
+                    continue;
+                }
+                let first_token = trimmed.split_whitespace().next().unwrap_or("");
+                let matches = first_token == pattern1
+                    || first_token == address
+                    || (port.is_none() && first_token.starts_with(&pattern_bracket))
+                    || first_token.split(',').any(|part| {
+                        part == pattern1
+                            || part == address
+                            || (port.is_none() && part.starts_with(&pattern_bracket))
+                    });
 
-                    if matches {
-                        file_changed = true;
-                        modified = true;
-                    } else {
-                        new_lines.push(line.to_string());
-                    }
+                if matches {
+                    file_changed = true;
+                    modified = true;
+                } else {
+                    new_lines.push(line.to_string());
                 }
-                if file_changed {
-                    let mut out = new_lines.join("\n");
-                    if !out.is_empty() {
-                        out.push('\n');
-                    }
-                    let _ = std::fs::write(&p, out);
+            }
+            if file_changed {
+                let mut out = new_lines.join("\n");
+                if !out.is_empty() {
+                    out.push('\n');
                 }
+                let _ = std::fs::write(&p, out);
             }
         }
     }
@@ -1065,10 +1065,10 @@ fn connect_local() -> Result<SshSession, CatermError> {
     // Clean up stale or non-existent SSL_CERT_FILE so CLI agents (Hermes, curl, python)
     // spawned in local terminal don't fail certificate verification.
     #[cfg(not(windows))]
-    if let Ok(cert) = std::env::var("SSL_CERT_FILE") {
-        if !std::path::Path::new(&cert).exists() {
-            cmd.env_remove("SSL_CERT_FILE");
-        }
+    if let Ok(cert) = std::env::var("SSL_CERT_FILE")
+        && !std::path::Path::new(&cert).exists()
+    {
+        cmd.env_remove("SSL_CERT_FILE");
     }
 
     let child = pty_pair

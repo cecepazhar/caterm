@@ -19,7 +19,7 @@ pub fn decode_base32(input: &str) -> Result<Vec<u8>, CatermError> {
             continue;
         }
         let upper = c.to_ascii_uppercase();
-        if ('A'..='Z').contains(&upper) || ('2'..='7').contains(&upper) {
+        if upper.is_ascii_uppercase() || ('2'..='7').contains(&upper) {
             clean_chars.push(upper);
         } else {
             return Err(CatermError::Validation(ValidationError::Generic(format!(
@@ -129,12 +129,13 @@ pub fn parse_otpauth_uri(uri: &str) -> Result<OtpAuthUri, CatermError> {
     })?;
 
     // If issuer is missing from query param, check if label contains "Issuer:Account"
-    if issuer.is_none() && label.contains(':') {
-        if let Some((iss, _)) = label.split_once(':') {
-            let iss = iss.trim();
-            if !iss.is_empty() {
-                issuer = Some(iss.to_string());
-            }
+    if issuer.is_none()
+        && label.contains(':')
+        && let Some((iss, _)) = label.split_once(':')
+    {
+        let iss = iss.trim();
+        if !iss.is_empty() {
+            issuer = Some(iss.to_string());
         }
     }
 
