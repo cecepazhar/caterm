@@ -995,6 +995,57 @@
                   </li>
                 {/each}
               </ul>
+
+              <!-- License key input (Model A: offline HWID activation) -->
+              {#if !pro.isPro}
+                <div class="mt-3 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/40 p-3 space-y-2">
+                  <p class="text-xs font-medium text-neutral-700 dark:text-neutral-300">
+                    {t('settings.subscription.enterLicenseKey')}
+                  </p>
+                  <div class="flex flex-col sm:flex-row gap-2">
+                    <Input
+                      type="text"
+                      bind:value={licenseInput}
+                      placeholder="e.g. CATM99-R64108-3"
+                      class="font-mono uppercase flex-1"
+                      disabled={licenseBusy}
+                    />
+                    <Button
+                      type="button"
+                      onclick={() => handleActivateLicense()}
+                      disabled={licenseBusy || !licenseInput.trim()}
+                      loading={licenseBusy}
+                      variant="primary"
+                      size="md"
+                      class="shrink-0"
+                    >
+                      {t('settings.subscription.activateLicense')}
+                    </Button>
+                  </div>
+                </div>
+              {:else}
+                <div class="mt-3 rounded-lg border border-emerald-500/30 bg-emerald-50/50 dark:bg-emerald-950/20 p-3 flex items-center justify-between gap-2">
+                  <div>
+                    <p class="text-xs font-semibold text-emerald-700 dark:text-emerald-400">
+                      {t('settings.subscription.licenseActive')}
+                    </p>
+                    {#if pro.status?.licenseKeyMasked}
+                      <p class="text-xs font-mono text-neutral-500 dark:text-neutral-400 mt-0.5">
+                        {pro.status.licenseKeyMasked}
+                      </p>
+                    {/if}
+                  </div>
+                  <Button
+                    type="button"
+                    onclick={releaseKeyDevice}
+                    variant="outline"
+                    size="sm"
+                    class="shrink-0"
+                  >
+                    {t('settings.subscription.deactivateKey')}
+                  </Button>
+                </div>
+              {/if}
             </div>
 
             <!-- Model B: Subscription, 5 devices (GCC cloud account) -->

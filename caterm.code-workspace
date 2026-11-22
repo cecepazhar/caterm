@@ -1,0 +1,23 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../../Notes/notes/4 - Product/2 CATerm"
+		},
+		{
+			"path": "../../Notes/notes/4 - Product/17 CAShell"
+		},
+		{
+			"path": "../../Notes/notes/4 - Product/8 CAMark"
+		},
+		{
+			"path": "../camark"
+		},
+		{
+			"path": "../cashell"
+		}
+	],
+	"settings": {}
+}
