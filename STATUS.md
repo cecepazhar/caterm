@@ -1,8 +1,8 @@
-# CATerm Development Status & Roadmap (v2.1.42)
+# CATerm Development Status & Roadmap (v2.1.44)
 
-**Last Updated:** November 2026  
-**Build Status:** Passing (`cargo check --workspace`, `cargo build -p caterm-app`)  
-**Workspace Version:** `2.1.42` (Rust Edition 2024)
+**Last Updated:** 22 November 2026  
+**Build Status:** Passing (`./scripts/ci.sh`, `cargo check --workspace`, `cargo clippy -D warnings`, `cargo test --workspace`)  
+**Workspace Version:** `2.1.44` (Rust Edition 2024)
 
 ## 1. Implementation Matrix
 
