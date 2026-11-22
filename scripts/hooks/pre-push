@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# Git pre-push hook for CATerm (opt-in)
+set -euo pipefail
+
+ROOT_DIR="$(git rev-parse --show-toplevel)"
+
+echo "==> [Pre-push Hook] Verifying local quality gates before push..."
+
+# 1. Version synchronization
+"$ROOT_DIR/scripts/check-version-sync.sh"
+
+# 2. Fast lint & clippy check
+(cd "$ROOT_DIR" && cargo fmt --check)
+(cd "$ROOT_DIR" && cargo clippy --workspace --all-targets -- -D warnings)
+
+# 3. Core pro & tests check
+(cd "$ROOT_DIR" && cargo test -p caterm-core -- pro::tests)
+
+echo "==> [Pre-push Hook] All pre-push checks passed!"
+exit 0
+
