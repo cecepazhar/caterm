@@ -2052,4 +2052,88 @@ mod tests {
         let (ent_day15, _) = eval(&p, &s, "dev", seen13, exp + 86_400);
         assert_eq!(ent_day15, Entitlement::Expired);
     }
+
+    #[test]
+    fn regression_revocation_or_refund_removes_token_and_drops_to_free() {
+        let conn = Connection::open_in_memory().expect("open in memory db");
+        ensure_table(&conn).expect("create table");
+
+        let (p, s) = v2_token("dev-revocation", 1_000_000, &["CATERM"]);
+        let initial_token = SignedToken {
+            payload: p.clone(),
+            signature: s.clone(),
+            key_version: 1,
+        };
+        let active_license = json!({
+            "status": "active",
+            "plan_tier": "lifetime",
+            "expires_at": 1_000_000,
+            "max_devices": 1,
+        });
+
+        // 1. Initial active activation
+        save_key_license(&conn, &active_license, Some(&initial_token))
+            .expect("save active license");
+        let state = load_state(&conn)
+            .expect("load state")
+            .expect("state exists");
+        assert!(state.token.is_some());
+        let token_tuple = state
+            .token
+            .as_ref()
+            .map(|(p, s, v)| (p.as_str(), s.as_str(), *v));
+        let (ent, _) = evaluate(token_tuple, test_key, "dev-revocation", 0, 100);
+        assert!(matches!(ent, Entitlement::Valid { .. }));
+
+        // 2. Revocation or refund happens: server returns valid=false or device_registered=false.
+        // refresh_license_key drops the token by calling save_key_license(conn, ..., None).
+        let revoked_license = json!({
+            "status": "revoked",
+            "plan_tier": "lifetime",
+            "expires_at": null,
+            "max_devices": 1,
+        });
+        save_key_license(&conn, &revoked_license, None).expect("save revoked license");
+
+        // 3. Verify state in DB has NO token
+        let updated_state = load_state(&conn)
+            .expect("load state")
+            .expect("state exists");
+        assert!(updated_state.token.is_none());
+        assert_eq!(
+            updated_state
+                .license
+                .as_ref()
+                .and_then(|l| l.get("status"))
+                .and_then(Value::as_str),
+            Some("revoked")
+        );
+
+        // 4. Verify evaluate drops immediately to None (Free tier, data remains unlocked)
+        let updated_token_tuple = updated_state
+            .token
+            .as_ref()
+            .map(|(p, s, v)| (p.as_str(), s.as_str(), *v));
+        let (revoked_ent, _) = evaluate(updated_token_tuple, test_key, "dev-revocation", 0, 100);
+        assert_eq!(revoked_ent, Entitlement::None);
+    }
+
+    #[test]
+    fn regression_core_error_device_limit_mapping() {
+        let err_dev_limit = core_error(
+            400,
+            &json!({ "error": { "message": "Maximum device limit reached for this license" } }),
+        );
+        assert_eq!(
+            err_dev_limit.to_string(),
+            pro_err("DEVICE_LIMIT_EXCEEDED").to_string()
+        );
+
+        let err_not_found =
+            core_error(404, &json!({ "error": { "message": "License not found" } }));
+        assert_eq!(
+            err_not_found.to_string(),
+            pro_err("LICENSE_NOT_FOUND").to_string()
+        );
+    }
 }

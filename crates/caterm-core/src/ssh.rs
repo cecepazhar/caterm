@@ -2253,7 +2253,7 @@ PRETTY_NAME="Ubuntu 24.04 LTS"
 
         let _ = write(&session.session_id, "echo TERM_IS:$TERM\r\n");
         let mut out = String::new();
-        for _ in 0..20 {
+        for _ in 0..40 {
             std::thread::sleep(Duration::from_millis(100));
             if let Ok(chunk) = read(&session.session_id) {
                 out.push_str(&chunk);
