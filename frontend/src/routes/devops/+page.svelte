@@ -188,10 +188,10 @@
   <div class="border-b border-neutral-200 dark:border-neutral-800 pb-2">
     <Tabs
       items={[
-        { id: 'speed_qos', label: t('devops.tabSpeedQos'), icon: speedIcon },
-        { id: 'benchmark', label: t('devops.tabBenchmark'), icon: benchIcon },
-        { id: 'mesh', label: t('devops.tabMesh'), badge: 'PRO', icon: meshIcon },
-        { id: 'network_tools', label: t('devops.tabNetworkTools'), icon: searchIcon }
+        { id: 'speed_qos', label: t('devops.tabSpeedQos'), icon: speedIcon as any },
+        { id: 'benchmark', label: t('devops.tabBenchmark'), icon: benchIcon as any },
+        { id: 'mesh', label: t('devops.tabMesh'), badge: 'PRO', icon: meshIcon as any },
+        { id: 'network_tools', label: t('devops.tabNetworkTools'), icon: searchIcon as any }
       ]}
       bind:value={activeTab}
       variant="pills"

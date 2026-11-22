@@ -17,7 +17,7 @@
     void goto(href);
   }
 
-  const menus: MenuGroup[] = $derived([
+  const menus: any = $derived([
     {
       id: 'workspace',
       title: t('nav.sectionWorkspace'),

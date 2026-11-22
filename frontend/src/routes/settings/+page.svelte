@@ -1242,7 +1242,7 @@
             label={t('settings.backup.exportPassphrase')}
             required
             bind:value={backupPassphrase}
-            trailingAction={backupPassEye}
+            trailingAction={backupPassEye as any}
           />
           {#if backupMsg}
             <p class="text-xs {backupMsgKind === 'success' ? 'text-emerald-600 dark:text-emerald-500' : 'text-red-600 dark:text-red-500'}">{backupMsg}</p>
@@ -1265,7 +1265,7 @@
             label={t('settings.backup.restorePassphrase')}
             required
             bind:value={restorePassphrase}
-            trailingAction={restorePassEye}
+            trailingAction={restorePassEye as any}
           />
           {#if restoreMsg}
             <p class="text-xs {restoreMsgKind === 'success' ? 'text-emerald-600 dark:text-emerald-500' : 'text-red-600 dark:text-red-500'}">{restoreMsg}</p>
