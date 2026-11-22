@@ -1880,4 +1880,176 @@ mod tests {
         assert!(activate_license_key("").is_err());
         assert!(activate_license_key("not-a-key").is_err());
     }
+
+    // ---- License Regression Test Suite (T3 - Offline Verification) ----
+
+    #[test]
+    fn regression_token_expired_drops_to_expired_without_locking_data() {
+        let (p, s) = v2_token("dev-hwid", 1_000_000, &["CATERM"]);
+        // Before expiration: valid
+        let (ent_before, seen_before) = eval(&p, &s, "dev-hwid", 500_000, 999_999);
+        assert!(matches!(ent_before, Entitlement::Valid { .. }));
+        assert_eq!(seen_before, 999_999);
+
+        // At exact expiration: expired
+        let (ent_exact, _) = eval(&p, &s, "dev-hwid", 999_999, 1_000_000);
+        assert_eq!(ent_exact, Entitlement::Expired);
+
+        // Past expiration: expired
+        let (ent_after, _) = eval(&p, &s, "dev-hwid", 999_999, 1_000_001);
+        assert_eq!(ent_after, Entitlement::Expired);
+    }
+
+    #[test]
+    fn regression_hwid_mismatch_rejects_as_other_device() {
+        let (p, s) = v2_token("host-alpha-uuid", 2_000_000, &["CATERM"]);
+        // Evaluating on host-beta
+        let (ent, _) = eval(&p, &s, "host-beta-uuid", 0, 1_000);
+        assert_eq!(
+            ent,
+            Entitlement::Invalid {
+                reason: "OTHER_DEVICE".into()
+            }
+        );
+    }
+
+    #[test]
+    fn regression_sku_mismatch_rejects_other_products() {
+        // Empty product list
+        let (p_empty, s_empty) = v2_token("dev", 2_000_000, &[]);
+        let (ent_empty, _) = eval(&p_empty, &s_empty, "dev", 0, 1_000);
+        assert_eq!(
+            ent_empty,
+            Entitlement::Invalid {
+                reason: "OTHER_PRODUCT".into()
+            }
+        );
+
+        // Single other product (CAMARK)
+        let (p_camark, s_camark) = v2_token("dev", 2_000_000, &["CAMARK"]);
+        let (ent_camark, _) = eval(&p_camark, &s_camark, "dev", 0, 1_000);
+        assert_eq!(
+            ent_camark,
+            Entitlement::Invalid {
+                reason: "OTHER_PRODUCT".into()
+            }
+        );
+
+        // Multiple other products (CASHELL + CAMARK) without CATERM
+        let (p_other, s_other) = v2_token("dev", 2_000_000, &["CASHELL", "CAMARK"]);
+        let (ent_other, _) = eval(&p_other, &s_other, "dev", 0, 1_000);
+        assert_eq!(
+            ent_other,
+            Entitlement::Invalid {
+                reason: "OTHER_PRODUCT".into()
+            }
+        );
+    }
+
+    #[test]
+    fn regression_corrupted_signature_fails_closed() {
+        let (p, s) = v2_token("dev", 2_000_000, &["CATERM"]);
+
+        // 1. Bit-flipped signature
+        let mut raw_sig = STANDARD.decode(&s).unwrap();
+        raw_sig[0] ^= 0xFF;
+        let corrupted_sig = STANDARD.encode(&raw_sig);
+        let (ent1, _) = eval(&p, &corrupted_sig, "dev", 0, 1_000);
+        assert_eq!(
+            ent1,
+            Entitlement::Invalid {
+                reason: "BAD_SIGNATURE".into()
+            }
+        );
+
+        // 2. Truncated signature (32 bytes)
+        let truncated_sig = STANDARD.encode(&raw_sig[..32]);
+        let (ent2, _) = eval(&p, &truncated_sig, "dev", 0, 1_000);
+        assert_eq!(
+            ent2,
+            Entitlement::Invalid {
+                reason: "BAD_SIGNATURE".into()
+            }
+        );
+
+        // 3. Non-base64 garbage
+        let (ent3, _) = eval(&p, "%%%NOT-BASE64%%%", "dev", 0, 1_000);
+        assert_eq!(
+            ent3,
+            Entitlement::Invalid {
+                reason: "BAD_SIGNATURE".into()
+            }
+        );
+
+        // 4. Empty signature
+        let (ent4, _) = eval(&p, "", "dev", 0, 1_000);
+        assert_eq!(
+            ent4,
+            Entitlement::Invalid {
+                reason: "BAD_SIGNATURE".into()
+            }
+        );
+    }
+
+    #[test]
+    fn regression_clock_rollback_boundary_300s() {
+        let (p, s) = v2_token("dev", 100_000, &["CATERM"]);
+        let last_seen = 50_000;
+
+        // Rollback of exactly 300s (allowed NTP drift)
+        let (ent_allowed, seen_allowed) = eval(&p, &s, "dev", last_seen, last_seen - 300);
+        assert!(matches!(ent_allowed, Entitlement::Valid { .. }));
+        assert_eq!(seen_allowed, last_seen);
+
+        // Rollback of 301s (exceeds 300s threshold)
+        let (ent_rejected, seen_rejected) = eval(&p, &s, "dev", last_seen, last_seen - 301);
+        assert_eq!(
+            ent_rejected,
+            Entitlement::RevalidationRequired {
+                reason: "CLOCK_ROLLBACK".into()
+            }
+        );
+        assert_eq!(seen_rejected, last_seen);
+
+        // Extreme rollback: clock reset to epoch / year 1970
+        let (ent_extreme, _) = eval(&p, &s, "dev", last_seen, 100);
+        assert_eq!(
+            ent_extreme,
+            Entitlement::RevalidationRequired {
+                reason: "CLOCK_ROLLBACK".into()
+            }
+        );
+    }
+
+    #[test]
+    fn regression_offline_grace_14_days_lifecycle() {
+        let iat = 1_763_600_000; // Activation time
+        let grace_duration = 14 * 86_400; // 14 days in seconds = 1,209,600s
+        let exp = iat + grace_duration;
+
+        let (p, s) = v2_token("dev", exp, &["CATERM"]);
+
+        // Day 0: newly activated
+        let (ent_day0, seen0) = eval(&p, &s, "dev", 0, iat);
+        assert!(matches!(ent_day0, Entitlement::Valid { .. }));
+        assert_eq!(seen0, iat);
+
+        // Day 7 offline: midway through grace period
+        let (ent_day7, seen7) = eval(&p, &s, "dev", seen0, iat + 7 * 86_400);
+        assert!(matches!(ent_day7, Entitlement::Valid { .. }));
+        assert_eq!(seen7, iat + 7 * 86_400);
+
+        // Day 13, 23 hours offline: 1 hour before expiry
+        let (ent_day13, seen13) = eval(&p, &s, "dev", seen7, exp - 3600);
+        assert!(matches!(ent_day13, Entitlement::Valid { .. }));
+        assert_eq!(seen13, exp - 3600);
+
+        // Day 14 exact: expiration threshold reached
+        let (ent_day14, _) = eval(&p, &s, "dev", seen13, exp);
+        assert_eq!(ent_day14, Entitlement::Expired);
+
+        // Day 15: past 14-day offline grace limit
+        let (ent_day15, _) = eval(&p, &s, "dev", seen13, exp + 86_400);
+        assert_eq!(ent_day15, Entitlement::Expired);
+    }
 }
