@@ -322,7 +322,7 @@
       </div>
     {:else}
       <table class="w-full text-left text-xs border-collapse">
-        <thead class="sticky top-0 bg-neutral-50/95 dark:bg-neutral-950/90 text-neutral-500 text-[10px] uppercase font-semibold border-b border-neutral-200 dark:border-neutral-800 select-none backdrop-blur-sm z-10">
+        <thead class="sticky top-0 bg-neutral-50/95 dark:bg-neutral-950/90 text-neutral-500 text-[11px] uppercase font-semibold border-b border-neutral-200 dark:border-neutral-800 select-none backdrop-blur-sm z-10">
           <tr>
             <th class="px-2.5 py-1.5">{t('fileManager.colName')}</th>
             <th class="px-2 py-1.5 text-right w-16">{t('fileManager.colSize')}</th>
@@ -357,7 +357,7 @@
               </td>
 
               <!-- Size -->
-              <td class="px-2 py-1.5 text-right whitespace-nowrap text-[10px] text-neutral-500">
+              <td class="px-2 py-1.5 text-right whitespace-nowrap text-[11px] text-neutral-500">
                 {#if file.is_dir}
                   <span class="text-neutral-400 dark:text-neutral-600">{t('fileManager.dir')}</span>
                 {:else}
@@ -366,7 +366,7 @@
               </td>
 
               <!-- Modified Date -->
-              <td class="px-2.5 py-1.5 text-right whitespace-nowrap text-[10px] text-neutral-500 hidden sm:table-cell">
+              <td class="px-2.5 py-1.5 text-right whitespace-nowrap text-[11px] text-neutral-500 hidden sm:table-cell">
                 {formatDate(file.mtime)}
               </td>
             </tr>
@@ -377,7 +377,7 @@
   </div>
 
   <!-- Status Footer -->
-  <div class="h-6 bg-neutral-50 dark:bg-neutral-950 border-t border-neutral-200 dark:border-neutral-800 px-3 flex items-center justify-between text-[10px] text-neutral-500 font-mono shrink-0 select-none">
+  <div class="h-6 bg-neutral-50 dark:bg-neutral-950 border-t border-neutral-200 dark:border-neutral-800 px-3 flex items-center justify-between text-[11px] text-neutral-500 font-mono shrink-0 select-none">
     <span>{t('fileManager.summary', { folders: folderCount, files: fileCount })}</span>
     <span>{currentPath}</span>
   </div>

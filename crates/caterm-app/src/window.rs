@@ -30,10 +30,41 @@ pub fn create_main_window(app: &tauri::App) -> tauri::Result<WebviewWindow> {
         builder = builder.additional_browser_args(&format!("{base} {NO_GPU_ARGS}"));
     }
 
+    // The window starts hidden (tauri.conf.json `visible: false`) on the app's dark background
+    // and is shown — always maximized — once the page, whose first paint is the boot splash,
+    // has loaded. The user never sees WebView2's blank white surface, nor a 1200x800 window
+    // that jumps to full size. A timer shows it anyway if the load event never arrives.
+    builder = builder.on_page_load(|webview, payload| {
+        if matches!(payload.event(), tauri::webview::PageLoadEvent::Finished) {
+            reveal(&webview);
+        }
+    });
+
     let window = builder.build()?;
+    {
+        let w = window.clone();
+        tauri::async_runtime::spawn(async move {
+            tokio::time::sleep(std::time::Duration::from_millis(2500)).await;
+            if !w.is_visible().unwrap_or(true) {
+                reveal(&w);
+            }
+        });
+    }
     memory::install(&window);
     disable_browser_accelerators(&window);
     Ok(window)
+}
+
+/// Maximizes and shows the main window, once. Maximizing before `show()` makes the first
+/// visible frame already full-size. Mobile windows are always full-screen, so only show.
+fn reveal(window: &WebviewWindow) {
+    if window.is_visible().unwrap_or(false) {
+        return;
+    }
+    #[cfg(desktop)]
+    let _ = window.maximize();
+    let _ = window.show();
+    let _ = window.set_focus();
 }
 
 /// Release builds turn off WebView2's *browser* shortcuts: F5/Ctrl+R would reload the whole

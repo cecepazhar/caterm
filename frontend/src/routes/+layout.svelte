@@ -7,7 +7,6 @@
   import NotificationCenter from '$lib/components/NotificationCenter.svelte';
   import Logo from '$lib/components/Logo.svelte';
   import WorkspaceMenu from '$lib/components/WorkspaceMenu.svelte';
-  import AiChatPanel from '$lib/components/AiChatPanel.svelte';
   import SessionViewport from '$lib/components/SessionViewport.svelte';
   import { getAiChatState, toggleAiChat, closeAiChat } from '$lib/stores/aiChat.svelte';
   import { page } from '$app/state';
@@ -27,9 +26,11 @@
   } from '$lib/stores/theme.svelte';
   import { getToasts, showToast, confirmModal } from '$lib/stores/uiNotifications.svelte';
   import { startMonitoring, stopMonitoring, monitorState } from '$lib/stores/monitorStore.svelte';
-  import FeedbackModal from '$lib/components/FeedbackModal.svelte';
-  import CrashReportModal from '$lib/components/CrashReportModal.svelte';
-  import AboutModal from '$lib/components/AboutModal.svelte';
+  // Panels and dialogs opened on demand load on first use, keeping them out of the startup bundle.
+  const loadAiChatPanel = () => import('$lib/components/AiChatPanel.svelte');
+  const loadFeedbackModal = () => import('$lib/components/FeedbackModal.svelte');
+  const loadCrashReportModal = () => import('$lib/components/CrashReportModal.svelte');
+  const loadAboutModal = () => import('$lib/components/AboutModal.svelte');
   import { getPendingCrashReport, type ScrubbedCrashReport } from '$lib/api/crash';
   import ProfileMenu from '$lib/components/ProfileMenu.svelte';
   import { getFeedbackPromptState } from '$lib/stores/feedbackStore.svelte';
@@ -39,6 +40,8 @@
   import { APP_VERSION } from '$lib/appInfo';
   import { goto } from '$app/navigation';
   import { onMount, onDestroy } from 'svelte';
+  import { finishBoot } from '$lib/boot';
+  import { startPerfMode } from '$lib/perfMode';
   import { getCurrentWindow } from '@tauri-apps/api/window';
   import { invoke } from '@tauri-apps/api/core';
   import { openExternalUrl } from '$lib/utils/url';
@@ -110,13 +113,18 @@
   let pendingCrashReport = $state<ScrubbedCrashReport | null>(null);
 
   onMount(() => {
-    startMonitoring();
     initTheme();
+    void finishBoot();
+    const stopPerfMode = startPerfMode();
+    startMonitoring();
     // Locks after the idle timeout from Settings → Security, and right after waking from sleep.
     const stopAutoLock = startAutoLock(() => isUnlocked, lockApp);
     // One quiet check per launch; failures (offline, no release yet) stay silent. Skipped under
-    // `vite dev`, where there is no installed build to update.
-    if (!import.meta.env.DEV) void checkForUpdates({ silent: true });
+    // `vite dev`, where there is no installed build to update. Deferred so the network request
+    // and signature check never compete with the first paint and vault unlock.
+    const updateTimer = import.meta.env.DEV
+      ? undefined
+      : setTimeout(() => void checkForUpdates({ silent: true }), 8000);
 
     void getPendingCrashReport()
       .then((report) => {
@@ -166,6 +174,8 @@
     window.addEventListener('keydown', handleShortcut, true);
 
     return () => {
+      if (updateTimer) clearTimeout(updateTimer);
+      stopPerfMode();
       stopAutoLock();
       window.removeEventListener('keydown', handleShortcut, true);
       window.removeEventListener('click', handleGlobalClick, true);
@@ -665,7 +675,7 @@
                   <span class="truncate max-w-[100px] sm:max-w-[140px]">{tabLabel(tab)}</span>
                   {#if tab.group}
                     <span
-                      class="px-1 py-0.1 rounded text-[9px] font-medium shrink-0 leading-tight"
+                      class="px-1 py-0.1 rounded text-[11px] font-medium shrink-0 leading-tight"
                       style="background-color: {tab.groupColor ? tab.groupColor + '25' : 'rgba(2, 132, 199, 0.15)'}; color: {tab.groupColor || '#0284c7'}"
                     >
                       {tab.group}
@@ -832,7 +842,7 @@
           <div class="flex items-center gap-2">
             <Logo size={22} mode="brand" />
             <span class="font-bold text-neutral-900 dark:text-white text-base tracking-tight">CATerm</span>
-            <span class="text-[10px] px-1.5 py-0.5 rounded border border-neutral-300 dark:border-neutral-700 text-neutral-500 dark:text-neutral-400 font-mono">v{APP_VERSION}</span>
+            <span class="text-[11px] px-1.5 py-0.5 rounded border border-neutral-300 dark:border-neutral-700 text-neutral-500 dark:text-neutral-400 font-mono">v{APP_VERSION}</span>
           </div>
           <Button
             variant="ghost"
@@ -847,7 +857,7 @@
           </Button>
         </div>
 
-        <p class="px-5 pt-2 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-neutral-500">{t('shell.workspace')}</p>
+        <p class="px-5 pt-2 pb-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-neutral-500">{t('shell.workspace')}</p>
         <nav class="px-2 space-y-0.5 overflow-y-auto scrollbar-none text-sm">
           {#each navItems as item}
             <a
@@ -893,7 +903,7 @@
           <div class="flex items-center gap-2 min-w-0">
             <Logo size={22} mode="brand" />
             <span class="font-bold text-neutral-900 dark:text-white text-lg tracking-tight truncate">CATerm</span>
-            <span class="text-[10px] px-1.5 py-0.5 rounded border border-neutral-300 dark:border-neutral-700 text-neutral-500 dark:text-neutral-400 font-mono shrink-0">v{APP_VERSION}</span>
+            <span class="text-[11px] px-1.5 py-0.5 rounded border border-neutral-300 dark:border-neutral-700 text-neutral-500 dark:text-neutral-400 font-mono shrink-0">v{APP_VERSION}</span>
           </div>
           <Button
             variant="ghost"
@@ -957,27 +967,35 @@
         </div>
 
         {#if aiChat.open}
-          <AiChatPanel onClose={closeAiChat} />
+          {#await loadAiChatPanel() then { default: AiChatPanel }}
+            <AiChatPanel onClose={closeAiChat} />
+          {/await}
         {/if}
 
         {#if feedbackPrompt.show}
           <!-- Feedback popup modal: auto-prompted after the 3rd closed session, or opened from the
                profile menu (Report bug). Modal popup like AboutModal. -->
+          {#await loadFeedbackModal() then { default: FeedbackModal }}
           <FeedbackModal
             onClose={() => feedbackPrompt.close()}
             onSubmitted={() => feedbackPrompt.markSubmitted()}
           />
+          {/await}
         {/if}
 
         {#if pendingCrashReport}
+          {#await loadCrashReportModal() then { default: CrashReportModal }}
           <CrashReportModal
             report={pendingCrashReport}
             onClose={() => (pendingCrashReport = null)}
           />
+          {/await}
         {/if}
 
         {#if showAboutModal}
-          <AboutModal onClose={() => (showAboutModal = false)} />
+          {#await loadAboutModal() then { default: AboutModal }}
+            <AboutModal onClose={() => (showAboutModal = false)} />
+          {/await}
         {/if}
       </main>
     </div>

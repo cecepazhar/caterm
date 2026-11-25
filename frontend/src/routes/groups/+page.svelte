@@ -264,7 +264,7 @@
     icon={['M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10']}
     accent="indigo"
     title="Work Groups"
-    subtitle="Pengelompokan klaster kerja multi-kategori untuk Hosts, Snippets, Tasks, Port Forwarding, Keys, 2FA, dan Tim."
+    subtitle={t('ui.groups.subtitle')}
   >
     {#snippet actions()}
       <Button
@@ -333,7 +333,7 @@
       <Input
         bind:value={searchQuery}
         oninput={() => (currentPage = 1)}
-        placeholder="Cari Work Group..."
+        placeholder={t('ui.groups.search')}
         size="sm"
       >
         {#snippet leadingIcon()}
@@ -353,9 +353,9 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
         </svg>
       </div>
-      <h3 class="text-sm font-semibold text-neutral-900 dark:text-white">Belum Ada Work Group</h3>
+      <h3 class="text-sm font-semibold text-neutral-900 dark:text-white">{t('ui.groups.emptyTitle')}</h3>
       <p class="text-xs text-neutral-500 max-w-sm mx-auto">
-        Buat grup kerja untuk mengkategorikan host, snippet, tugas cron, kunci SSH, 2FA, dan port forwarding dalam satu kesatuan.
+        {t('ui.groups.emptyBody')}
       </p>
       <Button
         variant="info"
@@ -363,7 +363,7 @@
         onclick={openAddModal}
         class="mt-2"
       >
-        + Buat Work Group Pertama
+        {t('ui.groups.createFirst')}
       </Button>
     </div>
   {:else}
@@ -414,22 +414,22 @@
             <div class="grid grid-cols-3 gap-1.5 text-center text-[11px] py-1.5 bg-neutral-50 dark:bg-neutral-950/60 rounded-xl border border-neutral-100 dark:border-neutral-800/60">
               <div>
                 <span class="block font-bold text-neutral-900 dark:text-white">{group.hostIds.length}</span>
-                <span class="text-[10px] text-neutral-500">Hosts</span>
+                <span class="text-[11px] text-neutral-500">Hosts</span>
               </div>
               <div>
                 <span class="block font-bold text-neutral-900 dark:text-white">{groupSnippets.length}</span>
-                <span class="text-[10px] text-neutral-500">Snippets</span>
+                <span class="text-[11px] text-neutral-500">Snippets</span>
               </div>
               <div>
                 <span class="block font-bold text-neutral-900 dark:text-white">{groupTotp.length}</span>
-                <span class="text-[10px] text-neutral-500">2FA Tokens</span>
+                <span class="text-[11px] text-neutral-500">2FA Tokens</span>
               </div>
             </div>
 
             <!-- Assigned Hosts -->
             {#if group.hostIds.length > 0}
               <div>
-                <span class="text-[10px] font-semibold uppercase tracking-wider text-neutral-400 block mb-1">Assigned Hosts</span>
+                <span class="text-[11px] font-semibold uppercase tracking-wider text-neutral-400 block mb-1">Assigned Hosts</span>
                 <div class="flex gap-1 flex-wrap">
                   {#each group.hostIds as hostId}
                     <Badge variant="neutral" size="xs" class="font-mono">
@@ -481,7 +481,7 @@
 </div>
 
 <!-- Create / Edit Work Group Modal -->
-<Modal bind:open={isAddModalOpen} title={editingId ? 'Edit Work Group' : 'Buat Work Group Baru'} size="lg">
+<Modal bind:open={isAddModalOpen} title={editingId ? 'Edit Work Group' : t('ui.groups.newTitle')} size="lg">
   <form id="caterm-group-form" onsubmit={handleSaveGroup} class="space-y-4 text-xs">
     <!-- Name -->
     <div>
@@ -554,7 +554,7 @@
                 class="rounded bg-white dark:bg-neutral-900 border-neutral-300 dark:border-neutral-700 text-sky-600 focus:ring-sky-500"
               />
               <span class="font-medium">{h.label}</span>
-              <span class="text-[10px] text-neutral-400 font-mono ml-auto">{h.address}</span>
+              <span class="text-[11px] text-neutral-400 font-mono ml-auto">{h.address}</span>
             </label>
           {/each}
         </div>
@@ -575,7 +575,7 @@
         handleSaveGroup(e as unknown as Event);
       }}
     >
-      {editingId ? 'Simpan Perubahan' : 'Buat Work Group'}
+      {editingId ? t('ui.groups.saveChanges') : t('ui.groups.create')}
     </Button>
   {/snippet}
 </Modal>

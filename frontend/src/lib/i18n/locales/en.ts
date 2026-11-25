@@ -1877,6 +1877,120 @@ const en = {
     toggleTheme: 'Switch light / dark theme',
     toggleAi: 'Show / hide AI assistant',
     lockVault: 'Lock the vault'
+  },
+  ui: {
+    "session": {
+      "broadcastHint": "— Every keystroke is sent to all panes",
+      "broadcastOff": "Turn off (Ctrl+Shift+B)"
+    },
+    "netAudit": {
+      "selectHost": "-- Select host --",
+      "noSpeed": "No speed test data yet. Press \"Test Speedometer\".",
+      "noQos": "No QoS audit yet. Press \"Audit Bufferbloat\".",
+      "runBench": "Run Server Benchmark",
+      "noBench": "No benchmark has run yet. Press \"Run Server Benchmark\"."
+    },
+    "hosts": {
+      "editSubtitle": "Credentials & connection settings for {{name}}",
+      "newSubtitle": "Connect a new Linux server / VPS to CATerm",
+      "closeModal": "Close dialog",
+      "pickKey": "Choose an SSH key from the vault",
+      "noKeys": "No SSH keys stored in the CATerm vault yet.",
+      "createKey": "+ Create / import a key now",
+      "keyPlaceholder": "Choose an available SSH key…",
+      "totpHint": "Used to auto-fill the 6-digit code when the server asks for SSH 2FA / OTP.",
+      "testOk": "Connection test passed!",
+      "testFail": "Connection test failed!",
+      "closeTest": "Close test result"
+    },
+    "groups": {
+      "subtitle": "Multi-category work clusters for Hosts, Snippets, Tasks, Port Forwarding, Keys, 2FA and Teams.",
+      "search": "Search work groups…",
+      "emptyTitle": "No work groups yet",
+      "emptyBody": "Create a work group to organise hosts, snippets, cron tasks, SSH keys, 2FA and port forwarding together.",
+      "createFirst": "+ Create your first work group",
+      "newTitle": "Create New Work Group",
+      "saveChanges": "Save Changes",
+      "create": "Create Work Group"
+    },
+    "snippets": {
+      "search": "Search snippets or commands…"
+    },
+    "investigations": {
+      "saveFailed": "Failed to save investigation",
+      "deleteFailed": "Failed to delete investigation"
+    },
+    "security": {
+      "ephemeralDesc": "Disposable one-time SSH keys with automatic revocation require a CATerm Pro license."
+    },
+    "settings": {
+      "syncOk": "Cloud sync complete! Hosts & settings are securely synced.",
+      "proActivateHint": "Activate CATerm Pro with a license code from Mayar, Ko-fi or Founder Lifetime."
+    },
+    "aiSkills": {
+      "hint": "Invoke a skill directly by typing the prefix",
+      "add": "+ Add New Skill",
+      "loading": "Loading skill catalog…",
+      "empty": "No skills registered yet. Click \"+ Add New Skill\" to create the first one.",
+      "deleteTitle": "Delete skill",
+      "newTitle": "Create New Custom Skill",
+      "save": "Save Skill"
+    },
+    "tasks": {
+      "logHistory": "Log History",
+      "delete": "Delete",
+      "editTitle": "Edit Scheduled Task",
+      "newTitle": "Add New Scheduled Task",
+      "save": "Save Schedule",
+      "noRuns": "No run history for this task yet."
+    },
+    "totp": {
+      "saveFailed": "Failed to save 2FA token",
+      "confirmDelete": "Are you sure you want to delete 2FA token \"{{label}}\"? This cannot be undone.",
+      "deleteTitle": "Delete 2FA Token",
+      "delete": "Delete",
+      "cancel": "Cancel",
+      "editTitle": "Edit 2FA Token",
+      "newTitle": "Add New 2FA Token",
+      "secretHint": "The secret key is encrypted immediately in the zero-knowledge AES-256-GCM vault.",
+      "saving": "Saving…",
+      "save": "Save Token"
+    },
+    "aiChat": {
+      "runTitle": "Run: {{cmd}}",
+      "noSession": "No active terminal session to broadcast to.",
+      "clearTitle": "Clear conversation history",
+      "clearAria": "Clear chat",
+      "floatMode": "Floating card mode",
+      "fullMode": "Full-height mode",
+      "resize": "Resize",
+      "minimize": "Minimize to corner",
+      "closeTitle": "Close Hana AI",
+      "close": "Close",
+      "clearConfirmTitle": "Clear conversation history?",
+      "clearConfirmBody": "This clears the entire AI terminal message log.",
+      "cancel": "Cancel",
+      "clearConfirm": "Yes, clear",
+      "proDesc": "The AI assistant for server diagnosis, command fixes and terminal automation requires a CATerm Pro license (with your own BYOK API key).",
+      "byoHint": "Choose \"BYO\" mode and enter your AI API key / endpoint URL."
+    },
+    "ambient": {
+      "desc": "Outer halo lighting around the terminal area. Supports solid colour, brand accent and dynamic RGB spectrum modes, like a mechanical keyboard.",
+      "proOnlyBefore": "Ambient Lighting customization is exclusive to the",
+      "proOnlyAfter": " license. Sign in or activate Pro to use it.",
+      "satellite": "2 satellite photon particles chase each other 180° apart with a double glow.",
+      "neonEdge": "Top & left edges light up crisply with a high-precision neon glow."
+    },
+    "avatar": {
+      "proOnly": "This avatar is exclusive to Pro members"
+    },
+    "floating": {
+      "askBefore": "Ask Hana AI or type",
+      "askAfter": "to call a skill.",
+      "placeholder": "Ask Hana AI (type @ for skills)…",
+      "sendTitle": "Send (Enter)",
+      "send": "Send"
+    }
   }
 };
 

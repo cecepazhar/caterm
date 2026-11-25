@@ -305,7 +305,7 @@
             }`}
           >
             <span>{t('dirSync.toUpload')}</span>
-            <span class="px-1.5 py-0.2 rounded-full text-[10px] bg-cyan-100 dark:bg-cyan-900/60 text-cyan-700 dark:text-cyan-300">
+            <span class="px-1.5 py-0.2 rounded-full text-[11px] bg-cyan-100 dark:bg-cyan-900/60 text-cyan-700 dark:text-cyan-300">
               {plan.to_upload.length}
             </span>
           </Button>
@@ -321,7 +321,7 @@
             }`}
           >
             <span>{t('dirSync.toDownload')}</span>
-            <span class="px-1.5 py-0.2 rounded-full text-[10px] bg-cyan-100 dark:bg-cyan-900/60 text-cyan-700 dark:text-cyan-300">
+            <span class="px-1.5 py-0.2 rounded-full text-[11px] bg-cyan-100 dark:bg-cyan-900/60 text-cyan-700 dark:text-cyan-300">
               {plan.to_download.length}
             </span>
           </Button>
@@ -337,7 +337,7 @@
             }`}
           >
             <span>{t('dirSync.conflicts')}</span>
-            <span class="px-1.5 py-0.2 rounded-full text-[10px] bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-300">
+            <span class="px-1.5 py-0.2 rounded-full text-[11px] bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-300">
               {plan.conflicts.length}
             </span>
           </Button>
@@ -477,7 +477,7 @@
                   <div class="flex items-center gap-2">
                     <span class={`inline-block w-2 h-2 rounded-full ${w.is_active ? 'bg-emerald-500 animate-pulse' : 'bg-neutral-400'}`}></span>
                     <span class="font-semibold text-neutral-800 dark:text-neutral-200">{w.id}</span>
-                    <span class={`text-[10px] px-1.5 py-0.2 rounded font-sans ${w.is_active ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400' : 'bg-neutral-200 dark:bg-slate-700 text-neutral-500 dark:text-slate-400'}`}>
+                    <span class={`text-[11px] px-1.5 py-0.2 rounded font-sans ${w.is_active ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400' : 'bg-neutral-200 dark:bg-slate-700 text-neutral-500 dark:text-slate-400'}`}>
                       {w.is_active ? t('dirSync.active') : t('dirSync.stopped')}
                     </span>
                   </div>

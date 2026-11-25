@@ -140,7 +140,7 @@
     <Card title="1. Button Scale & Variants" description="Monochrome solid base with outline secondary and dynamic brand variant.">
       <div class="space-y-6">
         <div>
-          <span class="text-[10px] font-mono uppercase text-neutral-500 block mb-2 font-bold tracking-wider">Style Variants (size="md"):</span>
+          <span class="text-[11px] font-mono uppercase text-neutral-500 block mb-2 font-bold tracking-wider">Style Variants (size="md"):</span>
           <div class="flex flex-wrap items-center gap-3">
             <Button variant="primary">Primary (Solid White)</Button>
             <Button variant="secondary">Secondary (Dark)</Button>
@@ -152,7 +152,7 @@
         </div>
 
         <div>
-          <span class="text-[10px] font-mono uppercase text-neutral-500 block mb-2 font-bold tracking-wider">Size Scale:</span>
+          <span class="text-[11px] font-mono uppercase text-neutral-500 block mb-2 font-bold tracking-wider">Size Scale:</span>
           <div class="flex flex-wrap items-center gap-3">
             <Button variant="outline" size="sm">Small (28px)</Button>
             <Button variant="outline" size="md">Medium (36px)</Button>

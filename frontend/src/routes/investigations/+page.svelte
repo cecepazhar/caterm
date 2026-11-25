@@ -88,7 +88,7 @@
       isAddModalOpen = false;
     } catch (err) {
       console.error('Failed to save investigation:', err);
-      showToast('Gagal menyimpan investigasi', 'error');
+      showToast(t('ui.investigations.saveFailed'), 'error');
     }
   }
 
@@ -99,7 +99,7 @@
       showToast('Investigasi dihapus', 'info');
     } catch (err) {
       console.error('Failed to delete investigation:', err);
-      showToast('Gagal menghapus investigasi', 'error');
+      showToast(t('ui.investigations.deleteFailed'), 'error');
     }
   }
 

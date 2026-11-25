@@ -163,7 +163,7 @@
           <h3 class="text-[11px] font-semibold uppercase tracking-wider text-neutral-500">{t('hostDetail.tags')}</h3>
           <div class="flex flex-wrap gap-1">
             {#each host.tags as tag}
-              <span class="px-2 py-0.5 rounded text-[10px] bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700">{tag}</span>
+              <span class="px-2 py-0.5 rounded text-[11px] bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700">{tag}</span>
             {/each}
           </div>
         </section>
@@ -190,10 +190,10 @@
             {#each logs as log (log.id)}
               <li class="p-2 rounded-lg bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800">
                 <div class="flex items-center justify-between gap-2">
-                  <span class="text-[10px] font-semibold uppercase tracking-wide text-sky-600 dark:text-sky-400">
+                  <span class="text-[11px] font-semibold uppercase tracking-wide text-sky-600 dark:text-sky-400">
                     {log.event_type}
                   </span>
-                  <span class="text-[10px] text-neutral-500 shrink-0">{formatTime(log.timestamp)}</span>
+                  <span class="text-[11px] text-neutral-500 shrink-0">{formatTime(log.timestamp)}</span>
                 </div>
                 <p class="mt-1 text-[11px] font-mono text-neutral-700 dark:text-neutral-300 break-all">
                   {log.details}

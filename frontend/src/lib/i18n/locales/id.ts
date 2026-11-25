@@ -1878,6 +1878,120 @@ const id: Dictionary = {
     toggleTheme: 'Ganti tema terang / gelap',
     toggleAi: 'Tampilkan / sembunyikan asisten AI',
     lockVault: 'Kunci vault'
+  },
+  ui: {
+    "session": {
+      "broadcastHint": "— Setiap ketikan dikirim serentak ke semua pane",
+      "broadcastOff": "Nonaktifkan (Ctrl+Shift+B)"
+    },
+    "netAudit": {
+      "selectHost": "-- Pilih Host --",
+      "noSpeed": "Belum ada data speed test. Tekan \"Test Speedometer\".",
+      "noQos": "Belum ada audit QoS. Tekan \"Audit Bufferbloat\".",
+      "runBench": "Jalankan Server Benchmark",
+      "noBench": "Belum ada benchmark dijalankan. Tekan \"Jalankan Server Benchmark\"."
+    },
+    "hosts": {
+      "editSubtitle": "Konfigurasi kredensial & koneksi untuk {{name}}",
+      "newSubtitle": "Hubungkan server Linux / VPS baru ke CATerm",
+      "closeModal": "Tutup dialog",
+      "pickKey": "Pilih SSH Key dari Vault",
+      "noKeys": "Belum ada SSH Key yang tersimpan di Vault CATerm.",
+      "createKey": "+ Buat / Impor Key Sekarang",
+      "keyPlaceholder": "Pilih SSH Key yang tersedia…",
+      "totpHint": "Digunakan untuk auto-inject kode 6-digit saat server meminta verifikasi SSH 2FA / OTP.",
+      "testOk": "Uji Koneksi Berhasil!",
+      "testFail": "Uji Koneksi Gagal!",
+      "closeTest": "Tutup hasil uji"
+    },
+    "groups": {
+      "subtitle": "Pengelompokan klaster kerja multi-kategori untuk Hosts, Snippets, Tasks, Port Forwarding, Keys, 2FA, dan Tim.",
+      "search": "Cari Work Group…",
+      "emptyTitle": "Belum Ada Work Group",
+      "emptyBody": "Buat grup kerja untuk mengkategorikan host, snippet, tugas cron, kunci SSH, 2FA, dan port forwarding dalam satu kesatuan.",
+      "createFirst": "+ Buat Work Group Pertama",
+      "newTitle": "Buat Work Group Baru",
+      "saveChanges": "Simpan Perubahan",
+      "create": "Buat Work Group"
+    },
+    "snippets": {
+      "search": "Cari snippet atau perintah…"
+    },
+    "investigations": {
+      "saveFailed": "Gagal menyimpan investigasi",
+      "deleteFailed": "Gagal menghapus investigasi"
+    },
+    "security": {
+      "ephemeralDesc": "Pembuatan kunci SSH sekali-pakai (disposable) dengan batas waktu auto-revoke memerlukan lisensi CATerm Pro."
+    },
+    "settings": {
+      "syncOk": "Sinkronisasi Cloud Berhasil! Host & pengaturan tersinkronisasi aman.",
+      "proActivateHint": "Aktifkan CATerm Pro dengan kode lisensi dari Mayar, Ko-fi, atau Founder Lifetime."
+    },
+    "aiSkills": {
+      "hint": "Panggil skill langsung dengan mengetik prefix",
+      "add": "+ Tambah Skill Baru",
+      "loading": "Memuat katalog skills…",
+      "empty": "Belum ada skill terdaftar. Klik \"+ Tambah Skill Baru\" untuk membuat skill pertama.",
+      "deleteTitle": "Hapus Skill",
+      "newTitle": "Buat Custom Skill Baru",
+      "save": "Simpan Skill"
+    },
+    "tasks": {
+      "logHistory": "Riwayat Log",
+      "delete": "Hapus",
+      "editTitle": "Edit Tugas Terjadwal",
+      "newTitle": "Tambah Tugas Terjadwal Baru",
+      "save": "Simpan Jadwal",
+      "noRuns": "Belum ada riwayat eksekusi untuk tugas ini."
+    },
+    "totp": {
+      "saveFailed": "Gagal menyimpan 2FA token",
+      "confirmDelete": "Apakah Anda yakin ingin menghapus token 2FA \"{{label}}\"? Tindakan ini tidak dapat dibatalkan.",
+      "deleteTitle": "Hapus Token 2FA",
+      "delete": "Hapus",
+      "cancel": "Batal",
+      "editTitle": "Edit Token 2FA",
+      "newTitle": "Tambah Token 2FA Baru",
+      "secretHint": "Kunci rahasia akan langsung dienkripsi menggunakan Zero-Knowledge AES-256-GCM vault.",
+      "saving": "Menyimpan…",
+      "save": "Simpan Token"
+    },
+    "aiChat": {
+      "runTitle": "Jalankan: {{cmd}}",
+      "noSession": "Tidak ada sesi terminal aktif untuk dibroadcast.",
+      "clearTitle": "Bersihkan riwayat percakapan",
+      "clearAria": "Bersihkan Chat",
+      "floatMode": "Mode Kartu Mengambang",
+      "fullMode": "Mode Layar Penuh",
+      "resize": "Ubah Ukuran",
+      "minimize": "Kecilkan ke pojok",
+      "closeTitle": "Tutup Hana AI",
+      "close": "Tutup",
+      "clearConfirmTitle": "Bersihkan riwayat percakapan?",
+      "clearConfirmBody": "Tindakan ini akan mengosongkan seluruh log pesan terminal AI.",
+      "cancel": "Batal",
+      "clearConfirm": "Ya, Bersihkan",
+      "proDesc": "Akses asisten AI pintar untuk diagnosa server, perbaikan sintaks perintah, dan automasi terminal memerlukan lisensi CATerm Pro (dengan API key BYOK Anda sendiri).",
+      "byoHint": "Pilih mode \"BYO\" dan masukkan API Key / URL endpoint AI Anda."
+    },
+    "ambient": {
+      "desc": "Pencahayaan halo luar di sekeliling area terminal. Mendukung mode warna solid, aksen brand, dan spektrum RGB dinamis ala keyboard mekanik.",
+      "proOnlyBefore": "Fitur kustomisasi Ambient Lighting eksklusif untuk lisensi",
+      "proOnlyAfter": ". Masuk atau aktifkan lisensi Pro untuk menikmatinya.",
+      "satellite": "2 partikel foton satelit berkejaran 180° dengan pendar ganda.",
+      "neonEdge": "Garis tepi siku atas & kiri menyala tegas dengan pendaran neon berpresisi tinggi."
+    },
+    "avatar": {
+      "proOnly": "Avatar ini eksklusif untuk member Pro"
+    },
+    "floating": {
+      "askBefore": "Tanya Hana AI atau ketik",
+      "askAfter": "untuk memanggil skill.",
+      "placeholder": "Tanya Hana AI (ketik @ untuk skill)…",
+      "sendTitle": "Kirim (Enter)",
+      "send": "Kirim"
+    }
   }
 };
 

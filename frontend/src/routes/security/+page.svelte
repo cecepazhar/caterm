@@ -844,7 +844,7 @@ SSH Hardening Non-Pass: ${securityReport.hardeningChecklist.filter((h) => h.stat
   <!-- TAB 7: EPHEMERAL KEYS -->
   {#if activeTab === 'ephemeral'}
     <div class="space-y-6">
-      <ProGate title="Ephemeral SSH Keys Pro" description="Pembuatan kunci SSH sekali-pakai (disposable) dengan batas waktu auto-revoke memerlukan lisensi CATerm Pro.">
+      <ProGate title="Ephemeral SSH Keys Pro" description={t('ui.security.ephemeralDesc')}>
         <Card variant="primary" size="md">
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>

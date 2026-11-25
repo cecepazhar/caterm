@@ -74,7 +74,7 @@
       <!-- Split View Layouts (if sessions > 1) -->
       {#if sessionCount > 1}
         <div>
-          <span class="block text-[10px] font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500 mb-1.5">
+          <span class="block text-[11px] font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500 mb-1.5">
             {t('shell.splitLayout') || 'Global Split Layout'}
           </span>
           <div class="grid grid-cols-4 gap-1 p-1 bg-neutral-100 dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800">
@@ -95,7 +95,7 @@
                     <path stroke-width="2" d={option.path}></path>
                   {/if}
                 </svg>
-                <span class="text-[9px] mt-0.5">{option.value === 1 ? '1' : option.value === 2 ? '2H' : option.value === 3 ? '2V' : '4G'}</span>
+                <span class="text-[11px] mt-0.5">{option.value === 1 ? '1' : option.value === 2 ? '2H' : option.value === 3 ? '2V' : '4G'}</span>
               </Button>
             {/each}
           </div>
@@ -104,7 +104,7 @@
 
       <!-- Quick Panes (Files SFTP & AI Assistant & Broadcast) -->
       <div>
-        <span class="block text-[10px] font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500 mb-1.5">
+        <span class="block text-[11px] font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500 mb-1.5">
           {t('shell.panels') || 'Quick Panels'}
         </span>
         <div class="grid grid-cols-2 gap-2">
@@ -145,7 +145,7 @@
                 </svg>
                 <span class="font-medium text-xs truncate">{t('shell.broadcastInput')}</span>
               </div>
-              <span class="text-[10px] px-1.5 py-0.5 rounded font-mono font-bold {broadcastInput ? 'bg-white text-neutral-950 dark:bg-neutral-900 dark:text-white' : 'bg-neutral-200 dark:bg-neutral-800 text-neutral-500'}">
+              <span class="text-[11px] px-1.5 py-0.5 rounded font-mono font-bold {broadcastInput ? 'bg-white text-neutral-950 dark:bg-neutral-900 dark:text-white' : 'bg-neutral-200 dark:bg-neutral-800 text-neutral-500'}">
                 {broadcastInput ? 'ON' : 'Ctrl+Shift+B'}
               </span>
             </Button>
@@ -156,7 +156,7 @@
       <!-- Language & Theme Switchers -->
       <div class="pt-2 border-t border-neutral-200 dark:border-neutral-800/80 flex items-center justify-between gap-2">
         <div class="flex items-center gap-1.5">
-          <span class="text-[10px] text-neutral-500">{t('shell.language') || 'Lang'}:</span>
+          <span class="text-[11px] text-neutral-500">{t('shell.language') || 'Lang'}:</span>
           <LanguageSwitcher />
         </div>
 

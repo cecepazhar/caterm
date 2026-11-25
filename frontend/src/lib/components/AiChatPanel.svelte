@@ -148,7 +148,7 @@
             } else {
               stepsToPropose.push({
                 step_number: stepIdx,
-                title: `Jalankan: ${line.slice(0, 40)}${line.length > 40 ? '...' : ''}`,
+                title: t('ui.aiChat.runTitle', { cmd: `${line.slice(0, 40)}${line.length > 40 ? '…' : ''}` }),
                 description: `Perintah diekstrak dari respon AI (Langkah ${stepIdx})`,
                 command: line,
                 is_danger: false
@@ -316,7 +316,7 @@
           }
           const activeSessions = getAllActiveSessions();
           if (activeSessions.length === 0) {
-            runs[i] = { status: 'failed', output: 'Tidak ada sesi terminal aktif untuk dibroadcast.' };
+            runs[i] = { status: 'failed', output: t('ui.aiChat.noSession') };
             showToast(t('aiChat.noActiveTerminalSessions'), 'error');
             return false;
           }
@@ -455,8 +455,8 @@
           size="icon"
           onclick={() => (showConfirmClear = true)}
           class="!p-1 text-neutral-400 hover:text-amber-400 rounded-lg hover:bg-neutral-800 transition-colors"
-          title="Bersihkan riwayat percakapan"
-          aria-label="Bersihkan Chat"
+          title={t('ui.aiChat.clearTitle')}
+          aria-label={t('ui.aiChat.clearAria')}
         >
           <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -470,7 +470,7 @@
           size="icon"
           onclick={() => (isMinimized = true)}
           class="!p-1 text-neutral-400 hover:text-white rounded-lg hover:bg-neutral-800 transition-colors"
-          title="Kecilkan ke pojok"
+          title={t('ui.aiChat.minimize')}
           aria-label="Kecilkan"
         >
           <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -485,8 +485,8 @@
           size="icon"
           onclick={() => (isFullHeight = !isFullHeight)}
           class="!p-1 text-neutral-400 hover:text-white rounded-lg hover:bg-neutral-800 transition-colors"
-          title={isFullHeight ? "Mode Kartu Mengambang" : "Mode Layar Penuh"}
-          aria-label="Ubah Ukuran"
+          title={isFullHeight ? t('ui.aiChat.floatMode') : t('ui.aiChat.fullMode')}
+          aria-label={t('ui.aiChat.resize')}
         >
           <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             {#if isFullHeight}
@@ -504,8 +504,8 @@
           size="icon"
           onclick={onClose}
           class="!p-1 text-neutral-400 hover:text-rose-400 rounded-lg hover:bg-neutral-800 transition-colors"
-          title="Tutup Hana AI"
-          aria-label="Tutup"
+          title={t('ui.aiChat.closeTitle')}
+          aria-label={t('ui.aiChat.close')}
         >
           <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -517,8 +517,8 @@
     <!-- Clear Chat Confirmation Overlay -->
     {#if showConfirmClear}
       <div class="p-4 bg-amber-500/10 border-b border-amber-500/20 text-xs animate-in fade-in duration-150">
-        <p class="font-semibold text-amber-300 mb-1">Bersihkan riwayat percakapan?</p>
-        <p class="text-neutral-400 mb-3 text-[11px]">Tindakan ini akan mengosongkan seluruh log pesan terminal AI.</p>
+        <p class="font-semibold text-amber-300 mb-1">{t('ui.aiChat.clearConfirmTitle')}</p>
+        <p class="text-neutral-400 mb-3 text-[11px]">{t('ui.aiChat.clearConfirmBody')}</p>
         <div class="flex justify-end gap-2">
           <Button
             type="button"
@@ -527,7 +527,7 @@
             onclick={() => (showConfirmClear = false)}
             class="px-2.5 py-1 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300 text-xs transition-colors"
           >
-            Batal
+            {t('ui.aiChat.cancel')}
           </Button>
           <Button
             type="button"
@@ -536,7 +536,7 @@
             onclick={confirmClearChat}
             class="px-2.5 py-1 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold transition-colors"
           >
-            Ya, Bersihkan
+            {t('ui.aiChat.clearConfirm')}
           </Button>
         </div>
       </div>
@@ -547,7 +547,7 @@
       <div class="flex-1 p-6 flex flex-col items-center justify-center">
         <ProGate
           title="Hana AI DevOps Copilot (BYOK)"
-          description="Akses asisten AI pintar untuk diagnosa server, perbaikan sintaks perintah, dan automasi terminal memerlukan lisensi CATerm Pro (dengan API key BYOK Anda sendiri)."
+          description={t('ui.aiChat.proDesc')}
         >
           <div></div>
         </ProGate>
@@ -555,7 +555,7 @@
     {:else}
     <div class="px-3.5 py-2.5 border-b border-neutral-800/80 bg-neutral-950/40 flex items-center gap-2.5 shrink-0 text-xs">
       <div class="flex-1 flex items-center gap-1.5 min-w-0">
-        <span class="text-[10px] font-semibold text-neutral-400 shrink-0">Host:</span>
+        <span class="text-[11px] font-semibold text-neutral-400 shrink-0">Host:</span>
         <select
           bind:value={targetHostId}
           class="flex-1 min-w-0 bg-neutral-900 border border-neutral-700/70 rounded-lg px-2 py-1 text-[11px] text-white focus:outline-none focus:border-rose-500 cursor-pointer truncate"
@@ -568,14 +568,14 @@
       </div>
 
       <div class="flex items-center gap-1.5 shrink-0">
-        <span class="text-[10px] font-semibold text-neutral-400">Via:</span>
+        <span class="text-[11px] font-semibold text-neutral-400">Via:</span>
         <div class="inline-flex rounded-lg bg-neutral-900 p-0.5 border border-neutral-800">
           <Button
             type="button"
             variant="ghost"
             size="sm"
             onclick={() => (execMode = 'ssh')}
-            class="px-2 py-0.5 rounded text-[10px] font-medium transition-colors {execMode === 'ssh'
+            class="px-2 py-0.5 rounded text-[11px] font-medium transition-colors {execMode === 'ssh'
               ? 'bg-rose-600 text-white shadow-sm'
               : 'text-neutral-400 hover:text-white'}"
           >
@@ -586,7 +586,7 @@
             variant="ghost"
             size="sm"
             onclick={() => (execMode = 'terminal')}
-            class="px-2 py-0.5 rounded text-[10px] font-medium transition-colors {execMode === 'terminal'
+            class="px-2 py-0.5 rounded text-[11px] font-medium transition-colors {execMode === 'terminal'
               ? 'bg-rose-600 text-white shadow-sm'
               : 'text-neutral-400 hover:text-white'}"
           >
@@ -640,12 +640,12 @@
                   <div class="flex-1 min-w-0">
                     <div class="font-medium text-neutral-200">{step.title}</div>
                     {#if step.command}
-                      <code class="block mt-1 p-1 bg-black/60 rounded text-[10px] text-rose-300 font-mono break-all">
+                      <code class="block mt-1 p-1 bg-black/60 rounded text-[11px] text-rose-300 font-mono break-all">
                         {step.command}
                       </code>
                     {/if}
                     {#if runs[i]?.output}
-                      <div class="mt-1 text-[10px] {runs[i].status === 'ok' ? 'text-emerald-400' : 'text-rose-400'} font-mono bg-neutral-950 p-1 rounded">
+                      <div class="mt-1 text-[11px] {runs[i].status === 'ok' ? 'text-emerald-400' : 'text-rose-400'} font-mono bg-neutral-950 p-1 rounded">
                         {runs[i].output}
                       </div>
                     {/if}
@@ -666,7 +666,7 @@
             </svg>
             <span>Konfigurasi AI Provider</span>
           </div>
-          <p class="text-[11px] text-neutral-400">Pilih mode "BYO" dan masukkan API Key / URL endpoint AI Anda.</p>
+          <p class="text-[11px] text-neutral-400">{t('ui.aiChat.byoHint')}</p>
           <Button
             type="button"
             variant="danger"

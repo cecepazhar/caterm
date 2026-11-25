@@ -132,7 +132,7 @@
       if (outcome?.deviceLimit) {
         deviceLimit = outcome.deviceLimit;
       } else if (vaultSynced) {
-        showToast('Sinkronisasi Cloud Berhasil! Host & pengaturan tersinkronisasi aman.', 'success');
+        showToast(t('ui.settings.syncOk'), 'success');
       } else {
         handleOutcome(outcome, t('pro.account.synced'));
       }
@@ -615,7 +615,7 @@
       <div class="{SUBCARD} space-y-4">
         <div>
           <p class="text-sm font-semibold text-neutral-900 dark:text-white">Aktivasi License Key</p>
-          <p class="{MUTED} text-xs mt-0.5">Aktifkan CATerm Pro dengan kode lisensi dari Mayar, Ko-fi, atau Founder Lifetime.</p>
+          <p class="{MUTED} text-xs mt-0.5">{t('ui.settings.proActivateHint')}</p>
         </div>
 
         <div class="flex flex-col sm:flex-row gap-2">
@@ -1103,7 +1103,7 @@
               {#if pro.serverAvailable === false}
                 <Button disabled class="flex-1 w-full" variant="outline" size="lg" title={t('settings.subscription.comingSoon')}>
                   {t('settings.subscription.startTrial', { days: PRO_PRICING.trialDays })}
-                  <span class="block text-[10px] font-normal">{t('settings.subscription.comingSoon')}</span>
+                  <span class="block text-[11px] font-normal">{t('settings.subscription.comingSoon')}</span>
                 </Button>
               {:else if !pro.status?.license}
                 <!-- Signed out: opens Pro Login first. A license (trial or paid) hides the trial. -->

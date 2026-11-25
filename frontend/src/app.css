@@ -111,3 +111,35 @@ body {
   width: 100%;
   height: 100%;
 }
+
+/* ── Rendering cost (see $lib/perfMode.ts) ────────────────────────────────────────────────
+   Decorative loops (ambient glow, border beam, aurora) stop while CATerm is in the background,
+   and when the user asked the OS for less motion. */
+html.ca-paused :is([class*="ambient-"], .card-glow-spin),
+html.ca-no-gpu :is([class*="ambient-"], .card-glow-spin) {
+  animation-play-state: paused !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  :is([class*="ambient-"], .card-glow-spin) {
+    animation: none !important;
+  }
+}
+
+/* Without GPU compositing, frosted glass is re-blurred in software on every repaint of what
+   lies beneath it (terminal output included). The translucent background colour stays. */
+html.ca-no-gpu [class*="backdrop-blur"] {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+/* ── Keyboard focus ────────────────────────────────────────────────────────────────────────
+   One visible ring for every focusable control, shown only for keyboard navigation (mouse
+   clicks keep the clean look). The terminal's hidden xterm textarea is excluded. */
+:where(button, a, input, select, textarea, summary, [role="button"], [role="tab"], [role="menuitem"], [role="option"], [tabindex]):focus-visible {
+  outline: 2px solid #0ea5e9;
+  outline-offset: 2px;
+}
+.xterm :focus-visible,
+.xterm-helper-textarea:focus-visible {
+  outline: none;
+}

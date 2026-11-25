@@ -192,7 +192,7 @@
       <ul bind:this={list} id="palette-list" role="listbox" class="max-h-[50vh] overflow-y-auto py-1.5 px-1.5 space-y-0.5">
         {#each filtered as item, i (item.id)}
           {#if i === 0 || filtered[i - 1].group !== item.group}
-            <li role="presentation" class="px-2.5 pt-2.5 pb-1 text-[10px] font-semibold uppercase tracking-wider text-[var(--ca-text-muted)]">
+            <li role="presentation" class="px-2.5 pt-2.5 pb-1 text-[11px] font-semibold uppercase tracking-wider text-[var(--ca-text-muted)]">
               {t(GROUP_LABEL[item.group])}
             </li>
           {/if}

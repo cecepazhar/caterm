@@ -334,7 +334,7 @@
                 <div class="text-xs font-semibold text-neutral-900 dark:text-white truncate group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors">
                   {ws.name}
                 </div>
-                <div class="text-[10px] text-neutral-500 dark:text-neutral-400 flex items-center flex-wrap gap-1.5 mt-0.5">
+                <div class="text-[11px] text-neutral-500 dark:text-neutral-400 flex items-center flex-wrap gap-1.5 mt-0.5">
                   <span class="px-1.5 py-0.2 rounded bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 font-mono">
                     {t('workspaces.hostCount', { count: ws.sessions?.length || ws.hostIds.length })}
                   </span>
@@ -350,7 +350,7 @@
                     {#each Array.from(new Set(ws.sessions.filter(s => s.group).map(s => JSON.stringify({ name: s.group, color: s.groupColor })))) as jsonGroup}
                       {@const g = JSON.parse(jsonGroup)}
                       <span
-                        class="px-1.5 py-0.2 rounded text-[9px] font-medium flex items-center gap-1 border"
+                        class="px-1.5 py-0.2 rounded text-[11px] font-medium flex items-center gap-1 border"
                         style="background-color: {g.color ? g.color + '15' : 'rgba(2, 132, 199, 0.1)'}; color: {g.color || '#0284c7'}; border-color: {g.color ? g.color + '40' : 'rgba(2, 132, 199, 0.3)'}"
                       >
                         <span class="w-1 h-1 rounded-full" style="background-color: {g.color || '#0284c7'}"></span>
@@ -469,7 +469,7 @@
                   <span>{tab.title || tab.host.label}</span>
                   {#if tab.group}
                     <span
-                      class="px-1 py-0.1 rounded text-[9px] font-sans font-medium"
+                      class="px-1 py-0.1 rounded text-[11px] font-sans font-medium"
                       style="background-color: {tab.groupColor ? tab.groupColor + '20' : 'rgba(2, 132, 199, 0.1)'}; color: {tab.groupColor || '#0284c7'}"
                     >
                       {tab.group}

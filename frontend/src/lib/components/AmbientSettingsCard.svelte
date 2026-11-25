@@ -28,17 +28,17 @@
       <div class="flex items-center gap-2">
         <h3 class="text-base font-semibold tracking-tight">Ambient Underglow & RGB Lighting</h3>
         {#if pro.isPro}
-          <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-500 border border-amber-500/30 uppercase tracking-wide">
+          <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-500 border border-amber-500/30 uppercase tracking-wide">
             PRO Founder
           </span>
         {:else}
-          <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-neutral-200 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400 uppercase tracking-wide">
+          <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-neutral-200 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400 uppercase tracking-wide">
             PRO Feature
           </span>
         {/if}
       </div>
       <p class="text-xs text-neutral-500 dark:text-neutral-400 max-w-xl">
-        Pencahayaan halo luar di sekeliling area terminal dengan akselerasi GPU. Mendukung mode warna solid, aksen brand, dan spektrum RGB dinamis ala keyboard mekanik.
+        {t('ui.ambient.desc')}
       </p>
     </div>
 
@@ -70,7 +70,7 @@
         <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
         </svg>
-        <span>Fitur kustomisasi Ambient Lighting eksklusif untuk lisensi <strong>PRO Founder Edition</strong>. Masuk atau aktifkan lisensi Pro untuk menikmatinya.</span>
+        <span>{t('ui.ambient.proOnlyBefore')} <strong>PRO Founder Edition</strong>{t('ui.ambient.proOnlyAfter')}</span>
       </div>
       <a href="/settings?tab=subscription" class="shrink-0 px-3 py-1.5 font-bold rounded-lg bg-amber-500 hover:bg-amber-400 text-neutral-950 transition-colors text-center">
         Aktivasi Lisensi Disini →
@@ -97,7 +97,7 @@
               <span class="w-3 h-3 rounded-full border border-black/20" style:background-color={defaultAccent}></span>
               <span class="text-xs font-semibold">Tema {appName}</span>
             </div>
-            <p class="text-[10px] text-neutral-500 dark:text-neutral-400">Bawaan warna aplikasi</p>
+            <p class="text-[11px] text-neutral-500 dark:text-neutral-400">Bawaan warna aplikasi</p>
           </Button>
 
           <Button
@@ -110,7 +110,7 @@
               <span class="w-3 h-3 rounded-full border border-black/20" style:background-color={ambient.config.customColor}></span>
               <span class="text-xs font-semibold">Warna Solid</span>
             </div>
-            <p class="text-[10px] text-neutral-500 dark:text-neutral-400">{t('ambient.customColorDesc')}</p>
+            <p class="text-[11px] text-neutral-500 dark:text-neutral-400">{t('ambient.customColorDesc')}</p>
           </Button>
 
           <Button
@@ -123,7 +123,7 @@
               <span class="w-3 h-3 rounded-full bg-[linear-gradient(135deg,#ff0055,#33cc33,#0099ff)]"></span>
               <span class="text-xs font-semibold">RGB Chroma</span>
             </div>
-            <p class="text-[10px] text-neutral-500 dark:text-neutral-400">Keyboard mechanical cycle</p>
+            <p class="text-[11px] text-neutral-500 dark:text-neutral-400">Keyboard mechanical cycle</p>
           </Button>
 
           <Button
@@ -136,7 +136,7 @@
               <span class="w-3 h-3 rounded-full bg-[radial-gradient(circle,#ef4444,#8b5cf6)]"></span>
               <span class="text-xs font-semibold">Aurora Drift</span>
             </div>
-            <p class="text-[10px] text-neutral-500 dark:text-neutral-400">Gelombang cahaya halus</p>
+            <p class="text-[11px] text-neutral-500 dark:text-neutral-400">Gelombang cahaya halus</p>
           </Button>
         </div>
       </div>
@@ -196,7 +196,7 @@
             class="p-3 rounded-xl border text-center transition-all h-auto block w-full {ambient.config.effect === 'static' ? 'border-sky-500 bg-sky-500/10 text-sky-700 dark:text-sky-300 font-semibold' : 'border-neutral-200 dark:border-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-800'}"
           >
             <div class="text-xs">Statis (Steady)</div>
-            <div class="text-[10px] text-neutral-500 dark:text-neutral-400 mt-0.5">Cahaya konstan</div>
+            <div class="text-[11px] text-neutral-500 dark:text-neutral-400 mt-0.5">Cahaya konstan</div>
           </Button>
 
           <Button
@@ -206,7 +206,7 @@
             class="p-3 rounded-xl border text-center transition-all h-auto block w-full {ambient.config.effect === 'breathing' ? 'border-sky-500 bg-sky-500/10 text-sky-700 dark:text-sky-300 font-semibold' : 'border-neutral-200 dark:border-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-800'}"
           >
             <div class="text-xs">Bernafas (Pulse)</div>
-            <div class="text-[10px] text-neutral-500 dark:text-neutral-400 mt-0.5">Siklus redup & terang</div>
+            <div class="text-[11px] text-neutral-500 dark:text-neutral-400 mt-0.5">Siklus redup & terang</div>
           </Button>
 
           <Button
@@ -216,7 +216,7 @@
             class="p-3 rounded-xl border text-center transition-all h-auto block w-full {ambient.config.effect === 'wave' ? 'border-sky-500 bg-sky-500/10 text-sky-700 dark:text-sky-300 font-semibold' : 'border-neutral-200 dark:border-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-800'}"
           >
             <div class="text-xs">Gelombang (Wave)</div>
-            <div class="text-[10px] text-neutral-500 dark:text-neutral-400 mt-0.5">Aliran dinamis</div>
+            <div class="text-[11px] text-neutral-500 dark:text-neutral-400 mt-0.5">Aliran dinamis</div>
           </Button>
         </div>
       </div>
@@ -285,7 +285,7 @@
               <span class="text-xs font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
                 Typing-Reactive Glow (Efek Ketikan)
               </span>
-              <span class="text-[9px] font-bold px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-500 border border-amber-500/20 uppercase">
+              <span class="text-[11px] font-bold px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-500 border border-amber-500/20 uppercase">
                 Bloom Reaktif
               </span>
             </div>
@@ -322,7 +322,7 @@
                 <span class="text-xs font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
                   Bicolor Dual-Axis Gradient
                 </span>
-                <span class="text-[9px] font-bold px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 uppercase">
+                <span class="text-[11px] font-bold px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 uppercase">
                   Dual Axis
                 </span>
               </div>
@@ -402,7 +402,7 @@
               <span class="text-xs font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
                 Avatar Profile Halo Effect (PRO)
               </span>
-              <span class="text-[9px] font-bold px-1.5 py-0.2 rounded bg-sky-500/10 text-sky-500 border border-sky-500/20 uppercase">
+              <span class="text-[11px] font-bold px-1.5 py-0.2 rounded bg-sky-500/10 text-sky-500 border border-sky-500/20 uppercase">
                 Aura GPU
               </span>
             </div>
@@ -448,7 +448,7 @@
                   <div class="w-4 h-4 rounded-full bg-sky-500/20 text-sky-400 flex items-center justify-center text-[8px] font-bold">1</div>
                 </div>
               </div>
-              <p class="text-[10px] text-neutral-500 dark:text-neutral-400 leading-relaxed">
+              <p class="text-[11px] text-neutral-500 dark:text-neutral-400 leading-relaxed">
                 Default: Berkas laser komet berputar 120° mengelilingi cincin avatar.
               </p>
             </Button>
@@ -468,8 +468,8 @@
                   <div class="w-4 h-4 rounded-full bg-purple-500/20 text-purple-400 flex items-center justify-center text-[8px] font-bold">2</div>
                 </div>
               </div>
-              <p class="text-[10px] text-neutral-500 dark:text-neutral-400 leading-relaxed">
-                2 partikel foton satelit berkejaran 180° dengan pendar ganda.
+              <p class="text-[11px] text-neutral-500 dark:text-neutral-400 leading-relaxed">
+                {t('ui.ambient.satellite')}
               </p>
             </Button>
 
@@ -488,7 +488,7 @@
                   <div class="w-4 h-4 rounded-full bg-neutral-900 z-10 flex items-center justify-center text-[8px] font-bold text-neutral-300">3</div>
                 </div>
               </div>
-              <p class="text-[10px] text-neutral-500 dark:text-neutral-400 leading-relaxed">
+              <p class="text-[11px] text-neutral-500 dark:text-neutral-400 leading-relaxed">
                 Aura reaktif mengikuti spektrum warna & kecepatan ambient terpilih.
               </p>
             </Button>
@@ -504,7 +504,7 @@
               <span class="text-xs font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
                 Work Area Card Outer Glow (PRO)
               </span>
-              <span class="text-[9px] font-bold px-1.5 py-0.2 rounded bg-sky-500/10 text-sky-500 border border-sky-500/20 uppercase">
+              <span class="text-[11px] font-bold px-1.5 py-0.2 rounded bg-sky-500/10 text-sky-500 border border-sky-500/20 uppercase">
                 Card Aura
               </span>
             </div>
@@ -550,7 +550,7 @@
                   <div class="w-full h-full rounded-tl-md border-t border-l border-sky-400/60 bg-neutral-800/80"></div>
                 </div>
               </div>
-              <p class="text-[10px] text-neutral-500 dark:text-neutral-400 leading-relaxed">
+              <p class="text-[11px] text-neutral-500 dark:text-neutral-400 leading-relaxed">
                 Pendaran cahaya ambient lembut memancar keluar ke kanvas dan sekeliling sudut siku.
               </p>
             </Button>
@@ -569,8 +569,8 @@
                   <div class="w-full h-full rounded-tl-md border-t-2 border-l-2 border-sky-400 shadow-[0_0_8px_#38bdf8] bg-neutral-800/80"></div>
                 </div>
               </div>
-              <p class="text-[10px] text-neutral-500 dark:text-neutral-400 leading-relaxed">
-                Garis tepi siku atas & kiri menyala tegas dengan pendaran neon berpresisi tinggi.
+              <p class="text-[11px] text-neutral-500 dark:text-neutral-400 leading-relaxed">
+                {t('ui.ambient.neonEdge')}
               </p>
             </Button>
 
@@ -589,7 +589,7 @@
                   <div class="relative w-full h-full rounded-tl-md bg-neutral-900 border-t border-l border-sky-400/40"></div>
                 </div>
               </div>
-              <p class="text-[10px] text-neutral-500 dark:text-neutral-400 leading-relaxed">
+              <p class="text-[11px] text-neutral-500 dark:text-neutral-400 leading-relaxed">
                 Sinar berkas laser mengalir dinamis mengitari lengkungan siku rounded.
               </p>
             </Button>

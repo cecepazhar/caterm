@@ -442,7 +442,7 @@
           <div class="flex items-center justify-center gap-2">
             <h2 class="text-2xl font-bold text-neutral-900 dark:text-white">{t('lock.welcomeBack', { name: profile.name })}</h2>
             {#if isProUser}
-              <span class="px-2 py-0.5 rounded-full text-[10px] font-black tracking-wider bg-amber-400 dark:bg-amber-500 text-neutral-950 shadow-xs border border-white dark:border-neutral-900">
+              <span class="px-2 py-0.5 rounded-full text-[11px] font-black tracking-wider bg-amber-400 dark:bg-amber-500 text-neutral-950 shadow-xs border border-white dark:border-neutral-900">
                 PRO
               </span>
             {/if}

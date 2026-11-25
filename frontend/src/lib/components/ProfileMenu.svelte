@@ -130,7 +130,7 @@
       <span class="min-w-0 flex-1 text-left">
         <span class="flex items-center gap-1.5">
           <span class="text-[13px] font-semibold text-neutral-900 dark:text-white truncate">{profile.name}</span>
-          <span class="shrink-0 px-1.5 py-px rounded border border-neutral-300 dark:border-neutral-700 text-[9px] font-semibold tracking-wider text-neutral-500 dark:text-neutral-400">
+          <span class="shrink-0 px-1.5 py-px rounded border border-neutral-300 dark:border-neutral-700 text-[11px] font-semibold tracking-wider text-neutral-500 dark:text-neutral-400">
             {planLabel.toUpperCase()}
           </span>
         </span>

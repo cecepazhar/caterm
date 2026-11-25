@@ -202,7 +202,7 @@
 
               <!-- System prompt preview -->
               <div class="space-y-1">
-                <span class="text-[10px] font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
+                <span class="text-[11px] font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
                   Base System Prompt
                 </span>
                 <p class="text-xs font-mono bg-white dark:bg-neutral-900 p-2.5 rounded border border-neutral-200 dark:border-neutral-800 line-clamp-3 text-neutral-800 dark:text-neutral-200">
@@ -213,7 +213,7 @@
               <!-- Rules preview -->
               {#if p.custom_rules && p.custom_rules.length > 0}
                 <div class="space-y-1">
-                  <span class="text-[10px] font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
+                  <span class="text-[11px] font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
                     Rules ({p.custom_rules.length})
                   </span>
                   <ul class="text-xs space-y-1">
@@ -300,6 +300,8 @@
               size="sm"
               variant="ghost"
               onclick={() => removeRule(i)}
+              title="Remove rule"
+              aria-label="Remove rule"
               class="text-rose-500 hover:text-rose-700 font-bold p-1 h-auto"
             >
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>

@@ -881,7 +881,7 @@
 			<span class="text-neutral-900 dark:text-white font-medium truncate">{paneLabel}</span>
 			<span class="text-neutral-500 dark:text-neutral-500 hidden sm:inline truncate">({host.address})</span>
 			{#if sessionView.broadcastInput}
-			  <span class="ml-1 px-1.5 py-0.5 rounded text-[9px] font-bold tracking-wider uppercase bg-amber-500/20 text-amber-500 border border-amber-500/40 animate-pulse">
+			  <span class="ml-1 px-1.5 py-0.5 rounded text-[11px] font-bold tracking-wider uppercase bg-amber-500/20 text-amber-500 border border-amber-500/40 animate-pulse">
 			    SYNC
 			  </span>
 			{/if}
@@ -898,7 +898,7 @@
             selectedSuggestionIndex = -1;
           }
         }}
-        class="!px-1.5 !py-0.5 rounded text-[10px] font-sans font-semibold transition-colors flex items-center gap-1 {autocompleteEnabled ? 'bg-sky-500/15 dark:bg-sky-500/20 text-sky-700 dark:text-sky-400 border border-sky-500/30' : 'bg-neutral-200 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400 border border-transparent'}"
+        class="!px-1.5 !py-0.5 rounded text-[11px] font-sans font-semibold transition-colors flex items-center gap-1 {autocompleteEnabled ? 'bg-sky-500/15 dark:bg-sky-500/20 text-sky-700 dark:text-sky-400 border border-sky-500/30' : 'bg-neutral-200 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400 border border-transparent'}"
         title={t('terminal.toggleAutocompleteTitle')}
         aria-label={t('terminal.toggleAutocomplete')}
       >
@@ -911,7 +911,7 @@
         variant="ghost"
         size="sm"
         onclick={triggerErrorDiagnostic}
-        class="!px-1.5 !py-0.5 rounded text-[10px] font-sans font-semibold transition-colors flex items-center gap-1 bg-purple-500/15 dark:bg-purple-500/20 text-purple-700 dark:text-purple-400 border border-purple-500/30 hover:bg-purple-500/25"
+        class="!px-1.5 !py-0.5 rounded text-[11px] font-sans font-semibold transition-colors flex items-center gap-1 bg-purple-500/15 dark:bg-purple-500/20 text-purple-700 dark:text-purple-400 border border-purple-500/30 hover:bg-purple-500/25"
         title="Diagnose Recent Errors with Master AI Router"
         aria-label="AI Diagnose"
       >
@@ -959,7 +959,7 @@
         }}
       />
       {#if searchMiss && searchQuery}
-        <span class="text-[10px] text-rose-500">{t('terminal.searchNoMatch')}</span>
+        <span class="text-[11px] text-rose-500">{t('terminal.searchNoMatch')}</span>
       {/if}
       <button type="button" class="text-xs px-1 text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200" onclick={() => runSearch(true)} aria-label="previous">↑</button>
       <button type="button" class="text-xs px-1 text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200" onclick={() => runSearch(false)} aria-label="next">↓</button>
@@ -1004,7 +1004,7 @@
             </span>
             <h3 class="text-sm font-semibold">AI Error Diagnostic & Fix</h3>
             {#if diagnosticResult}
-              <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-neutral-200 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300">
+              <span class="text-[11px] font-mono px-2 py-0.5 rounded bg-neutral-200 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300">
                 {diagnosticResult.model}
                 {#if diagnosticResult.fell_back}
                   (Failover Active)
@@ -1045,7 +1045,7 @@
         </div>
 
         <div class="flex justify-between items-center pt-2 border-t border-neutral-200 dark:border-neutral-800">
-          <span class="text-[10px] text-neutral-400">Zero-knowledge local memory & PII scrubber enabled.</span>
+          <span class="text-[11px] text-neutral-400">Zero-knowledge local memory & PII scrubber enabled.</span>
           <div class="flex gap-2">
             <Button
               variant="secondary"

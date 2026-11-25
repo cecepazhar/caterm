@@ -336,7 +336,7 @@
             </div>
           {:else}
             <div class="py-16 text-center text-neutral-400 text-xs bg-white dark:bg-neutral-900/40 rounded-2xl border border-neutral-200 dark:border-neutral-800">
-              Belum ada benchmark dijalankan. Tekan "Jalankan Server Benchmark".
+              {t('ui.netAudit.noBench')}
             </div>
           {/if}
         </div>

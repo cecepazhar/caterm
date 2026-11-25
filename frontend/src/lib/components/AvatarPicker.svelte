@@ -22,7 +22,7 @@
   function selectAvatar(id: string, isProAvatar: boolean, e: MouseEvent) {
     e.stopPropagation();
     if (isProAvatar && !pro.isPro && profile.plan !== 'pro') {
-      showToast('Avatar ini eksklusif untuk member Pro', 'error');
+      showToast(t('ui.avatar.proOnly'), 'error');
       return;
     }
     value = id;
@@ -98,7 +98,7 @@
             role="radio"
             aria-checked={value === option.id}
             aria-label={option.label}
-            title={option.pro ? (pro.isPro ? `${option.label} (Pro Exclusive)` : `${option.label} - Avatar ini eksklusif untuk member Pro`) : option.label}
+            title={option.pro ? (pro.isPro ? `${option.label} (Pro Exclusive)` : `${option.label} - ${t('ui.avatar.proOnly')}`) : option.label}
             onclick={(e) => selectAvatar(option.id, !!option.pro, e)}
             class="relative justify-self-center rounded-full p-1 ring-2 ring-offset-2 ring-offset-white dark:ring-offset-neutral-900 transition-all {option.pro && !pro.isPro ? 'opacity-60 hover:opacity-100' : ''} {value === option.id ? 'ring-sky-500 scale-110 shadow-sm' : 'ring-transparent hover:ring-neutral-300 dark:hover:ring-neutral-700 hover:scale-105'}"
           >

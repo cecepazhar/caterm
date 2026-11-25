@@ -217,7 +217,7 @@
   {/if}
 
   <!-- Status bar -->
-  <div class="flex items-center justify-between px-3 py-1 border-t border-neutral-200 dark:border-slate-800 bg-neutral-100 dark:bg-slate-900 text-[10px] text-neutral-500 dark:text-slate-500 select-none shrink-0">
+  <div class="flex items-center justify-between px-3 py-1 border-t border-neutral-200 dark:border-slate-800 bg-neutral-100 dark:bg-slate-900 text-[11px] text-neutral-500 dark:text-slate-500 select-none shrink-0">
     <span>{t('editor.position', { line, col })}</span>
     <span class="flex items-center gap-3">
       <span>UTF-8</span>

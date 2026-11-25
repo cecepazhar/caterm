@@ -826,7 +826,7 @@
                     {/if}
                   </div>
                   {#if step.result?.exit_code !== undefined}
-                    <span class="px-1.5 py-0.5 rounded text-[10px] {step.result.exit_code === 0 ? 'bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800' : 'bg-rose-50 dark:bg-rose-950 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800'}">
+                    <span class="px-1.5 py-0.5 rounded text-[11px] {step.result.exit_code === 0 ? 'bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800' : 'bg-rose-50 dark:bg-rose-950 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800'}">
                       {t('promptStudio.exitCode', { code: step.result.exit_code })}
                     </span>
                   {/if}

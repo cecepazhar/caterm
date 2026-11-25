@@ -315,16 +315,16 @@
             <!-- Details Box -->
             <div class="bg-neutral-50 dark:bg-neutral-950/60 rounded-xl p-3 border border-neutral-100 dark:border-neutral-800/60 text-xs space-y-1.5 font-mono">
               <div class="flex items-center justify-between text-neutral-600 dark:text-neutral-400">
-                <span class="text-[10px] uppercase font-sans font-semibold text-neutral-400">Target Host:</span>
+                <span class="text-[11px] uppercase font-sans font-semibold text-neutral-400">Target Host:</span>
                 <span class="font-medium text-neutral-900 dark:text-white">{hostName(task.hostId)}</span>
               </div>
               {#if task.taskType === 'sftp_backup'}
                 <div class="flex items-center justify-between text-neutral-600 dark:text-neutral-400 truncate">
-                  <span class="text-[10px] uppercase font-sans font-semibold text-neutral-400 shrink-0">Remote Path:</span>
+                  <span class="text-[11px] uppercase font-sans font-semibold text-neutral-400 shrink-0">Remote Path:</span>
                   <span class="truncate ml-2 text-indigo-600 dark:text-indigo-400">{task.remoteSrcPath}</span>
                 </div>
                 <div class="flex items-center justify-between text-neutral-600 dark:text-neutral-400">
-                  <span class="text-[10px] uppercase font-sans font-semibold text-neutral-400">Retensi Lokal:</span>
+                  <span class="text-[11px] uppercase font-sans font-semibold text-neutral-400">Retensi Lokal:</span>
                   <span>{task.retentionCount} file terakhir</span>
                 </div>
               {/if}
@@ -341,7 +341,7 @@
               class="flex items-center gap-1.5"
             >
               <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-              <span>Riwayat Log</span>
+              <span>{t('ui.tasks.logHistory')}</span>
             </Button>
 
             <div class="flex items-center gap-1.5">
@@ -371,7 +371,7 @@
                 size="sm"
                 onclick={() => handleDeleteTask(task)}
               >
-                Hapus
+                {t('ui.tasks.delete')}
               </Button>
             </div>
           </div>
@@ -384,7 +384,7 @@
 <!-- Modal Create / Edit Task -->
 <Modal
   bind:open={isAddModalOpen}
-  title={editingId ? 'Edit Tugas Terjadwal' : 'Tambah Tugas Terjadwal Baru'}
+  title={editingId ? t('ui.tasks.editTitle') : t('ui.tasks.newTitle')}
   size="lg"
 >
   <div class="space-y-3 text-xs">
@@ -518,7 +518,7 @@
         disabled={isLoading}
         loading={isLoading}
       >
-        Simpan Jadwal
+        {t('ui.tasks.save')}
       </Button>
     </div>
   {/snippet}
@@ -532,7 +532,7 @@
 >
   {#if activeTaskLogs.length === 0}
     <div class="text-center py-8 text-neutral-500 text-xs">
-      Belum ada riwayat eksekusi untuk tugas ini.
+      {t('ui.tasks.noRuns')}
     </div>
   {:else}
     <div class="space-y-3 text-xs max-h-[60vh] overflow-y-auto">

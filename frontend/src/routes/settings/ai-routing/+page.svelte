@@ -310,7 +310,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
               <!-- Primary Provider & Model -->
               <div class="space-y-2 p-3 rounded-md bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800">
-                <div class="font-semibold text-sky-600 dark:text-sky-400 uppercase tracking-wide text-[10px]">Primary Execution</div>
+                <div class="font-semibold text-sky-600 dark:text-sky-400 uppercase tracking-wide text-[11px]">Primary Execution</div>
                 <div>
                   <label for="primary-prov-{rule.task_type}" class={LABEL}>Provider</label>
                   <select id="primary-prov-{rule.task_type}" bind:value={rule.primary_provider_id} class={INPUT}>
@@ -330,7 +330,7 @@
 
               <!-- Fallback Provider & Model -->
               <div class="space-y-2 p-3 rounded-md bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800">
-                <div class="font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wide text-[10px]">Fallback Failover (15s Timeout)</div>
+                <div class="font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wide text-[11px]">Fallback Failover (15s Timeout)</div>
                 <div>
                   <label for="fallback-prov-{rule.task_type}" class={LABEL}>Provider</label>
                   <select id="fallback-prov-{rule.task_type}" bind:value={rule.fallback_provider_id} class={INPUT}>
@@ -352,7 +352,7 @@
 
               <!-- Persona & System Prompt -->
               <div class="space-y-2 p-3 rounded-md bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800">
-                <div class="font-semibold text-purple-600 dark:text-purple-400 uppercase tracking-wide text-[10px]">System Persona Context</div>
+                <div class="font-semibold text-purple-600 dark:text-purple-400 uppercase tracking-wide text-[11px]">System Persona Context</div>
                 <div>
                   <label for="persona-{rule.task_type}" class={LABEL}>Active Persona</label>
                   <select id="persona-{rule.task_type}" bind:value={rule.system_persona_id} class={INPUT}>
@@ -366,7 +366,7 @@
 
               <!-- Hyperparameters -->
               <div class="space-y-2 p-3 rounded-md bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800">
-                <div class="font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wide text-[10px]">Generation Parameters</div>
+                <div class="font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wide text-[11px]">Generation Parameters</div>
                 <div class="flex items-center justify-between gap-2">
                   <label for="temp-{rule.task_type}" class={LABEL}>Temp ({rule.temperature.toFixed(2)})</label>
                   <input

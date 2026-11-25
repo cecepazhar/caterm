@@ -90,7 +90,7 @@
       <div class="flex items-center gap-2">
         <p class="font-semibold text-neutral-900 dark:text-white truncate text-sm">{label || 'Authenticator Token'}</p>
         {#if issuer}
-          <span class="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-bold uppercase tracking-wider bg-sky-500/15 text-sky-700 dark:text-sky-300 border border-sky-500/30 shrink-0">
+          <span class="inline-flex items-center px-1.5 py-0.2 rounded text-[11px] font-bold uppercase tracking-wider bg-sky-500/15 text-sky-700 dark:text-sky-300 border border-sky-500/30 shrink-0">
             {issuer}
           </span>
         {/if}

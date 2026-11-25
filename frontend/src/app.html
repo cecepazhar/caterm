@@ -7,17 +7,129 @@
     <title>CATerm</title>
     <script>
       try {
-        const theme = localStorage.getItem('caterm-theme');
-        if (theme === 'light') {
-          document.documentElement.classList.remove('dark');
-        } else {
-          document.documentElement.classList.add('dark');
-        }
+        // Same key the theme store writes (lib/stores/theme.svelte.ts), so the splash and the
+        // window background match the app from the first frame. Default: dark.
+        var theme = localStorage.getItem('caterm-theme');
+        document.documentElement.classList.toggle('dark', theme !== 'light');
       } catch (e) {}
     </script>
+    <style>
+      /* Boot splash: plain HTML/CSS so it paints in the very first frame, before any JS bundle.
+         Same family look as the other CA apps (CAPost, CACalm): soft colour glows, the app
+         mark with a breathing ring, a thin progress bar and the maker line. */
+      html, body { margin: 0; background: #0e0e0e; }
+      html:not(.dark), html:not(.dark) body { background: #f5f5f5; }
+      #boot-splash {
+        position: fixed; inset: 0; z-index: 2147483647;
+        display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px;
+        background:
+          radial-gradient(40% 45% at 30% 35%, rgba(239,68,68,.18), transparent 70%),
+          radial-gradient(35% 40% at 72% 65%, rgba(244,63,94,.12), transparent 70%),
+          #0e0e0e;
+        color: #ededed;
+        font: 13px/1.4 "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, sans-serif;
+        transition: opacity 300ms ease, visibility 300ms ease;
+        user-select: none; cursor: default;
+      }
+      html:not(.dark) #boot-splash {
+        background:
+          radial-gradient(40% 45% at 30% 35%, rgba(239,68,68,.13), transparent 70%),
+          radial-gradient(35% 40% at 72% 65%, rgba(244,63,94,.08), transparent 70%),
+          #f5f5f5;
+        color: #171717;
+      }
+      #boot-splash.is-done { opacity: 0; visibility: hidden; }
+      #boot-splash .bs-logo-wrap { position: relative; width: 84px; height: 84px; display: flex; align-items: center; justify-content: center; }
+      #boot-splash .bs-ring { position: absolute; inset: 0; border-radius: 26px; background: #ef4444; animation: bs-breathe 3.2s ease-in-out infinite; }
+      #boot-splash .bs-logo { position: relative; width: 84px; height: 84px; border-radius: 22px; box-shadow: 0 10px 30px -12px rgba(0,0,0,.6); }
+      html:not(.dark) #boot-splash .bs-logo { box-shadow: 0 10px 30px -14px rgba(15,23,42,.45); }
+      #boot-splash .bs-name { font-size: 22px; font-weight: 600; letter-spacing: -0.01em; text-align: center; }
+      #boot-splash .bs-sub { margin-top: 2px; font-size: 12px; color: #737373; text-align: center; }
+      #boot-splash .bs-track { width: 240px; height: 4px; border-radius: 4px; overflow: hidden; background: rgba(127,127,127,.18); }
+      #boot-splash .bs-bar { height: 100%; width: 0%; border-radius: 4px; background: linear-gradient(90deg, #ef4444, #fca5a5); transition: width 180ms ease-out; }
+      #boot-splash .bs-step { min-height: 16px; font-size: 11.5px; color: #737373; }
+      #boot-splash .bs-by { position: absolute; bottom: 22px; font-size: 11px; color: #737373; }
+      @keyframes bs-breathe { 0%, 100% { transform: scale(1); opacity: .30; } 50% { transform: scale(1.28); opacity: .04; } }
+      @media (prefers-reduced-motion: reduce) { #boot-splash .bs-ring { animation: none; opacity: .14; } }
+    </style>
     %sveltekit.head%
   </head>
   <body data-sveltekit-preload-data="hover">
+    <div id="boot-splash" role="status" aria-live="polite" aria-label="Loading CATerm">
+      <div class="bs-logo-wrap">
+        <span class="bs-ring" aria-hidden="true"></span>
+        <!-- The app mark (dark tile, faint grid, red >_ prompt), inline so it needs no request. -->
+        <svg class="bs-logo" viewBox="0 0 512 512" aria-hidden="true">
+          <defs>
+            <linearGradient id="bs-tile" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#1a1517" />
+              <stop offset="1" stop-color="#0c0a0b" />
+            </linearGradient>
+            <pattern id="bs-grid" width="32" height="32" patternUnits="userSpaceOnUse">
+              <path d="M32 0H0V32" fill="none" stroke="#ef4444" stroke-opacity=".07" stroke-width="2" />
+            </pattern>
+            <radialGradient id="bs-glow" cx=".5" cy=".55" r=".5">
+              <stop offset="0" stop-color="#ef4444" stop-opacity=".16" />
+              <stop offset="1" stop-color="#ef4444" stop-opacity="0" />
+            </radialGradient>
+            <linearGradient id="bs-mark" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#f87171" />
+              <stop offset="1" stop-color="#ef4444" />
+            </linearGradient>
+          </defs>
+          <rect width="512" height="512" rx="112" fill="url(#bs-tile)" />
+          <rect width="512" height="512" rx="112" fill="url(#bs-grid)" />
+          <rect width="512" height="512" rx="112" fill="url(#bs-glow)" />
+          <path d="M140 152 L260 256 L140 360" fill="none" stroke="url(#bs-mark)" stroke-width="38" stroke-linecap="round" stroke-linejoin="round" />
+          <line x1="288" y1="360" x2="384" y2="360" stroke="#ef4444" stroke-width="38" stroke-linecap="round" />
+        </svg>
+      </div>
+      <div>
+        <div class="bs-name">CATerm</div>
+        <div class="bs-sub" id="boot-sub">Enterprise SSH Manager &amp; Prompt Studio</div>
+      </div>
+      <div class="bs-track"><div class="bs-bar" id="boot-bar"></div></div>
+      <div class="bs-step" id="boot-step">Starting…</div>
+      <div class="bs-by" id="boot-by">by Cecep Azhar · Fathforce</div>
+    </div>
+    <script>
+      // Progress creeps toward 90% on its own; the app reports real steps through
+      // __catermBoot.step() and finishes with __catermBoot.done(). Hard cap: 3.5 s.
+      (function () {
+        var bar = document.getElementById('boot-bar');
+        var label = document.getElementById('boot-step');
+        var splash = document.getElementById('boot-splash');
+        var lang = 'en';
+        try {
+          lang = localStorage.getItem('caterm_locale') || (navigator.language || '').slice(0, 2);
+        } catch (e) {}
+        if (lang === 'id') {
+          document.getElementById('boot-sub').textContent = 'Pengelola SSH Enterprise & Prompt Studio';
+          document.getElementById('boot-by').textContent = 'oleh Cecep Azhar · Fathforce';
+          label.textContent = 'Memulai…';
+        }
+        var pct = 0, finished = false;
+        function set(p) { pct = Math.max(pct, Math.min(100, p)); if (bar) bar.style.width = pct + '%'; }
+        var timer = setInterval(function () { if (pct < 90) set(pct + Math.max(0.6, (90 - pct) * 0.06)); }, 60);
+        function done() {
+          if (finished) return;
+          finished = true;
+          clearInterval(timer);
+          set(100);
+          setTimeout(function () {
+            if (splash) splash.classList.add('is-done');
+            setTimeout(function () { if (splash && splash.parentNode) splash.parentNode.removeChild(splash); }, 320);
+          }, 140);
+        }
+        window.__catermBoot = {
+          start: performance.now(),
+          lang: lang,
+          step: function (text, p) { if (label && text) label.textContent = text; if (typeof p === 'number') set(p); },
+          done: done
+        };
+        setTimeout(done, 3500);
+      })();
+    </script>
     <div style="display: contents">%sveltekit.body%</div>
   </body>
 </html>

@@ -114,10 +114,10 @@
             }`}
           >
             <div class="flex items-center justify-between gap-1 w-full">
-              <span class={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold border ${badge.bg}`}>
+              <span class={`text-[11px] px-1.5 py-0.5 rounded-full font-semibold border ${badge.bg}`}>
                 {badge.label}
               </span>
-              <span class="text-[10px] font-mono text-neutral-400">
+              <span class="text-[11px] font-mono text-neutral-400">
                 {formatDuration(log.durationMs)}
               </span>
             </div>
@@ -125,7 +125,7 @@
               {log.startedAt}
             </div>
             {#if log.bytesTransferred}
-              <div class="text-[10px] text-purple-600 dark:text-purple-400">
+              <div class="text-[11px] text-purple-600 dark:text-purple-400">
                 Transferred: {formatBytes(log.bytesTransferred)}
               </div>
             {/if}
@@ -178,14 +178,14 @@
 
           {#if selectedLog.stdout}
             <div class="space-y-1">
-              <div class="text-[10px] text-neutral-500 uppercase tracking-wider">── Standard Output (stdout) ──</div>
+              <div class="text-[11px] text-neutral-500 uppercase tracking-wider">── Standard Output (stdout) ──</div>
               <pre class="text-emerald-400 whitespace-pre-wrap leading-relaxed text-xs">{selectedLog.stdout}</pre>
             </div>
           {/if}
 
           {#if selectedLog.stderr}
             <div class="space-y-1">
-              <div class="text-[10px] text-amber-500 uppercase tracking-wider">── Standard Error (stderr) ──</div>
+              <div class="text-[11px] text-amber-500 uppercase tracking-wider">── Standard Error (stderr) ──</div>
               <pre class="text-rose-400 whitespace-pre-wrap leading-relaxed text-xs">{selectedLog.stderr}</pre>
             </div>
           {/if}

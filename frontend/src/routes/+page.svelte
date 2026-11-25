@@ -680,7 +680,7 @@
   }
 
   const kbdClass =
-    'px-1.5 py-0.5 rounded border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900 font-mono text-[10px] text-neutral-600 dark:text-neutral-300';
+    'px-1.5 py-0.5 rounded border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900 font-mono text-[11px] text-neutral-600 dark:text-neutral-300';
   const menuItemBase = 'w-full flex items-center px-3 py-1.5 text-left transition-colors';
   const menuItem = `${menuItemBase} text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800/60`;
 
@@ -750,7 +750,7 @@
       </Button>
       {#if filterOpen}
         <div class="absolute right-0 top-full mt-2 z-30 w-52 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#141414] shadow-2xl p-1.5 text-sm">
-          <p class="px-2.5 pt-1.5 pb-1 text-[10px] font-semibold uppercase tracking-wider text-neutral-400">{t('hosts.show')}</p>
+          <p class="px-2.5 pt-1.5 pb-1 text-[11px] font-semibold uppercase tracking-wider text-neutral-400">{t('hosts.show')}</p>
           <label class="flex items-center gap-2.5 px-2.5 py-1.5 rounded-md hover:bg-neutral-100 dark:hover:bg-neutral-800/60 text-neutral-700 dark:text-neutral-200 cursor-pointer">
             <input type="checkbox" bind:checked={starredOnly} class="rounded" />
             {t('hosts.starredOnly')}
@@ -774,7 +774,7 @@
         onclick={() => (selectedGroupId = null)}
       >
         <span>{t('hosts.allFolders')}</span>
-        <span class="ml-1.5 opacity-60 font-mono text-[10px]">{hosts.length}</span>
+        <span class="ml-1.5 opacity-60 font-mono text-[11px]">{hosts.length}</span>
       </Button>
       <Button
         variant={selectedGroupId === '__ungrouped__' ? 'primary' : 'ghost'}
@@ -783,7 +783,7 @@
         onclick={() => (selectedGroupId = '__ungrouped__')}
       >
         <span>{t('hosts.ungrouped')}</span>
-        <span class="ml-1.5 opacity-60 font-mono text-[10px]">{ungroupedHosts.length}</span>
+        <span class="ml-1.5 opacity-60 font-mono text-[11px]">{ungroupedHosts.length}</span>
       </Button>
       <div class="w-[1px] h-4 bg-neutral-200 dark:bg-neutral-800 shrink-0 mx-1"></div>
       {#each groups as grp (grp.id)}
@@ -795,7 +795,7 @@
         >
           <svg class="w-3.5 h-3.5 opacity-70 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
           <span class="truncate max-w-[120px]">{grp.name}</span>
-          <span class="opacity-60 font-mono text-[10px]">{grp.hostIds?.length || 0}</span>
+          <span class="opacity-60 font-mono text-[11px]">{grp.hostIds?.length || 0}</span>
         </Button>
       {/each}
     </div>
@@ -1057,7 +1057,7 @@
                 <p class="font-semibold text-neutral-900 dark:text-white truncate">{host.label}</p>
                 {#each getGroupsForHost(host.id) as grp}
                   <span
-                    class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 shrink-0"
+                    class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 shrink-0"
                   >
                     <span class="w-1.5 h-1.5 rounded-full bg-neutral-400 dark:bg-neutral-500"></span>
                     <span>{grp.name}</span>
@@ -1122,7 +1122,7 @@
           <!-- Actions -->
           <div class="mt-3 pt-3 border-t border-neutral-100 dark:border-neutral-800/80 flex items-center gap-1.5">
             {#if host.options?.environment && host.options.environment !== 'none'}
-              <span class="shrink-0 text-[10px] font-bold uppercase px-1.5 py-0.5 rounded {host.options.environment === 'production' ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30' : host.options.environment === 'staging' ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30' : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30'}">{host.options.environment === 'production' ? 'PROD' : host.options.environment}</span>
+              <span class="shrink-0 text-[11px] font-bold uppercase px-1.5 py-0.5 rounded {host.options.environment === 'production' ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30' : host.options.environment === 'staging' ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30' : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30'}">{host.options.environment === 'production' ? 'PROD' : host.options.environment}</span>
             {/if}
             <span class="text-[11px] text-neutral-400 dark:text-neutral-500 truncate">
               {host.authMethod.type === 'password' ? t('hosts.authPassword') : host.authMethod.type === 'agent' ? t('hosts.authAgent') : t('hosts.authKey')} · {host.hasSecret ? t('hosts.passwordSaved') : host.authMethod.type === 'password' ? t('hosts.passwordNotSaved') : t('hosts.noPassphrase')}
@@ -1229,7 +1229,7 @@
             {editingId ? t('hosts.form.editTitle') : t('hosts.form.addTitle')}
           </h3>
           <p class="text-xs text-neutral-500 dark:text-neutral-400">
-            {editingId ? `Konfigurasi kredensial & koneksi untuk ${formLabel || 'server'}` : 'Hubungkan server Linux / VPS baru ke CATerm'}
+            {editingId ? t('ui.hosts.editSubtitle', { name: formLabel || 'server' }) : t('ui.hosts.newSubtitle')}
           </p>
         </div>
       </div>
@@ -1238,7 +1238,7 @@
         onclick={handleRequestClose}
         class="p-2 rounded-lg text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 hover:bg-neutral-200/50 dark:hover:bg-neutral-800/50 transition-colors cursor-pointer"
         aria-label="Tutup"
-        title="Tutup Modal"
+        title={t('ui.hosts.closeModal')}
       >
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
       </button>
@@ -1356,7 +1356,7 @@
           <input type="radio" value="password" bind:group={formAuthType} class="text-sky-600 focus:ring-0" />
           <div class="min-w-0">
             <div class="text-xs font-bold">Password</div>
-            <div class="text-[10px] text-neutral-500 dark:text-neutral-400">Kata sandi login</div>
+            <div class="text-[11px] text-neutral-500 dark:text-neutral-400">Kata sandi login</div>
           </div>
         </label>
 
@@ -1365,9 +1365,9 @@
           <div class="min-w-0">
             <div class="text-xs font-bold flex items-center gap-1.5">
               <span>SSH Key (Vault)</span>
-              <span class="px-1.5 py-0.2 rounded-full text-[9px] bg-sky-500/20 text-sky-700 dark:text-sky-300 font-mono">{vaultKeys.length}</span>
+              <span class="px-1.5 py-0.2 rounded-full text-[11px] bg-sky-500/20 text-sky-700 dark:text-sky-300 font-mono">{vaultKeys.length}</span>
             </div>
-            <div class="text-[10px] text-neutral-500 dark:text-neutral-400">Tersimpan di Vault</div>
+            <div class="text-[11px] text-neutral-500 dark:text-neutral-400">Tersimpan di Vault</div>
           </div>
         </label>
 
@@ -1375,7 +1375,7 @@
           <input type="radio" value="key" bind:group={formAuthType} class="text-sky-600 focus:ring-0" />
           <div class="min-w-0">
             <div class="text-xs font-bold">Local Key File</div>
-            <div class="text-[10px] text-neutral-500 dark:text-neutral-400">File ~/.ssh di laptop</div>
+            <div class="text-[11px] text-neutral-500 dark:text-neutral-400">File ~/.ssh di laptop</div>
           </div>
         </label>
 
@@ -1383,7 +1383,7 @@
           <input type="radio" value="agent" bind:group={formAuthType} class="text-sky-600 focus:ring-0" />
           <div class="min-w-0">
             <div class="text-xs font-bold">{t('hosts.authAgent')}</div>
-            <div class="text-[10px] text-neutral-500 dark:text-neutral-400">{t('hosts.authAgentHint')}</div>
+            <div class="text-[11px] text-neutral-500 dark:text-neutral-400">{t('hosts.authAgentHint')}</div>
           </div>
         </label>
       </div>
@@ -1415,7 +1415,7 @@
         <div class="space-y-3 pt-1">
           <div class="flex items-center justify-between">
             <label for="form-key-id" class="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 uppercase tracking-wide">
-              Pilih SSH Key dari Vault
+              {t('ui.hosts.pickKey')}
             </label>
             <a 
               href="/ssh-keys" 
@@ -1430,12 +1430,12 @@
 
           {#if vaultKeys.length === 0}
             <div class="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-700 dark:text-amber-300 flex items-center justify-between gap-3">
-              <span>Belum ada SSH Key yang tersimpan di Vault CATerm.</span>
+              <span>{t('ui.hosts.noKeys')}</span>
               <a 
                 href="/ssh-keys" 
                 class="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-white rounded-lg font-semibold text-xs transition-colors shrink-0"
               >
-                + Buat / Impor Key Sekarang
+                {t('ui.hosts.createKey')}
               </a>
             </div>
           {:else}
@@ -1445,7 +1445,7 @@
                 bind:value={formKeyId}
                 class="w-full h-10 px-3 bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-800 rounded-xl text-neutral-900 dark:text-white focus:outline-none focus:border-sky-500 shadow-xs text-xs font-mono cursor-pointer"
               >
-                <option value="" disabled>Pilih SSH Key yang tersedia...</option>
+                <option value="" disabled>{t('ui.hosts.keyPlaceholder')}</option>
                 {#each vaultKeys as k}
                   <option value={k.id}>{k.name} [{k.algorithm}]</option>
                 {/each}
@@ -1644,7 +1644,7 @@
           class="h-10 text-xs font-mono"
         />
         <p class="text-[11px] text-neutral-500 dark:text-neutral-400">
-          Digunakan untuk auto-inject kode 6-digit saat server meminta verifikasi SSH 2FA / OTP.
+          {t('ui.hosts.totpHint')}
         </p>
       </div>
     </div>
@@ -1661,9 +1661,9 @@
             {/if}
             <div class="space-y-1">
               <div class="text-xs font-bold flex items-center gap-2">
-                <span>{testResult.success ? 'Uji Koneksi Berhasil!' : 'Uji Koneksi Gagal!'}</span>
+                <span>{testResult.success ? t('ui.hosts.testOk') : t('ui.hosts.testFail')}</span>
                 {#if testResult.latencyMs > 0}
-                  <span class="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold {testResult.success ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400' : 'bg-rose-500/20 text-rose-600 dark:text-rose-400'}">
+                  <span class="px-2 py-0.5 rounded-full text-[11px] font-mono font-bold {testResult.success ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400' : 'bg-rose-500/20 text-rose-600 dark:text-rose-400'}">
                     <svg class="w-3.5 h-3.5 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
                     <span>{testResult.latencyMs} ms</span>
                   </span>
@@ -1676,7 +1676,7 @@
             type="button" 
             onclick={() => (testResult = null)} 
             class="p-1 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 transition-colors"
-            title="Tutup Hasil Uji"
+            title={t('ui.hosts.closeTest')}
           >
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
           </button>

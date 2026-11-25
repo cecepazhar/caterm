@@ -131,7 +131,11 @@ pub fn run_with_start(start: std::time::Instant) {
     #[cfg(desktop)]
     let builder = builder.plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
         use tauri::Manager;
-        let _ = app.get_webview_window("main").map(|w| w.set_focus());
+        if let Some(w) = app.get_webview_window("main") {
+            let _ = w.unminimize();
+            let _ = w.show();
+            let _ = w.set_focus();
+        }
     }));
 
     #[allow(clippy::expect_used, clippy::disallowed_methods)]

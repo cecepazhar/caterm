@@ -152,22 +152,22 @@
   <div class="flex items-center justify-between">
     <div>
       <h3 class="text-sm font-bold text-neutral-900 dark:text-white">Active Skills ({skills.length})</h3>
-      <p class="text-xs text-neutral-500">Panggil skill langsung dengan mengetik prefix <code class="text-sky-500 font-mono">@nama-skill</code>.</p>
+      <p class="text-xs text-neutral-500">{t('ui.aiSkills.hint')} <code class="text-sky-500 font-mono">@nama-skill</code>.</p>
     </div>
     <Button
       onclick={openCreate}
       variant="primary"
       size="sm"
     >
-      + Tambah Skill Baru
+      {t('ui.aiSkills.add')}
     </Button>
   </div>
 
   {#if isLoading}
-    <Card variant="primary" size="lg" class="text-center text-xs text-neutral-400">Memuat katalog skills...</Card>
+    <Card variant="primary" size="lg" class="text-center text-xs text-neutral-400">{t('ui.aiSkills.loading')}</Card>
   {:else if skills.length === 0}
     <Card variant="secondary" size="lg" class="text-center text-xs text-neutral-400">
-      Belum ada skill terdaftar. Klik "+ Tambah Skill Baru" untuk membuat skill pertama.
+      {t('ui.aiSkills.empty')}
     </Card>
   {:else}
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -202,7 +202,7 @@
                     size="icon"
                     variant="danger"
                     onclick={() => handleDelete(s)}
-                    title="Hapus Skill"
+                    title={t('ui.aiSkills.deleteTitle')}
                   >
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                   </Button>
@@ -215,13 +215,13 @@
 
           <div class="pt-3 border-t border-neutral-100 dark:border-neutral-800 text-[11px] space-y-1">
             <div class="flex flex-wrap items-center gap-1">
-              <span class="text-neutral-400 text-[10px] uppercase font-bold">Triggers:</span>
+              <span class="text-neutral-400 text-[11px] uppercase font-bold">Triggers:</span>
               {#each s.triggers as t}
                 <Badge variant="neutral" size="xs">{t}</Badge>
               {/each}
             </div>
             <div class="flex flex-wrap items-center gap-1">
-              <span class="text-neutral-400 text-[10px] uppercase font-bold">Tools:</span>
+              <span class="text-neutral-400 text-[11px] uppercase font-bold">Tools:</span>
               {#each s.allowed_tools as tool}
                 <Badge variant="success" size="xs">{tool}</Badge>
               {/each}
@@ -236,7 +236,7 @@
 <!-- MODAL FORM -->
 <Modal
   bind:open={showModal}
-  title={formId ? 'Edit Custom Skill' : 'Buat Custom Skill Baru'}
+  title={formId ? 'Edit Custom Skill' : t('ui.aiSkills.newTitle')}
   size="lg"
 >
   <div class="space-y-4 text-xs">
@@ -300,7 +300,7 @@
       variant="primary"
       size="md"
     >
-      Simpan Skill
+      {t('ui.aiSkills.save')}
     </Button>
   {/snippet}
 </Modal>

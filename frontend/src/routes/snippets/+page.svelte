@@ -356,7 +356,7 @@
       <Input
         bind:value={searchQuery}
         oninput={() => (currentPage = 1)}
-        placeholder="Cari snippet atau perintah..."
+        placeholder={t('ui.snippets.search')}
         size="sm"
       >
         {#snippet leadingIcon()}

@@ -3,6 +3,7 @@
   import { t } from '$lib/i18n/index.svelte';
   import { onMount } from 'svelte';
   import { page } from '$app/state';
+  import { goto } from '$app/navigation';
   import type TerminalPaneComponent from '$lib/components/TerminalPane.svelte';
   import SessionFileManager from '$lib/components/SessionFileManager.svelte';
   import { listHosts } from '$lib/api/hosts';
@@ -75,6 +76,15 @@
     }
   });
 
+  // Closing the last tab (or landing on /session with none open) goes straight to the Hosts
+  // list — that is where a new session starts, so an empty "no session" screen is a dead end.
+  // replaceState keeps the empty session view out of the Back history.
+  $effect(() => {
+    if (tabs.length === 0 && !loadError && page.url.pathname.startsWith('/session')) {
+      void goto('/', { replaceState: true });
+    }
+  });
+
   $effect(() => {
     if (tabs.length > 0 && (!view.selectedTabId || !tabs.some((tab) => tab.id === view.selectedTabId))) {
       setSelectedTabId(tabs[0].id);
@@ -136,16 +146,16 @@
                 <span class="font-bold tracking-wider uppercase text-[11px]">
                   {t('shell.broadcastInputActive', { count: broadcastPaneCount }) || `BROADCAST ACTIVE (${broadcastPaneCount} PANES)`}
                 </span>
-                <span class="text-[10px] text-neutral-500 hidden sm:inline">— Setiap ketikan dikirim serentak ke semua pane</span>
+                <span class="text-[11px] text-neutral-500 hidden sm:inline">{t('ui.session.broadcastHint')}</span>
               </div>
               <Button
                 type="button"
                 variant="warning"
                 size="sm"
                 onclick={() => (view.broadcastInput = false)}
-                class="!px-2 !py-0.5 rounded text-[10px] bg-amber-500/20 hover:bg-amber-500/30 text-amber-700 dark:text-amber-300 font-sans font-medium transition-colors"
+                class="!px-2 !py-0.5 rounded text-[11px] bg-amber-500/20 hover:bg-amber-500/30 text-amber-700 dark:text-amber-300 font-sans font-medium transition-colors"
               >
-                Nonaktifkan (Ctrl+Shift+B)
+                {t('ui.session.broadcastOff')}
               </Button>
             </div>
           {/if}
@@ -162,7 +172,7 @@
                   <span class="w-1.5 h-1.5 rounded-full" style="background-color: {tab.groupColor || '#10b981'}"></span>
                   <span class="truncate max-w-[120px]">{tabLabel(tab)}</span>
                   {#if tab.group}
-                    <span class="px-1 py-0.1 rounded text-[9px] font-sans font-medium" style="background-color: {tab.groupColor ? tab.groupColor + '25' : 'rgba(2,132,199,0.2)'}; color: {tab.groupColor || '#0284c7'}">
+                    <span class="px-1 py-0.1 rounded text-[11px] font-sans font-medium" style="background-color: {tab.groupColor ? tab.groupColor + '25' : 'rgba(2,132,199,0.2)'}; color: {tab.groupColor || '#0284c7'}">
                       {tab.group}
                     </span>
                   {/if}

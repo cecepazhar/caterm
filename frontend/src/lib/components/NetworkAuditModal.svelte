@@ -272,7 +272,7 @@ SSH Hardening Fail/Warn: ${securityReport.hardeningChecklist.filter((h) => h.sta
           bind:value={selectedHostId}
           class="px-3 py-1.5 text-xs bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-lg text-neutral-900 dark:text-white focus:outline-none focus:border-sky-500"
         >
-          <option value="">-- Pilih Host --</option>
+          <option value="">{t('ui.netAudit.selectHost')}</option>
           <option value="local">Mesin Lokal (Localhost CLI)</option>
           {#each hosts as h}
             <option value={h.id}>{h.label || h.address} ({h.address})</option>
@@ -433,7 +433,7 @@ SSH Hardening Fail/Warn: ${securityReport.hardeningChecklist.filter((h) => h.sta
                         <span class="font-bold text-neutral-900 dark:text-white">{p.localAddress}</span>
                         <span class="text-neutral-400 text-[11px] block">{p.process}</span>
                       </div>
-                      <span class="text-[10px] px-2 py-0.5 rounded font-bold {p.riskLevel === 'CRITICAL' ? 'bg-rose-500/20 text-rose-500' : p.riskLevel === 'HIGH' ? 'bg-amber-500/20 text-amber-500' : 'bg-neutral-200 dark:bg-neutral-700 text-neutral-400'}">
+                      <span class="text-[11px] px-2 py-0.5 rounded font-bold {p.riskLevel === 'CRITICAL' ? 'bg-rose-500/20 text-rose-500' : p.riskLevel === 'HIGH' ? 'bg-amber-500/20 text-amber-500' : 'bg-neutral-200 dark:bg-neutral-700 text-neutral-400'}">
                         {p.riskLevel}
                       </span>
                     </div>
@@ -450,7 +450,7 @@ SSH Hardening Fail/Warn: ${securityReport.hardeningChecklist.filter((h) => h.sta
                         <span class="font-bold text-neutral-900 dark:text-white">{e.port} ({e.serviceLabel})</span>
                         <span class="text-neutral-400 text-[11px] block">{e.target}</span>
                       </div>
-                      <span class="text-[10px] px-2 py-0.5 rounded font-bold {e.status === 'OPEN_LEAK' ? 'bg-rose-500/20 text-rose-500' : 'bg-emerald-500/20 text-emerald-500'}">
+                      <span class="text-[11px] px-2 py-0.5 rounded font-bold {e.status === 'OPEN_LEAK' ? 'bg-rose-500/20 text-rose-500' : 'bg-emerald-500/20 text-emerald-500'}">
                         {e.status}
                       </span>
                     </div>
@@ -507,12 +507,12 @@ SSH Hardening Fail/Warn: ${securityReport.hardeningChecklist.filter((h) => h.sta
                   <div class="p-4 rounded-lg bg-sky-500/10 border border-sky-500/20">
                     <span class="text-xs text-sky-600 dark:text-sky-400 font-medium">Download</span>
                     <div class="text-3xl font-black text-sky-600 dark:text-sky-300 mt-1">{speedResult.downloadMbps}</div>
-                    <span class="text-[10px] text-neutral-400">Mbps</span>
+                    <span class="text-[11px] text-neutral-400">Mbps</span>
                   </div>
                   <div class="p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
                     <span class="text-xs text-emerald-600 dark:text-emerald-400 font-medium">Upload</span>
                     <div class="text-3xl font-black text-emerald-600 dark:text-emerald-300 mt-1">{speedResult.uploadMbps}</div>
-                    <span class="text-[10px] text-neutral-400">Mbps</span>
+                    <span class="text-[11px] text-neutral-400">Mbps</span>
                   </div>
                 </div>
                 <div class="flex justify-between text-xs text-neutral-500 pt-2 border-t border-neutral-100 dark:border-neutral-800">
@@ -521,7 +521,7 @@ SSH Hardening Fail/Warn: ${securityReport.hardeningChecklist.filter((h) => h.sta
                   <span>Target: <strong class="text-neutral-900 dark:text-white">{speedResult.serverTarget}</strong></span>
                 </div>
               {:else}
-                <div class="py-12 text-center text-neutral-400 text-xs">Belum ada data speed test. Tekan "Test Speedometer".</div>
+                <div class="py-12 text-center text-neutral-400 text-xs">{t('ui.netAudit.noSpeed')}</div>
               {/if}
             </div>
 
@@ -540,20 +540,20 @@ SSH Hardening Fail/Warn: ${securityReport.hardeningChecklist.filter((h) => h.sta
                 </div>
                 <div class="grid grid-cols-3 gap-2 pt-2 border-t border-neutral-100 dark:border-neutral-800 text-center font-mono text-xs">
                   <div class="p-2 rounded bg-neutral-50 dark:bg-neutral-800/50">
-                    <span class="text-[10px] text-neutral-400 block font-sans">Idle Ping</span>
+                    <span class="text-[11px] text-neutral-400 block font-sans">Idle Ping</span>
                     <strong>{qosResult.idleLatencyMs} ms</strong>
                   </div>
                   <div class="p-2 rounded bg-neutral-50 dark:bg-neutral-800/50">
-                    <span class="text-[10px] text-neutral-400 block font-sans">Under Download</span>
+                    <span class="text-[11px] text-neutral-400 block font-sans">Under Download</span>
                     <strong>{qosResult.downloadLoadLatencyMs} ms</strong>
                   </div>
                   <div class="p-2 rounded bg-neutral-50 dark:bg-neutral-800/50">
-                    <span class="text-[10px] text-neutral-400 block font-sans">Under Upload</span>
+                    <span class="text-[11px] text-neutral-400 block font-sans">Under Upload</span>
                     <strong>{qosResult.uploadLoadLatencyMs} ms</strong>
                   </div>
                 </div>
               {:else}
-                <div class="py-12 text-center text-neutral-400 text-xs">Belum ada audit QoS. Tekan "Audit Bufferbloat".</div>
+                <div class="py-12 text-center text-neutral-400 text-xs">{t('ui.netAudit.noQos')}</div>
               {/if}
             </div>
           </div>
@@ -578,7 +578,7 @@ SSH Hardening Fail/Warn: ${securityReport.hardeningChecklist.filter((h) => h.sta
                 class="flex items-center gap-1.5"
               >
                 <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3"/></svg>
-                <span>{isRunningBench ? 'Benchmarking Hardware...' : 'Jalankan Server Benchmark'}</span>
+                <span>{isRunningBench ? 'Benchmarking Hardware...' : t('ui.netAudit.runBench')}</span>
               </Button>
             </div>
 
@@ -604,7 +604,7 @@ SSH Hardening Fail/Warn: ${securityReport.hardeningChecklist.filter((h) => h.sta
                   <span class="text-xs font-bold text-neutral-500 uppercase">Memory RAM Bandwidth</span>
                   <div class="mt-2 text-center p-3 rounded-lg bg-sky-500/10 border border-sky-500/20">
                     <div class="text-3xl font-black text-sky-600 dark:text-sky-400 font-mono">{benchResult.ramBandwidthMbps}</div>
-                    <span class="text-[10px] text-neutral-400">MB/s Direct Memory Throughput</span>
+                    <span class="text-[11px] text-neutral-400">MB/s Direct Memory Throughput</span>
                   </div>
                 </div>
 
@@ -628,7 +628,7 @@ SSH Hardening Fail/Warn: ${securityReport.hardeningChecklist.filter((h) => h.sta
                 </div>
               </div>
             {:else}
-              <div class="py-16 text-center text-neutral-400 text-xs">Belum ada benchmark dijalankan. Tekan "Jalankan Server Benchmark".</div>
+              <div class="py-16 text-center text-neutral-400 text-xs">{t('ui.netAudit.noBench')}</div>
             {/if}
           </div>
         </ProGate>
@@ -669,7 +669,7 @@ SSH Hardening Fail/Warn: ${securityReport.hardeningChecklist.filter((h) => h.sta
                         <span class="font-mono text-sm font-bold {node.reachable ? 'text-emerald-500' : 'text-rose-500'}">
                           {node.reachable ? `${node.rttMs} ms` : 'UNREACHABLE'}
                         </span>
-                        <span class="text-[10px] text-neutral-400">{node.packetLossPct}% loss</span>
+                        <span class="text-[11px] text-neutral-400">{node.packetLossPct}% loss</span>
                       </div>
                     </div>
                   {/each}

@@ -5,6 +5,25 @@ Format mengacu pada [Keep a Changelog](https://keepachangelog.com/id/), dan proy
 
 ---
 
+## [v2.1.46] - 2026-11-25
+
+### Added
+- **Boot Splash + Progress**: Splash HTML/CSS inline (logo CATerm, cincin "bernapas", progress bar, label langkah boot en/id) yang tergambar di frame pertama, mengikuti pola CAPost. Progres nyata dari `lib/boot.ts` (cek vault, layout, font), minimal 0,9 dtk dan maksimal 3,5 dtk.
+- **Perf Mode** (`lib/perfMode.ts`): animasi Ambient Glow dijeda saat jendela tidak fokus/minimize, statis saat akselerasi GPU off, dan mengikuti `prefers-reduced-motion`. `backdrop-blur` dimatikan saat GPU off (render software).
+- **Ring Fokus Keyboard**: outline `:focus-visible` global untuk semua kontrol interaktif (kecuali textarea xterm).
+
+### Changed
+- **Jendela Selalu Maximized**: jendela dibuat tersembunyi di latar gelap, lalu di-maximize dan ditampilkan saat halaman (splash) selesai dimuat, sehingga tidak ada kilatan layar putih atau lompatan ukuran 1200x800. Membuka aplikasi kedua kali kini juga memulihkan jendela yang sedang minimize.
+- **Startup Lebih Ringan**: AiChatPanel, FeedbackModal, CrashReportModal, dan AboutModal dimuat saat pertama dibuka (lazy). Pengecekan update ditunda 8 dtk setelah start.
+- **Tutup Tab Terakhir → Hosts**: menutup semua tab sesi langsung membuka halaman Hosts, tidak lagi menampilkan layar "tidak ada sesi".
+- **Keterbacaan**: teks 9–10px dinaikkan ke 11px (badge berukuran tetap dikecualikan).
+
+### Fixed
+- **i18n**: 75 teks hardcoded (Hosts, Groups, Tasks, 2FA, AI Skills, Hana AI, Network Audit, Ambient, dll.) dipindahkan ke namespace `ui.*` en/id, sehingga UI bahasa Inggris tidak lagi bercampur bahasa Indonesia.
+- Tombol hapus aturan guardrail di AI Personas kini punya label aksesibilitas.
+
+---
+
 ## [v2.1.44] - 2026-11-22
 
 ### Added

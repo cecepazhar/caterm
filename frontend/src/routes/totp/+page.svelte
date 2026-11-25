@@ -113,7 +113,7 @@
       showToast(editingId ? 'Token 2FA diperbarui!' : 'Token 2FA berhasil ditambahkan!', 'success');
       await refreshEntries();
     } catch (err: any) {
-      formError = typeof err === 'string' ? err : err?.message || 'Gagal menyimpan 2FA token';
+      formError = typeof err === 'string' ? err : err?.message || t('ui.totp.saveFailed');
       showToast(formError, 'error');
     } finally {
       isLoading = false;
@@ -122,11 +122,11 @@
 
   async function handleDelete(id: string, label: string) {
     const confirmed = await confirmModal(
-      `Apakah Anda yakin ingin menghapus token 2FA "${label}"? Tindakan ini tidak dapat dibatalkan.`,
-      'Hapus Token 2FA',
+      t('ui.totp.confirmDelete', { label }),
+      t('ui.totp.deleteTitle'),
       true,
-      'Hapus',
-      'Batal'
+      t('ui.totp.delete'),
+      t('ui.totp.cancel')
     );
     if (confirmed) {
       try {
@@ -219,7 +219,7 @@
 </div>
 
 <!-- Add / Edit 2FA Modal -->
-<Modal bind:open={isAddModalOpen} title={editingId ? 'Edit Token 2FA' : 'Tambah Token 2FA Baru'} size="md">
+<Modal bind:open={isAddModalOpen} title={editingId ? t('ui.totp.editTitle') : t('ui.totp.newTitle')} size="md">
   <div class="space-y-4 text-xs">
     {#if formError}
       <div class="p-2.5 text-xs rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-400">
@@ -264,7 +264,7 @@
         class="font-mono"
       />
       <p class="text-[11px] text-neutral-500 mt-1">
-        Kunci rahasia akan langsung dienkripsi menggunakan Zero-Knowledge AES-256-GCM vault.
+        {t('ui.totp.secretHint')}
       </p>
     </div>
   </div>
@@ -273,7 +273,7 @@
       Batal
     </Button>
     <Button variant="info" size="sm" onclick={handleSave} disabled={isLoading} loading={isLoading}>
-      {isLoading ? 'Menyimpan...' : 'Simpan Token'}
+      {isLoading ? t('ui.totp.saving') : t('ui.totp.save')}
     </Button>
   {/snippet}
 </Modal>
