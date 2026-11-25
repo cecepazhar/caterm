@@ -5,6 +5,13 @@ Format mengacu pada [Keep a Changelog](https://keepachangelog.com/id/), dan proy
 
 ---
 
+## [v2.1.47] - 2026-11-26
+
+### Fixed
+- **Branding Installer NSIS**: `sidebar.bmp` dan `header.bmp` masih memakai logo lama; keduanya dibuat ulang dari ikon resmi CATerm (latar gelap, prompt `>_` merah).
+
+---
+
 ## [v2.1.46] - 2026-11-25
 
 ### Added
